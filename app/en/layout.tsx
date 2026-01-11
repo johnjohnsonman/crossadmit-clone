@@ -79,6 +79,13 @@ export default function RootLayoutEN({
   return (
     <html lang="en">
       <head>
+        {/* Pretendard 폰트 */}
+        <link
+          rel="stylesheet"
+          as="style"
+          crossOrigin="anonymous"
+          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"
+        />
         <StructuredData data={organizationSchema} />
         <StructuredData data={websiteSchema} />
         <link rel="alternate" hrefLang="ko" href="https://crossadmit.com" />

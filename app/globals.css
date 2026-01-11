@@ -5,7 +5,7 @@
 :root {
   --background: #fafaf9;
   --foreground: #1c1917;
-  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
   --font-serif: "Georgia", "Times New Roman", serif;
   --beige-bg: #f5f3f0;
   --beige-light: #faf9f7;
