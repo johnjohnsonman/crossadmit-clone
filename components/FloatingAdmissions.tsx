@@ -49,14 +49,15 @@ export default function FloatingAdmissions() {
   const basePath = isEnglish ? "/en/crossadmit" : "/crossadmit";
 
   return (
-    <div className="bg-tea-100 border-b border-tea-200 py-2.5 overflow-hidden relative h-11">
-      <div className="absolute inset-0 flex items-center">
+    <div className="bg-tea-100 border-b border-tea-200 py-2.5 overflow-hidden relative h-11 z-40 mt-0">
+      <div className="absolute inset-0 flex items-center" style={{ pointerEvents: 'none' }}>
         {/* 첫 번째 세트 */}
         {comparisons.map((comp, index) => (
           <Link
             key={`${comp.id}-${index}`}
             href={`${basePath}/${comp.id}`}
             className="flex items-center space-x-2 whitespace-nowrap animate-scroll hover:opacity-80 transition-opacity cursor-pointer px-8"
+            style={{ pointerEvents: 'auto' }}
             style={{
               animationDelay: `${index * 4}s`,
               animationDuration: "30s",
@@ -83,6 +84,7 @@ export default function FloatingAdmissions() {
             key={`${comp.id}-${index}-dup`}
             href={`${basePath}/${comp.id}`}
             className="flex items-center space-x-2 whitespace-nowrap animate-scroll hover:opacity-80 transition-opacity cursor-pointer px-8"
+            style={{ pointerEvents: 'auto' }}
             style={{
               animationDelay: `${(index + comparisons.length) * 4}s`,
               animationDuration: "30s",
