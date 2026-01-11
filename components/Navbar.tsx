@@ -11,18 +11,18 @@ export default function Navbar() {
   return (
     <nav className="bg-white border-b border-sage-200 sticky top-0 z-50 relative shadow-sm">
       <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between min-h-[90px] py-4">
+        <div className="flex items-center justify-between min-h-[100px] py-5">
           <div className="flex items-center space-x-8">
             <Link href="/" className="flex items-center hover:opacity-80 transition-opacity overflow-visible">
-              <div className="flex items-center">
+              <div className="flex items-center h-full">
                 <Image 
                   src="/logo.svg" 
                   alt="CROSSADMIT" 
-                  width={160} 
-                  height={50}
-                  className="h-16 w-auto object-contain"
+                  width={180} 
+                  height={60}
+                  className="h-20 w-auto object-contain"
                   priority
-                  style={{ maxHeight: 'none' }}
+                  style={{ maxHeight: 'none', objectFit: 'contain' }}
                 />
               </div>
             </Link>

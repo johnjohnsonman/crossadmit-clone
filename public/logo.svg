@@ -1,18 +1,18 @@
-<svg width="160" height="50" viewBox="0 0 160 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg width="180" height="60" viewBox="0 0 180 60" fill="none" xmlns="http://www.w3.org/2000/svg">
   <!-- C와 A가 결합된 로고 -->
   <g>
     <!-- C 모양 (더 큰 크기) -->
-    <path d="M10 25C10 15.34 17.34 8 27 8C32.52 8 37.44 10.15 40.25 14" stroke="#8B6F47" stroke-width="3.5" stroke-linecap="round" fill="none"/>
-    <path d="M10 25C10 34.66 17.34 42 27 42C32.52 42 37.44 39.85 40.25 36" stroke="#8B6F47" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+    <path d="M12 30C12 18.5 21.5 9 33 9C39.78 9 45.66 11.23 48.75 15" stroke="#8B6F47" stroke-width="4" stroke-linecap="round" fill="none"/>
+    <path d="M12 30C12 41.5 21.5 51 33 51C39.78 51 45.66 48.77 48.75 45" stroke="#8B6F47" stroke-width="4" stroke-linecap="round" fill="none"/>
     
     <!-- A 모양의 대각선 -->
-    <path d="M40.25 14L50 25L40.25 36" stroke="#8B6F47" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M45 25H54" stroke="#8B6F47" stroke-width="3"/>
+    <path d="M48.75 15L60 30L48.75 45" stroke="#8B6F47" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M54 30H66" stroke="#8B6F47" stroke-width="3.5"/>
   </g>
   
   <!-- CROSSADMIT 텍스트 -->
-  <text x="60" y="30" font-family="Arial, sans-serif" font-size="16" font-weight="300" fill="#8B6F47" letter-spacing="1.5px">CROSSADMIT</text>
+  <text x="72" y="36" font-family="Arial, sans-serif" font-size="18" font-weight="300" fill="#8B6F47" letter-spacing="2px">CROSSADMIT</text>
   
   <!-- Beta 표시 -->
-  <text x="145" y="15" font-family="Arial, sans-serif" font-size="9" font-weight="300" fill="#8B6F47">BETA</text>
+  <text x="165" y="18" font-family="Arial, sans-serif" font-size="10" font-weight="300" fill="#8B6F47">BETA</text>
 </svg>
