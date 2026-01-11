@@ -57,10 +57,11 @@ export default function FloatingAdmissions() {
             key={`${comp.id}-${index}`}
             href={`${basePath}/${comp.id}`}
             className="flex items-center space-x-2 whitespace-nowrap animate-scroll hover:opacity-80 transition-opacity cursor-pointer px-8"
-            style={{ pointerEvents: 'auto' }}
             style={{
-              animationDelay: `${index * 4}s`,
-              animationDuration: "30s",
+              pointerEvents: 'auto',
+              animationDelay: `${index * 6}s`,
+              animationDuration: "40s",
+              transform: `translateX(${100 + index * 150}vw)`,
             }}
           >
             <span className="text-xs font-semibold text-tea-800">
@@ -84,10 +85,11 @@ export default function FloatingAdmissions() {
             key={`${comp.id}-${index}-dup`}
             href={`${basePath}/${comp.id}`}
             className="flex items-center space-x-2 whitespace-nowrap animate-scroll hover:opacity-80 transition-opacity cursor-pointer px-8"
-            style={{ pointerEvents: 'auto' }}
             style={{
-              animationDelay: `${(index + comparisons.length) * 4}s`,
-              animationDuration: "30s",
+              pointerEvents: 'auto',
+              animationDelay: `${(index + comparisons.length) * 6}s`,
+              animationDuration: "40s",
+              transform: `translateX(${100 + (index + comparisons.length) * 150}vw)`,
             }}
           >
             <span className="text-xs font-semibold text-tea-800">
