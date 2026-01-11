@@ -11,15 +11,15 @@ export default function Navbar() {
   return (
     <nav className="bg-white border-b border-sage-200 sticky top-0 z-50">
       <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-20 py-2">
+        <div className="flex items-center justify-between min-h-[80px] py-3">
           <div className="flex items-center space-x-8">
             <Link href="/" className="flex items-center hover:opacity-80 transition-opacity">
               <Image 
                 src="/logo.svg" 
                 alt="CROSSADMIT" 
-                width={140} 
-                height={40}
-                className="h-12 w-auto object-contain"
+                width={160} 
+                height={50}
+                className="h-14 w-auto object-contain"
                 priority
               />
             </Link>
