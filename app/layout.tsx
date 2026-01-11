@@ -89,9 +89,6 @@ export const metadata: Metadata = {
     // Google Search Console 인증 코드 (나중에 추가)
     // google: "your-google-verification-code",
   },
-  alternates: {
-    canonical: "https://crossadmit.com",
-  },
 };
 
 export default function RootLayout({
