@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useState } from "react";
 import LanguageSwitcher from "./LanguageSwitcher";
 
@@ -12,8 +13,15 @@ export default function Navbar() {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center space-x-8">
-            <Link href="/" className="text-xl font-serif text-sage-800 hover:text-tea-600">
-              크로스어드밋
+            <Link href="/" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
+              <Image 
+                src="/logo.svg" 
+                alt="CROSSADMIT" 
+                width={120} 
+                height={40}
+                className="h-8 w-auto"
+                priority
+              />
             </Link>
             <div className="hidden md:flex items-center space-x-6">
               <Link href="/crossadmit" className="text-sage-700 hover:text-tea-600 transition-colors font-semibold">

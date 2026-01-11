@@ -1,0 +1,18 @@
+<svg width="120" height="40" viewBox="0 0 120 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- C와 A가 결합된 로고 -->
+  <g>
+    <!-- C 모양 -->
+    <path d="M8 20C8 12.27 14.27 6 22 6C26.42 6 30.35 8.12 32.8 11.2" stroke="#8B6F47" stroke-width="3" stroke-linecap="round" fill="none"/>
+    <path d="M8 20C8 27.73 14.27 34 22 34C26.42 34 30.35 31.88 32.8 28.8" stroke="#8B6F47" stroke-width="3" stroke-linecap="round" fill="none"/>
+    
+    <!-- A 모양의 대각선 -->
+    <path d="M32.8 11.2L40 20L32.8 28.8" stroke="#8B6F47" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M36 20H44" stroke="#8B6F47" stroke-width="2.5"/>
+  </g>
+  
+  <!-- CROSSADMIT 텍스트 -->
+  <text x="50" y="25" font-family="Arial, sans-serif" font-size="14" font-weight="300" fill="#8B6F47" letter-spacing="1px">CROSSADMIT</text>
+  
+  <!-- Beta 표시 -->
+  <text x="110" y="12" font-family="Arial, sans-serif" font-size="8" font-weight="300" fill="#8B6F47">BETA</text>
+</svg>
