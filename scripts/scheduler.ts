@@ -78,7 +78,6 @@ async function dailyUpdate() {
 export function startScheduler() {
   // 매일 자정에 실행 (0 0 * * *)
   cron.schedule("0 0 * * *", dailyUpdate, {
-    scheduled: true,
     timezone: "Asia/Seoul",
   });
 
