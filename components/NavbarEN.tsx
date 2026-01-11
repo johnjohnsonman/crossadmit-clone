@@ -11,17 +11,20 @@ export default function NavbarEN() {
   return (
     <nav className="bg-white border-b border-sage-200 sticky top-0 z-50">
       <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between min-h-[80px] py-3">
+        <div className="flex items-center justify-between min-h-[90px] py-4">
           <div className="flex items-center space-x-8">
-            <Link href="/en" className="flex items-center hover:opacity-80 transition-opacity">
-              <Image 
-                src="/logo.svg" 
-                alt="CROSSADMIT" 
-                width={160} 
-                height={50}
-                className="h-14 w-auto object-contain"
-                priority
-              />
+            <Link href="/en" className="flex items-center hover:opacity-80 transition-opacity overflow-visible">
+              <div className="flex items-center">
+                <Image 
+                  src="/logo.svg" 
+                  alt="CROSSADMIT" 
+                  width={160} 
+                  height={50}
+                  className="h-16 w-auto object-contain"
+                  priority
+                  style={{ maxHeight: 'none' }}
+                />
+              </div>
             </Link>
             <div className="hidden md:flex items-center space-x-6">
               <Link href="/en/crossadmit" className="text-sage-700 hover:text-tea-600 transition-colors font-semibold">
