@@ -49,14 +49,14 @@ export default function FloatingAdmissions() {
   const basePath = isEnglish ? "/en/crossadmit" : "/crossadmit";
 
   return (
-    <div className="bg-tea-100 border-b border-tea-200 py-2.5 overflow-hidden relative h-11 z-40 mt-0">
+    <div className="bg-tea-100 border-b border-tea-200 py-1.5 md:py-2.5 overflow-hidden relative h-9 md:h-11 z-40 mt-0">
       <div className="absolute inset-0 flex items-center" style={{ pointerEvents: 'none' }}>
         {/* 첫 번째 세트 */}
         {comparisons.map((comp, index) => (
           <Link
             key={`${comp.id}-${index}`}
             href={`${basePath}/${comp.id}`}
-            className="flex items-center space-x-2 whitespace-nowrap animate-scroll hover:opacity-80 transition-opacity cursor-pointer px-8"
+            className="flex items-center space-x-1 md:space-x-2 whitespace-nowrap animate-scroll hover:opacity-80 transition-opacity cursor-pointer px-4 md:px-8"
             style={{
               pointerEvents: 'auto',
               animationDelay: `${index * 6}s`,
@@ -64,14 +64,14 @@ export default function FloatingAdmissions() {
               transform: `translateX(${100 + index * 150}vw)`,
             }}
           >
-            <span className="text-sm font-medium text-sage-800">
+            <span className="text-xs md:text-sm font-medium text-sage-800">
               {comp.university1}
             </span>
-            <span className="text-xs text-sage-600 font-medium">vs</span>
-            <span className="text-sm font-medium text-sage-800">
+            <span className="text-[10px] md:text-xs text-sage-600 font-medium">vs</span>
+            <span className="text-xs md:text-sm font-medium text-sage-800">
               {comp.university2}
             </span>
-            <span className="text-xs text-sage-500">
+            <span className="text-[10px] md:text-xs text-sage-500">
               ({comp.percentage1}% vs {comp.percentage2}%)
             </span>
           </Link>
@@ -81,7 +81,7 @@ export default function FloatingAdmissions() {
           <Link
             key={`${comp.id}-${index}-dup`}
             href={`${basePath}/${comp.id}`}
-            className="flex items-center space-x-2 whitespace-nowrap animate-scroll hover:opacity-80 transition-opacity cursor-pointer px-8"
+            className="flex items-center space-x-1 md:space-x-2 whitespace-nowrap animate-scroll hover:opacity-80 transition-opacity cursor-pointer px-4 md:px-8"
             style={{
               pointerEvents: 'auto',
               animationDelay: `${(index + comparisons.length) * 6}s`,
@@ -89,14 +89,14 @@ export default function FloatingAdmissions() {
               transform: `translateX(${100 + (index + comparisons.length) * 150}vw)`,
             }}
           >
-            <span className="text-sm font-medium text-sage-800">
+            <span className="text-xs md:text-sm font-medium text-sage-800">
               {comp.university1}
             </span>
-            <span className="text-xs text-sage-600 font-medium">vs</span>
-            <span className="text-sm font-medium text-sage-800">
+            <span className="text-[10px] md:text-xs text-sage-600 font-medium">vs</span>
+            <span className="text-xs md:text-sm font-medium text-sage-800">
               {comp.university2}
             </span>
-            <span className="text-xs text-sage-500">
+            <span className="text-[10px] md:text-xs text-sage-500">
               ({comp.percentage1}% vs {comp.percentage2}%)
             </span>
           </Link>

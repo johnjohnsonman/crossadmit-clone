@@ -52,10 +52,10 @@ export default function LanguageSwitcher() {
   };
 
   return (
-    <div className="flex items-center gap-1 border border-gray-300 rounded-md overflow-hidden">
+    <div className="flex items-center gap-0.5 border border-gray-300 rounded-md overflow-hidden">
       <button
         onClick={() => switchLanguage("ko")}
-        className={`px-3 py-1.5 text-sm font-medium transition-all ${
+        className={`px-2 md:px-3 py-1 md:py-1.5 text-xs md:text-sm font-medium transition-all ${
           currentLang === "ko"
             ? "bg-blue-500 text-white"
             : "bg-white text-gray-700 hover:bg-gray-50"
@@ -67,7 +67,7 @@ export default function LanguageSwitcher() {
       <div className="w-px bg-gray-300"></div>
       <button
         onClick={() => switchLanguage("en")}
-        className={`px-3 py-1.5 text-sm font-medium transition-all ${
+        className={`px-2 md:px-3 py-1 md:py-1.5 text-xs md:text-sm font-medium transition-all ${
           currentLang === "en"
             ? "bg-blue-500 text-white"
             : "bg-white text-gray-700 hover:bg-gray-50"

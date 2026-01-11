@@ -167,40 +167,40 @@ export default function CrossAdmitPage() {
       <main className="min-h-screen bg-[#f5f3f0]">
         {/* 헤더 */}
       <div className="bg-white border-b border-gray-200">
-        <div className="container mx-auto px-4 py-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">크로스어드밋</h1>
-          <p className="text-lg text-gray-600 mb-2">
+        <div className="container mx-auto px-4 py-4 md:py-8">
+          <h1 className="text-2xl md:text-4xl font-bold text-gray-900 mb-2 md:mb-4">크로스어드밋</h1>
+          <p className="text-sm md:text-lg text-gray-600 mb-1 md:mb-2">
             두 대학에 동시에 합격했을 때, 학생들은 어디를 선택할까요?
           </p>
-          <p className="text-sm text-gray-500 mb-6">
+          <p className="text-xs md:text-sm text-gray-500 mb-4 md:mb-6">
             통계적으로 유의미한 차이가 있는 경우 색상으로 표시됩니다 (95% 신뢰구간)
           </p>
           <Link
             href="/crossadmit/register"
-            className="inline-block px-6 py-3 bg-yellow-500 hover:bg-yellow-600 text-white font-semibold rounded-lg shadow-md transition-colors"
+            className="inline-block px-4 md:px-6 py-2 md:py-3 text-sm md:text-base bg-yellow-500 hover:bg-yellow-600 text-white font-semibold rounded-lg shadow-md transition-colors"
           >
             내 학교 등록 인증하기 →
           </Link>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+      <div className="container mx-auto px-4 py-4 md:py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 md:gap-8">
           {/* 메인 콘텐츠 */}
           <div className="lg:col-span-3">
             {/* 검색 */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 md:p-4 mb-4 md:mb-6">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="대학명 검색..."
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
+                className="w-full px-3 md:px-4 py-2 text-sm md:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
               />
             </div>
 
             {/* 비교 목록 */}
-            <div className="space-y-6">
+            <div className="space-y-4 md:space-y-6">
               {filteredComparisons.map((comparison) => (
                 <Link
                   key={comparison.id}
@@ -209,44 +209,44 @@ export default function CrossAdmitPage() {
                 >
                   <div className="grid grid-cols-2 divide-x divide-gray-200">
                     {/* 왼쪽: 대학 1 */}
-                    <div className="p-8 text-center">
-                      <div className={`text-6xl font-bold mb-2 ${
+                    <div className="p-4 md:p-8 text-center">
+                      <div className={`text-3xl md:text-6xl font-bold mb-1 md:mb-2 ${
                         comparison.percentage1 > comparison.percentage2
                           ? "text-green-600"
                           : "text-gray-400"
                       }`}>
                         {comparison.percentage1}%
                       </div>
-                      <div className="text-sm text-gray-500 mb-1">choose</div>
-                      <div className="text-lg font-semibold text-blue-600 mb-4">
+                      <div className="text-xs md:text-sm text-gray-500 mb-1">choose</div>
+                      <div className="text-sm md:text-lg font-semibold text-blue-600 mb-2 md:mb-4 line-clamp-2">
                         {comparison.university1}
                       </div>
-                      <div className="text-xs text-gray-500">
+                      <div className="text-[10px] md:text-xs text-gray-500 hidden md:block">
                         95% confidence interval: {comparison.confidenceInterval1.min}% to {comparison.confidenceInterval1.max}%
                       </div>
                     </div>
 
                     {/* 오른쪽: 대학 2 */}
-                    <div className="p-8 text-center">
-                      <div className={`text-6xl font-bold mb-2 ${
+                    <div className="p-4 md:p-8 text-center">
+                      <div className={`text-3xl md:text-6xl font-bold mb-1 md:mb-2 ${
                         comparison.percentage2 > comparison.percentage1
                           ? "text-red-600"
                           : "text-gray-400"
                       }`}>
                         {comparison.percentage2}%
                       </div>
-                      <div className="text-sm text-gray-500 mb-1">choose</div>
-                      <div className="text-lg font-semibold text-blue-600 mb-4">
+                      <div className="text-xs md:text-sm text-gray-500 mb-1">choose</div>
+                      <div className="text-sm md:text-lg font-semibold text-blue-600 mb-2 md:mb-4 line-clamp-2">
                         {comparison.university2}
                       </div>
-                      <div className="text-xs text-gray-500">
+                      <div className="text-[10px] md:text-xs text-gray-500 hidden md:block">
                         95% confidence interval: {comparison.confidenceInterval2.min}% to {comparison.confidenceInterval2.max}%
                       </div>
                     </div>
                   </div>
 
-                  <div className="bg-gray-50 px-8 py-4 border-t border-gray-200">
-                    <div className="text-center text-sm text-gray-600">
+                  <div className="bg-gray-50 px-4 md:px-8 py-2 md:py-4 border-t border-gray-200">
+                    <div className="text-center text-xs md:text-sm text-gray-600">
                       총 {comparison.totalAdmitted.toLocaleString()}명이 두 대학에 동시에 합격
                     </div>
                   </div>
@@ -256,24 +256,24 @@ export default function CrossAdmitPage() {
           </div>
 
           {/* 사이드바 */}
-          <div className="space-y-6">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-4">인기 비교</h3>
-              <div className="space-y-3">
+          <div className="space-y-4 md:space-y-6">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6">
+              <h3 className="text-base md:text-lg font-bold text-gray-900 mb-3 md:mb-4">인기 비교</h3>
+              <div className="space-y-2 md:space-y-3">
                 {popularComparisons.map((item) => (
                   <Link
                     key={item.id}
                     href={`/crossadmit/${item.id}`}
-                    className="block p-3 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-blue-300 transition-all"
+                    className="block p-2 md:p-3 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-blue-300 transition-all"
                   >
-                    <div className="text-sm font-medium text-gray-900 mb-1">
+                    <div className="text-xs md:text-sm font-medium text-gray-900 mb-1 line-clamp-1">
                       {item.university1}
                     </div>
-                    <div className="text-xs text-gray-500 mb-2">vs</div>
-                    <div className="text-sm font-medium text-gray-900 mb-2">
+                    <div className="text-[10px] md:text-xs text-gray-500 mb-1 md:mb-2">vs</div>
+                    <div className="text-xs md:text-sm font-medium text-gray-900 mb-1 md:mb-2 line-clamp-1">
                       {item.university2}
                     </div>
-                    <div className="flex items-center gap-2 text-xs">
+                    <div className="flex items-center gap-2 text-[10px] md:text-xs">
                       <span className={`font-bold ${
                         item.percentage1 > item.percentage2 ? "text-green-600" : "text-gray-400"
                       }`}>
