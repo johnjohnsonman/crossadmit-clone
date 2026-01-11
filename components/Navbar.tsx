@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { useState } from "react";
 import LanguageSwitcher from "./LanguageSwitcher";
 
@@ -11,20 +10,12 @@ export default function Navbar() {
   return (
     <nav className="bg-white border-b border-sage-200 sticky top-0 z-50 relative shadow-sm">
       <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between min-h-[100px] py-5">
+        <div className="flex items-center justify-between h-16 md:h-20 py-3 md:py-4">
           <div className="flex items-center space-x-8">
-            <Link href="/" className="flex items-center hover:opacity-80 transition-opacity overflow-visible">
-              <div className="flex items-center h-full">
-                <Image 
-                  src="/logo.svg" 
-                  alt="CROSSADMIT" 
-                  width={180} 
-                  height={60}
-                  className="h-20 w-auto object-contain"
-                  priority
-                  style={{ maxHeight: 'none', objectFit: 'contain' }}
-                />
-              </div>
+            <Link href="/" className="flex items-center hover:opacity-80 transition-opacity">
+              <span className="text-2xl md:text-3xl font-bold text-[#8B6F47] tracking-wide whitespace-nowrap">
+                CROSSADMIT
+              </span>
             </Link>
             <div className="hidden md:flex items-center space-x-6">
               <Link href="/crossadmit" className="text-sage-700 hover:text-tea-600 transition-colors font-semibold">
