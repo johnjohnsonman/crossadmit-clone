@@ -41,10 +41,11 @@ function saveAdmissionData(records: AdmissionRecord[]): void {
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const records = loadAdmissionData();
-  const record = records.find((r) => r.id === params.id);
+  const record = records.find((r) => r.id === id);
 
   if (!record) {
     return NextResponse.json(
@@ -59,14 +60,15 @@ export async function GET(
 // 좋아요 추가
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const body = await request.json();
     const { action, comment } = body;
     
     const records = loadAdmissionData();
-    const recordIndex = records.findIndex((r) => r.id === params.id);
+    const recordIndex = records.findIndex((r) => r.id === id);
 
     if (recordIndex === -1) {
       return NextResponse.json(
