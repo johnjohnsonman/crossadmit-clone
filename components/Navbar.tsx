@@ -13,14 +13,15 @@ export default function Navbar() {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center space-x-8">
-            <Link href="/" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
+            <Link href="/" className="flex items-center hover:opacity-80 transition-opacity">
               <Image 
                 src="/logo.svg" 
                 alt="CROSSADMIT" 
-                width={120} 
+                width={140} 
                 height={40}
-                className="h-8 w-auto"
+                className="h-10 w-auto object-contain"
                 priority
+                style={{ maxHeight: '40px' }}
               />
             </Link>
             <div className="hidden md:flex items-center space-x-6">
