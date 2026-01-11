@@ -1,0 +1,185 @@
+[
+  {
+    "id": "generated-1768145581965-0",
+    "university": "UCLA",
+    "universityEn": "University of California, Los Angeles",
+    "major": "Theater",
+    "year": 2024,
+    "admissionType": "Round 1",
+    "status": "등록",
+    "createdAt": "2026-01-11T15:33:01.965Z",
+    "source": "generated",
+    "username": "dream77575",
+    "testScores": {
+      "type": "Test free"
+    },
+    "gpa": {
+      "unweighted": "3.7/4.0",
+      "weighted": "3.8/4.4",
+      "ap": [
+        "Calc AB",
+        "Calc BC"
+      ]
+    },
+    "specialSkills": [
+      "Leadership"
+    ],
+    "review": "After all the hard work, I'm so grateful to be accepted to UCLA Theater.",
+    "likes": 7,
+    "comments": []
+  },
+  {
+    "id": "generated-1768145581965-1",
+    "university": "Stanford University",
+    "universityEn": "Stanford University",
+    "major": "Economics",
+    "year": 2023,
+    "admissionType": "정시",
+    "status": "등록",
+    "createdAt": "2026-01-11T15:33:01.965Z",
+    "source": "generated",
+    "username": "star2026504",
+    "testScores": {
+      "type": "내신"
+    },
+    "gpa": {
+      "unweighted": "1등급",
+      "weighted": "1등급"
+    },
+    "specialSkills": [
+      "리더십"
+    ],
+    "review": "Stanford University는 제가 꿈꾸던 대학이었습니다. 좋은 환경에서 공부할 수 있어 기쁩니다.",
+    "likes": 14,
+    "comments": []
+  },
+  {
+    "id": "generated-1768145581965-2",
+    "university": "홍익대학교",
+    "universityEn": "Hongik University",
+    "major": "디자인학과",
+    "year": 2025,
+    "admissionType": "정시",
+    "status": "합격",
+    "createdAt": "2026-01-11T15:33:01.965Z",
+    "source": "generated",
+    "username": "future2028241",
+    "testScores": {
+      "type": "내신"
+    },
+    "gpa": {
+      "unweighted": "2등급",
+      "weighted": "2등급"
+    },
+    "specialSkills": [
+      "영어"
+    ],
+    "review": "열심히 준비한 결과 홍익대학교에 합격할 수 있었습니다. 앞으로도 더 노력하겠습니다.",
+    "likes": 14,
+    "comments": []
+  },
+  {
+    "id": "generated-1768145581965-3",
+    "university": "부산대학교",
+    "universityEn": "Pusan National University",
+    "major": "기계공학과",
+    "year": 2023,
+    "admissionType": "수시",
+    "status": "등록",
+    "createdAt": "2026-01-11T15:33:01.965Z",
+    "source": "generated",
+    "username": "success66217",
+    "testScores": {
+      "type": "내신"
+    },
+    "gpa": {
+      "unweighted": "2등급",
+      "weighted": "2등급"
+    },
+    "specialSkills": [
+      "독서",
+      "리더십"
+    ],
+    "review": "열심히 준비한 결과 부산대학교에 합격할 수 있었습니다. 앞으로도 더 노력하겠습니다.",
+    "likes": 7,
+    "comments": []
+  },
+  {
+    "id": "generated-1768145581965-4",
+    "university": "서울시립대학교",
+    "universityEn": "University of Seoul",
+    "major": "기계공학과",
+    "year": 2026,
+    "admissionType": "수시",
+    "status": "합격",
+    "createdAt": "2026-01-11T15:33:01.965Z",
+    "source": "generated",
+    "username": "admit2027769",
+    "testScores": {
+      "type": "내신"
+    },
+    "gpa": {
+      "unweighted": "2등급",
+      "weighted": "2등급"
+    },
+    "specialSkills": [
+      "프로그래밍",
+      "인턴십",
+      "과학실험",
+      "논술"
+    ],
+    "review": "열심히 준비한 결과 서울시립대학교에 합격할 수 있었습니다. 앞으로도 더 노력하겠습니다.",
+    "likes": 12,
+    "comments": []
+  },
+  {
+    "id": "generated-1768145581965-5",
+    "university": "연세대학교(서울캠)",
+    "universityEn": "Yonsei University",
+    "major": "의류환경학과",
+    "year": 2026,
+    "admissionType": "수시",
+    "status": "합격",
+    "createdAt": "2026-01-11T15:33:01.965Z",
+    "source": "generated",
+    "username": "admit88114",
+    "testScores": {
+      "type": "내신"
+    },
+    "gpa": {
+      "unweighted": "1등급",
+      "weighted": "1등급"
+    },
+    "specialSkills": [
+      "독서"
+    ],
+    "review": "오랜 시간 준비한 끝에 연세대학교(서울캠)에 합격했습니다. 감사합니다.",
+    "likes": 16,
+    "comments": []
+  },
+  {
+    "id": "generated-1768145581965-6",
+    "university": "홍익대학교",
+    "universityEn": "Hongik University",
+    "major": "건축학과",
+    "year": 2023,
+    "admissionType": "수시",
+    "status": "합격",
+    "createdAt": "2026-01-11T15:33:01.965Z",
+    "source": "generated",
+    "username": "dream2028896",
+    "testScores": {
+      "type": "내신"
+    },
+    "gpa": {
+      "unweighted": "1등급",
+      "weighted": "1등급"
+    },
+    "specialSkills": [
+      "음악"
+    ],
+    "review": "홍익대학교는 제가 꿈꾸던 대학이었습니다. 좋은 환경에서 공부할 수 있어 기쁩니다.",
+    "likes": 16,
+    "comments": []
+  }
+]

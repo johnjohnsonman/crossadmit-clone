@@ -1,0 +1,24 @@
+[
+  {
+    "id": "scraped-1765379672769-1",
+    "university": "서울대학교",
+    "universityEn": "Seoul National University",
+    "major": "경제학과",
+    "year": 2024,
+    "admissionType": "정시",
+    "status": "합격",
+    "createdAt": "2025-12-10T15:14:32.769Z",
+    "source": "web"
+  },
+  {
+    "id": "scraped-1765379672769-2",
+    "university": "연세대학교(서울캠)",
+    "universityEn": "Yonsei University",
+    "major": "컴퓨터공학부",
+    "year": 2024,
+    "admissionType": "수시",
+    "status": "등록",
+    "createdAt": "2025-12-10T15:14:32.769Z",
+    "source": "web"
+  }
+]

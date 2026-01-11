@@ -1,0 +1,48 @@
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "크로스어드밋 | 대학 선택 통계 | CrossAdmit | 交叉录取",
+  description: "두 대학에 동시에 합격했을 때 학생들의 선택 통계를 확인하세요. 서울대 vs 연세대, 고려대 vs 연세대 등 주요 대학 간 선택 통계를 제공합니다. Compare university admission statistics when students are accepted to multiple universities. Study in Korea. 比较同时被多所大学录取时的学生选择统计。留学韩国。",
+  keywords: [
+    "크로스어드밋",
+    "대학 선택 통계",
+    "서울대 연세대 비교",
+    "고려대 연세대 비교",
+    "CrossAdmit",
+    "university admission statistics",
+    "Korea university comparison",
+    "study in Korea",
+    "Korean university admission",
+    "SNU vs Yonsei",
+    "Korea University vs Yonsei",
+    "交叉录取",
+    "韩国大学",
+    "留学韩国",
+    "大学录取统计",
+    "首尔大学",
+    "延世大学",
+    "高丽大学",
+    "admisión universitaria",
+    "estudiar en Corea",
+    "universidad coreana",
+  ],
+  alternates: {
+    canonical: "https://crossadmit.com/crossadmit",
+    languages: {
+      ko: "https://crossadmit.com/crossadmit",
+      en: "https://crossadmit.com/en/crossadmit",
+      "zh-CN": "https://crossadmit.com/zh/crossadmit",
+      "zh-TW": "https://crossadmit.com/zh-tw/crossadmit",
+      es: "https://crossadmit.com/es/crossadmit",
+      ja: "https://crossadmit.com/ja/crossadmit",
+    },
+  },
+  openGraph: {
+    title: "크로스어드밋 | 대학 선택 통계 | CrossAdmit | 交叉录取",
+    description: "두 대학에 동시에 합격했을 때 학생들의 선택 통계를 확인하세요. Compare university admission statistics. 比较大学录取统计。",
+    type: "website",
+    url: "https://crossadmit.com/crossadmit",
+    locale: "ko_KR",
+    alternateLocale: ["en_US", "zh_CN", "zh_TW", "es_ES", "ja_JP"],
+  },
+};

@@ -1,0 +1,21 @@
+[
+  {
+    "id": "crossadmit-1768146168877-2ynxjl5fc",
+    "admittedUniversities": [
+      "서울대학교",
+      "고려대학교(서울캠)"
+    ],
+    "registeredUniversity": "서울대학교",
+    "createdAt": "2026-01-11T15:42:48.877Z"
+  },
+  {
+    "id": "crossadmit-1768147345964-d5owd67wx",
+    "admittedUniversities": [
+      "성균관대학교",
+      "중앙대학교",
+      "아주대학교"
+    ],
+    "registeredUniversity": "성균관대학교",
+    "createdAt": "2026-01-11T16:02:25.964Z"
+  }
+]

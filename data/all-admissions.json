@@ -1,0 +1,1806 @@
+[
+  {
+    "id": "generated-1768145581965-0",
+    "university": "UCLA",
+    "universityEn": "University of California, Los Angeles",
+    "major": "Theater",
+    "year": 2024,
+    "admissionType": "Round 1",
+    "status": "등록",
+    "createdAt": "2026-01-11T15:33:01.965Z",
+    "source": "generated",
+    "username": "dream77575",
+    "testScores": {
+      "type": "Test free"
+    },
+    "gpa": {
+      "unweighted": "3.7/4.0",
+      "weighted": "3.8/4.4",
+      "ap": [
+        "Calc AB",
+        "Calc BC"
+      ]
+    },
+    "specialSkills": [
+      "Leadership"
+    ],
+    "review": "After all the hard work, I'm so grateful to be accepted to UCLA Theater.",
+    "likes": 7,
+    "comments": []
+  },
+  {
+    "id": "generated-1768145581965-1",
+    "university": "Stanford University",
+    "universityEn": "Stanford University",
+    "major": "Economics",
+    "year": 2023,
+    "admissionType": "정시",
+    "status": "등록",
+    "createdAt": "2026-01-11T15:33:01.965Z",
+    "source": "generated",
+    "username": "star2026504",
+    "testScores": {
+      "type": "내신"
+    },
+    "gpa": {
+      "unweighted": "1등급",
+      "weighted": "1등급"
+    },
+    "specialSkills": [
+      "리더십"
+    ],
+    "review": "Stanford University는 제가 꿈꾸던 대학이었습니다. 좋은 환경에서 공부할 수 있어 기쁩니다.",
+    "likes": 14,
+    "comments": []
+  },
+  {
+    "id": "generated-1768145581965-2",
+    "university": "홍익대학교",
+    "universityEn": "Hongik University",
+    "major": "디자인학과",
+    "year": 2025,
+    "admissionType": "정시",
+    "status": "합격",
+    "createdAt": "2026-01-11T15:33:01.965Z",
+    "source": "generated",
+    "username": "future2028241",
+    "testScores": {
+      "type": "내신"
+    },
+    "gpa": {
+      "unweighted": "2등급",
+      "weighted": "2등급"
+    },
+    "specialSkills": [
+      "영어"
+    ],
+    "review": "열심히 준비한 결과 홍익대학교에 합격할 수 있었습니다. 앞으로도 더 노력하겠습니다.",
+    "likes": 14,
+    "comments": []
+  },
+  {
+    "id": "generated-1768145581965-3",
+    "university": "부산대학교",
+    "universityEn": "Pusan National University",
+    "major": "기계공학과",
+    "year": 2023,
+    "admissionType": "수시",
+    "status": "등록",
+    "createdAt": "2026-01-11T15:33:01.965Z",
+    "source": "generated",
+    "username": "success66217",
+    "testScores": {
+      "type": "내신"
+    },
+    "gpa": {
+      "unweighted": "2등급",
+      "weighted": "2등급"
+    },
+    "specialSkills": [
+      "독서",
+      "리더십"
+    ],
+    "review": "열심히 준비한 결과 부산대학교에 합격할 수 있었습니다. 앞으로도 더 노력하겠습니다.",
+    "likes": 7,
+    "comments": []
+  },
+  {
+    "id": "generated-1768145581965-4",
+    "university": "서울시립대학교",
+    "universityEn": "University of Seoul",
+    "major": "기계공학과",
+    "year": 2026,
+    "admissionType": "수시",
+    "status": "합격",
+    "createdAt": "2026-01-11T15:33:01.965Z",
+    "source": "generated",
+    "username": "admit2027769",
+    "testScores": {
+      "type": "내신"
+    },
+    "gpa": {
+      "unweighted": "2등급",
+      "weighted": "2등급"
+    },
+    "specialSkills": [
+      "프로그래밍",
+      "인턴십",
+      "과학실험",
+      "논술"
+    ],
+    "review": "열심히 준비한 결과 서울시립대학교에 합격할 수 있었습니다. 앞으로도 더 노력하겠습니다.",
+    "likes": 12,
+    "comments": []
+  },
+  {
+    "id": "generated-1768145581965-5",
+    "university": "연세대학교(서울캠)",
+    "universityEn": "Yonsei University",
+    "major": "의류환경학과",
+    "year": 2026,
+    "admissionType": "수시",
+    "status": "합격",
+    "createdAt": "2026-01-11T15:33:01.965Z",
+    "source": "generated",
+    "username": "admit88114",
+    "testScores": {
+      "type": "내신"
+    },
+    "gpa": {
+      "unweighted": "1등급",
+      "weighted": "1등급"
+    },
+    "specialSkills": [
+      "독서"
+    ],
+    "review": "오랜 시간 준비한 끝에 연세대학교(서울캠)에 합격했습니다. 감사합니다.",
+    "likes": 16,
+    "comments": []
+  },
+  {
+    "id": "generated-1768145581965-6",
+    "university": "홍익대학교",
+    "universityEn": "Hongik University",
+    "major": "건축학과",
+    "year": 2023,
+    "admissionType": "수시",
+    "status": "합격",
+    "createdAt": "2026-01-11T15:33:01.965Z",
+    "source": "generated",
+    "username": "dream2028896",
+    "testScores": {
+      "type": "내신"
+    },
+    "gpa": {
+      "unweighted": "1등급",
+      "weighted": "1등급"
+    },
+    "specialSkills": [
+      "음악"
+    ],
+    "review": "홍익대학교는 제가 꿈꾸던 대학이었습니다. 좋은 환경에서 공부할 수 있어 기쁩니다.",
+    "likes": 16,
+    "comments": []
+  },
+  {
+    "id": "scraped-1768145581964-1",
+    "university": "서울대학교",
+    "universityEn": "Seoul National University",
+    "major": "경제학과",
+    "year": 2024,
+    "admissionType": "정시",
+    "status": "합격",
+    "createdAt": "2026-01-11T15:33:01.964Z",
+    "source": "web"
+  },
+  {
+    "id": "scraped-1768145581964-2",
+    "university": "연세대학교(서울캠)",
+    "universityEn": "Yonsei University",
+    "major": "컴퓨터공학부",
+    "year": 2024,
+    "admissionType": "수시",
+    "status": "등록",
+    "createdAt": "2026-01-11T15:33:01.964Z",
+    "source": "web"
+  },
+  {
+    "id": "generated-1768145578614-0",
+    "university": "UCLA",
+    "universityEn": "University of California, Los Angeles",
+    "major": "Business",
+    "year": 2025,
+    "admissionType": "Early Action",
+    "status": "합격",
+    "createdAt": "2026-01-11T15:32:58.614Z",
+    "source": "generated",
+    "username": "dream2028938",
+    "testScores": {
+      "type": "SAT",
+      "score": "1566"
+    },
+    "gpa": {
+      "unweighted": "3.4/4.0",
+      "weighted": "3.8/4.4",
+      "ap": [
+        "Calc AB",
+        "Calc BC"
+      ]
+    },
+    "specialSkills": [
+      "3D CAD modeling",
+      "Research",
+      "Volunteer work",
+      "Leadership"
+    ],
+    "review": "Got accepted to UCLA! Can't wait to start my journey there.",
+    "likes": 12,
+    "comments": []
+  },
+  {
+    "id": "generated-1768145578614-1",
+    "university": "부산대학교",
+    "universityEn": "Pusan National University",
+    "major": "법학과",
+    "year": 2026,
+    "admissionType": "수시",
+    "status": "등록",
+    "createdAt": "2026-01-11T15:32:58.614Z",
+    "source": "generated",
+    "username": "student2027986",
+    "testScores": {
+      "type": "내신"
+    },
+    "gpa": {
+      "unweighted": "1등급",
+      "weighted": "1등급"
+    },
+    "specialSkills": [
+      "논술",
+      "과학실험",
+      "리더십"
+    ],
+    "review": "부산대학교 법학과에 합격하게 되어 정말 기쁩니다. 오랜 준비 끝에 원하는 결과를 얻을 수 있어서 감사합니다.",
+    "likes": 4,
+    "comments": []
+  },
+  {
+    "id": "generated-1768145578614-2",
+    "university": "중앙대학교",
+    "universityEn": "Chung-Ang University",
+    "major": "경제학과",
+    "year": 2022,
+    "admissionType": "정시",
+    "status": "합격",
+    "createdAt": "2026-01-11T15:32:58.614Z",
+    "source": "generated",
+    "username": "admit2027616",
+    "testScores": {
+      "type": "내신"
+    },
+    "gpa": {
+      "unweighted": "2등급",
+      "weighted": "2등급"
+    },
+    "specialSkills": [
+      "과학실험",
+      "인턴십",
+      "수학올림피아드"
+    ],
+    "review": "오랜 시간 준비한 끝에 중앙대학교에 합격했습니다. 감사합니다.",
+    "likes": 4,
+    "comments": []
+  },
+  {
+    "id": "generated-1768145578614-3",
+    "university": "한양대학교",
+    "universityEn": "Hanyang University",
+    "major": "의과대학의예과",
+    "year": 2022,
+    "admissionType": "편입학",
+    "status": "등록",
+    "createdAt": "2026-01-11T15:32:58.614Z",
+    "source": "generated",
+    "username": "dream99724",
+    "testScores": {
+      "type": "내신"
+    },
+    "gpa": {
+      "unweighted": "2등급",
+      "weighted": "2등급"
+    },
+    "specialSkills": [
+      "토론",
+      "논술"
+    ],
+    "review": "한양대학교 의과대학의예과는 제가 가장 관심 있던 분야입니다. 합격 소식을 듣고 정말 기뻤습니다.",
+    "likes": 13,
+    "comments": []
+  },
+  {
+    "id": "generated-1768145578614-4",
+    "university": "홍익대학교",
+    "universityEn": "Hongik University",
+    "major": "미술학과",
+    "year": 2025,
+    "admissionType": "정시",
+    "status": "등록",
+    "createdAt": "2026-01-11T15:32:58.614Z",
+    "source": "generated",
+    "username": "admit77514",
+    "testScores": {
+      "type": "내신"
+    },
+    "gpa": {
+      "unweighted": "1등급",
+      "weighted": "1등급"
+    },
+    "specialSkills": [
+      "동아리활동",
+      "미술"
+    ],
+    "review": "오랜 시간 준비한 끝에 홍익대학교에 합격했습니다. 감사합니다.",
+    "likes": 15,
+    "comments": []
+  },
+  {
+    "id": "generated-1768145578614-5",
+    "university": "서울대학교",
+    "universityEn": "Seoul National University",
+    "major": "정치외교학과",
+    "year": 2025,
+    "admissionType": "편입학",
+    "status": "합격",
+    "createdAt": "2026-01-11T15:32:58.614Z",
+    "source": "generated",
+    "username": "hope2026945",
+    "testScores": {
+      "type": "내신"
+    },
+    "gpa": {
+      "unweighted": "2등급",
+      "weighted": "2등급"
+    },
+    "specialSkills": [
+      "토론",
+      "영어"
+    ],
+    "review": "열심히 준비한 결과 서울대학교에 합격할 수 있었습니다. 앞으로도 더 노력하겠습니다.",
+    "likes": 3,
+    "comments": []
+  },
+  {
+    "id": "generated-1768145578614-6",
+    "university": "연세대학교(서울캠)",
+    "universityEn": "Yonsei University",
+    "major": "정치외교학과",
+    "year": 2022,
+    "admissionType": "편입학",
+    "status": "합격",
+    "createdAt": "2026-01-11T15:32:58.614Z",
+    "source": "generated",
+    "username": "star66398",
+    "testScores": {
+      "type": "내신"
+    },
+    "gpa": {
+      "unweighted": "2등급",
+      "weighted": "2등급"
+    },
+    "specialSkills": [
+      "봉사활동",
+      "미술"
+    ],
+    "review": "연세대학교(서울캠)는 제가 꿈꾸던 대학이었습니다. 좋은 환경에서 공부할 수 있어 기쁩니다.",
+    "likes": 8,
+    "comments": []
+  },
+  {
+    "id": "generated-1768145578614-7",
+    "university": "중앙대학교",
+    "universityEn": "Chung-Ang University",
+    "major": "경영학과",
+    "year": 2023,
+    "admissionType": "수시",
+    "status": "합격",
+    "createdAt": "2026-01-11T15:32:58.614Z",
+    "source": "generated",
+    "username": "success77532",
+    "testScores": {
+      "type": "내신"
+    },
+    "gpa": {
+      "unweighted": "1등급",
+      "weighted": "1등급"
+    },
+    "specialSkills": [
+      "리더십",
+      "독서"
+    ],
+    "review": "열심히 준비한 결과 중앙대학교에 합격할 수 있었습니다. 앞으로도 더 노력하겠습니다.",
+    "likes": 4,
+    "comments": []
+  },
+  {
+    "id": "generated-1768145578614-8",
+    "university": "UC Berkeley",
+    "universityEn": "University of California, Berkeley",
+    "major": "Computer Science",
+    "year": 2024,
+    "admissionType": "Round 1",
+    "status": "등록",
+    "createdAt": "2026-01-11T15:32:58.614Z",
+    "source": "generated",
+    "username": "admit2028421",
+    "testScores": {
+      "type": "SAT",
+      "score": "1429"
+    },
+    "gpa": {
+      "unweighted": "3.6/4.0",
+      "weighted": "3.7/4.4",
+      "ap": [
+        "Calc AB",
+        "Calc BC",
+        "Physics 1"
+      ]
+    },
+    "specialSkills": [
+      "Programming"
+    ],
+    "review": "I'm so happy to get accepted to UC Berkeley Computer Science. It's been my dream school for a long time.",
+    "likes": 8,
+    "comments": []
+  },
+  {
+    "id": "generated-1768145578614-9",
+    "university": "UCLA",
+    "universityEn": "University of California, Los Angeles",
+    "major": "Film",
+    "year": 2022,
+    "admissionType": "Regular Decision",
+    "status": "등록",
+    "createdAt": "2026-01-11T15:32:58.614Z",
+    "source": "generated",
+    "username": "hope77834",
+    "testScores": {
+      "type": "ACT",
+      "score": "30"
+    },
+    "gpa": {
+      "unweighted": "3.8/4.0",
+      "weighted": "4.1/4.4",
+      "ap": [
+        "Calc AB",
+        "Calc BC"
+      ]
+    },
+    "specialSkills": [
+      "Leadership",
+      "National Latin exam",
+      "Internship"
+    ],
+    "review": "Got accepted to UCLA! Can't wait to start my journey there.",
+    "likes": 8,
+    "comments": []
+  },
+  {
+    "id": "generated-1768145574431-1",
+    "university": "연세대학교(서울캠)",
+    "universityEn": "Yonsei University",
+    "major": "영어영문학과",
+    "year": 2022,
+    "admissionType": "정시",
+    "status": "합격",
+    "createdAt": "2026-01-11T15:32:54.431Z",
+    "source": "generated",
+    "username": "student2027798",
+    "testScores": {
+      "type": "내신"
+    },
+    "gpa": {
+      "unweighted": "2등급",
+      "weighted": "2등급"
+    },
+    "specialSkills": [
+      "인턴십",
+      "독서"
+    ],
+    "review": "오랜 시간 준비한 끝에 연세대학교(서울캠)에 합격했습니다. 감사합니다.",
+    "likes": 14,
+    "comments": []
+  },
+  {
+    "id": "generated-1768145574431-2",
+    "university": "고려대학교(서울캠)",
+    "universityEn": "Korea University",
+    "major": "영어영문학과",
+    "year": 2026,
+    "admissionType": "수시",
+    "status": "등록",
+    "createdAt": "2026-01-11T15:32:54.431Z",
+    "source": "generated",
+    "username": "star77210",
+    "testScores": {
+      "type": "내신"
+    },
+    "gpa": {
+      "unweighted": "1등급",
+      "weighted": "1등급"
+    },
+    "specialSkills": [
+      "디자인",
+      "토론",
+      "프로그래밍"
+    ],
+    "review": "고려대학교(서울캠)는 제가 꿈꾸던 대학이었습니다. 좋은 환경에서 공부할 수 있어 기쁩니다.",
+    "likes": 3,
+    "comments": []
+  },
+  {
+    "id": "generated-1768145574431-3",
+    "university": "부경대학교",
+    "universityEn": "Pukyong National University",
+    "major": "경영학과",
+    "year": 2025,
+    "admissionType": "수시",
+    "status": "등록",
+    "createdAt": "2026-01-11T15:32:54.431Z",
+    "source": "generated",
+    "username": "hope2025641",
+    "testScores": {
+      "type": "내신"
+    },
+    "gpa": {
+      "unweighted": "2등급",
+      "weighted": "2등급"
+    },
+    "specialSkills": [
+      "프로그래밍",
+      "토론",
+      "과학실험"
+    ],
+    "review": "부경대학교 경영학과는 제가 가장 관심 있던 분야입니다. 합격 소식을 듣고 정말 기뻤습니다.",
+    "likes": 9,
+    "comments": []
+  },
+  {
+    "id": "generated-1768145574431-4",
+    "university": "UC Berkeley",
+    "universityEn": "University of California, Berkeley",
+    "major": "Economics",
+    "year": 2022,
+    "admissionType": "Regular Decision",
+    "status": "합격",
+    "createdAt": "2026-01-11T15:32:54.431Z",
+    "source": "generated",
+    "username": "hope2025157",
+    "testScores": {
+      "type": "Test optional"
+    },
+    "gpa": {
+      "unweighted": "3.7/4.0",
+      "weighted": "4.2/4.4",
+      "ap": [
+        "Calc AB",
+        "Calc BC",
+        "Physics 1",
+        "Physics C"
+      ],
+      "dualEnrollment": "17"
+    },
+    "specialSkills": [
+      "Art",
+      "Sports",
+      "Robotics",
+      "Internship"
+    ],
+    "review": "UC Berkeley was my top choice and I'm excited to attend. The Economics program looks amazing.",
+    "likes": 9,
+    "comments": []
+  },
+  {
+    "id": "generated-1768145574431-5",
+    "university": "Columbia University",
+    "universityEn": "Columbia University",
+    "major": "Engineering",
+    "year": 2025,
+    "admissionType": "정시",
+    "status": "합격",
+    "createdAt": "2026-01-11T15:32:54.431Z",
+    "source": "generated",
+    "username": "success66311",
+    "testScores": {
+      "type": "내신"
+    },
+    "gpa": {
+      "unweighted": "1등급",
+      "weighted": "1등급"
+    },
+    "specialSkills": [
+      "독서"
+    ],
+    "review": "열심히 준비한 결과 Columbia University에 합격할 수 있었습니다. 앞으로도 더 노력하겠습니다.",
+    "likes": 6,
+    "comments": []
+  },
+  {
+    "id": "generated-1768145574431-6",
+    "university": "UC Berkeley",
+    "universityEn": "University of California, Berkeley",
+    "major": "Physics",
+    "year": 2022,
+    "admissionType": "Early Decision",
+    "status": "합격",
+    "createdAt": "2026-01-11T15:32:54.431Z",
+    "source": "generated",
+    "username": "success2025666",
+    "testScores": {
+      "type": "Test free"
+    },
+    "gpa": {
+      "unweighted": "3.8/4.0",
+      "weighted": "4.0/4.4",
+      "ap": [
+        "Calc AB"
+      ],
+      "dualEnrollment": "14"
+    },
+    "specialSkills": [
+      "Debate",
+      "Internship",
+      "Journalism"
+    ],
+    "review": "After months of preparation, I finally got accepted to UC Berkeley. I'm thrilled!",
+    "likes": 11,
+    "comments": []
+  },
+  {
+    "id": "generated-1768145574430-0",
+    "university": "MIT",
+    "universityEn": "Massachusetts Institute of Technology",
+    "major": "Physics",
+    "year": 2026,
+    "admissionType": "Early Decision",
+    "status": "합격",
+    "createdAt": "2026-01-11T15:32:54.430Z",
+    "source": "generated",
+    "username": "student66871",
+    "testScores": {
+      "type": "Test optional"
+    },
+    "gpa": {
+      "unweighted": "3.3/4.0",
+      "weighted": "3.8/4.4",
+      "ap": [
+        "Calc AB",
+        "Calc BC"
+      ],
+      "dualEnrollment": "18"
+    },
+    "specialSkills": [
+      "Sports",
+      "Music",
+      "Internship"
+    ],
+    "review": "I'm so happy to get accepted to MIT Physics. It's been my dream school for a long time.",
+    "likes": 4,
+    "comments": []
+  },
+  {
+    "id": "generated-1768144420098-0",
+    "university": "이화여자대학교",
+    "universityEn": "Ewha Womans University",
+    "major": "컴퓨터공학부",
+    "year": 2024,
+    "admissionType": "수시",
+    "status": "합격",
+    "createdAt": "2026-01-11T15:13:40.098Z",
+    "source": "generated",
+    "username": "future77515",
+    "testScores": {
+      "type": "내신"
+    },
+    "gpa": {
+      "unweighted": "2등급",
+      "weighted": "2등급"
+    },
+    "specialSkills": [
+      "체육",
+      "프로그래밍",
+      "음악",
+      "논술"
+    ],
+    "review": "이화여자대학교 컴퓨터공학부에 합격하게 되어 정말 기쁩니다. 오랜 준비 끝에 원하는 결과를 얻을 수 있어서 감사합니다.",
+    "likes": 17,
+    "comments": []
+  },
+  {
+    "id": "generated-1768144420098-1",
+    "university": "중앙대학교",
+    "universityEn": "Chung-Ang University",
+    "major": "국어국문학과",
+    "year": 2024,
+    "admissionType": "정시",
+    "status": "합격",
+    "createdAt": "2026-01-11T15:13:40.098Z",
+    "source": "generated",
+    "username": "star2027476",
+    "testScores": {
+      "type": "내신"
+    },
+    "gpa": {
+      "unweighted": "2등급",
+      "weighted": "2등급"
+    },
+    "specialSkills": [
+      "체육",
+      "수학올림피아드",
+      "논술",
+      "독서"
+    ],
+    "review": "중앙대학교 국어국문학과는 제가 가장 관심 있던 분야입니다. 합격 소식을 듣고 정말 기뻤습니다.",
+    "likes": 7,
+    "comments": []
+  },
+  {
+    "id": "generated-1768144420098-2",
+    "university": "성균관대학교",
+    "universityEn": "Sungkyunkwan University",
+    "major": "법학과",
+    "year": 2024,
+    "admissionType": "정시",
+    "status": "등록",
+    "createdAt": "2026-01-11T15:13:40.098Z",
+    "source": "generated",
+    "username": "student66735",
+    "testScores": {
+      "type": "내신"
+    },
+    "gpa": {
+      "unweighted": "2등급",
+      "weighted": "2등급"
+    },
+    "specialSkills": [
+      "논술",
+      "미술",
+      "수학올림피아드",
+      "음악"
+    ],
+    "review": "열심히 준비한 결과 성균관대학교에 합격할 수 있었습니다. 앞으로도 더 노력하겠습니다.",
+    "likes": 4,
+    "comments": []
+  },
+  {
+    "id": "generated-1768144420098-3",
+    "university": "홍익대학교",
+    "universityEn": "Hongik University",
+    "major": "디자인학과",
+    "year": 2024,
+    "admissionType": "정시",
+    "status": "합격",
+    "createdAt": "2026-01-11T15:13:40.098Z",
+    "source": "generated",
+    "username": "future88676",
+    "testScores": {
+      "type": "내신"
+    },
+    "gpa": {
+      "unweighted": "1등급",
+      "weighted": "1등급"
+    },
+    "specialSkills": [
+      "봉사활동",
+      "논술",
+      "토론",
+      "영어"
+    ],
+    "review": "홍익대학교 디자인학과에 합격하게 되어 정말 기쁩니다. 오랜 준비 끝에 원하는 결과를 얻을 수 있어서 감사합니다.",
+    "likes": 18,
+    "comments": []
+  },
+  {
+    "id": "generated-1768144420098-4",
+    "university": "동국대학교(서울캠)",
+    "universityEn": "Dongguk University",
+    "major": "컴퓨터공학부",
+    "year": 2022,
+    "admissionType": "수시",
+    "status": "합격",
+    "createdAt": "2026-01-11T15:13:40.098Z",
+    "source": "generated",
+    "username": "hope2025617",
+    "testScores": {
+      "type": "내신"
+    },
+    "gpa": {
+      "unweighted": "2등급",
+      "weighted": "2등급"
+    },
+    "specialSkills": [
+      "음악",
+      "봉사활동",
+      "체육"
+    ],
+    "review": "동국대학교(서울캠) 컴퓨터공학부는 제가 가장 관심 있던 분야입니다. 합격 소식을 듣고 정말 기뻤습니다.",
+    "likes": 17,
+    "comments": []
+  },
+  {
+    "id": "generated-1768144420098-5",
+    "university": "한양대학교",
+    "universityEn": "Hanyang University",
+    "major": "기계공학과",
+    "year": 2025,
+    "admissionType": "정시",
+    "status": "합격",
+    "createdAt": "2026-01-11T15:13:40.098Z",
+    "source": "generated",
+    "username": "student8850",
+    "testScores": {
+      "type": "내신"
+    },
+    "gpa": {
+      "unweighted": "1등급",
+      "weighted": "1등급"
+    },
+    "specialSkills": [
+      "동아리활동",
+      "봉사활동"
+    ],
+    "review": "열심히 준비한 결과 한양대학교에 합격할 수 있었습니다. 앞으로도 더 노력하겠습니다.",
+    "likes": 3,
+    "comments": []
+  },
+  {
+    "id": "generated-1768144420098-6",
+    "university": "서울시립대학교",
+    "universityEn": "University of Seoul",
+    "major": "경제학과",
+    "year": 2022,
+    "admissionType": "수시",
+    "status": "등록",
+    "createdAt": "2026-01-11T15:13:40.098Z",
+    "source": "generated",
+    "username": "success2026257",
+    "testScores": {
+      "type": "내신"
+    },
+    "gpa": {
+      "unweighted": "1등급",
+      "weighted": "1등급"
+    },
+    "specialSkills": [
+      "음악",
+      "봉사활동"
+    ],
+    "review": "서울시립대학교 경제학과는 제가 가장 관심 있던 분야입니다. 합격 소식을 듣고 정말 기뻤습니다.",
+    "likes": 17,
+    "comments": []
+  },
+  {
+    "id": "generated-1768144420098-7",
+    "university": "부경대학교",
+    "universityEn": "Pukyong National University",
+    "major": "경영학과",
+    "year": 2026,
+    "admissionType": "수시",
+    "status": "합격",
+    "createdAt": "2026-01-11T15:13:40.098Z",
+    "source": "generated",
+    "username": "hope77178",
+    "testScores": {
+      "type": "내신"
+    },
+    "gpa": {
+      "unweighted": "1등급",
+      "weighted": "1등급"
+    },
+    "specialSkills": [
+      "체육",
+      "과학실험"
+    ],
+    "review": "부경대학교 경영학과에 합격하게 되어 정말 기쁩니다. 오랜 준비 끝에 원하는 결과를 얻을 수 있어서 감사합니다.",
+    "likes": 19,
+    "comments": []
+  },
+  {
+    "id": "generated-1768144420098-8",
+    "university": "부경대학교",
+    "universityEn": "Pukyong National University",
+    "major": "기계공학과",
+    "year": 2026,
+    "admissionType": "정시",
+    "status": "합격",
+    "createdAt": "2026-01-11T15:13:40.098Z",
+    "source": "generated",
+    "username": "star2027446",
+    "testScores": {
+      "type": "내신"
+    },
+    "gpa": {
+      "unweighted": "1등급",
+      "weighted": "1등급"
+    },
+    "specialSkills": [
+      "체육",
+      "수학올림피아드",
+      "과학실험"
+    ],
+    "review": "부경대학교 기계공학과에 합격하게 되어 정말 기쁩니다. 오랜 준비 끝에 원하는 결과를 얻을 수 있어서 감사합니다.",
+    "likes": 10,
+    "comments": []
+  },
+  {
+    "id": "generated-1768144408712-0",
+    "university": "서울대학교",
+    "universityEn": "Seoul National University",
+    "major": "물리학과",
+    "year": 2022,
+    "admissionType": "정시",
+    "status": "등록",
+    "createdAt": "2026-01-11T15:13:28.712Z",
+    "source": "generated",
+    "username": "future2024205",
+    "testScores": {
+      "type": "내신"
+    },
+    "gpa": {
+      "unweighted": "1등급",
+      "weighted": "1등급"
+    },
+    "specialSkills": [
+      "음악"
+    ],
+    "review": "오랜 시간 준비한 끝에 서울대학교에 합격했습니다. 감사합니다.",
+    "likes": 1,
+    "comments": []
+  },
+  {
+    "id": "generated-1768144408712-1",
+    "university": "Stanford University",
+    "universityEn": "Stanford University",
+    "major": "Physics",
+    "year": 2024,
+    "admissionType": "정시",
+    "status": "합격",
+    "createdAt": "2026-01-11T15:13:28.712Z",
+    "source": "generated",
+    "username": "success99149",
+    "testScores": {
+      "type": "내신"
+    },
+    "gpa": {
+      "unweighted": "2등급",
+      "weighted": "2등급"
+    },
+    "specialSkills": [
+      "디자인",
+      "봉사활동",
+      "체육"
+    ],
+    "review": "Stanford University는 제가 꿈꾸던 대학이었습니다. 좋은 환경에서 공부할 수 있어 기쁩니다.",
+    "likes": 9,
+    "comments": []
+  },
+  {
+    "id": "generated-1768144408712-2",
+    "university": "고려대학교(서울캠)",
+    "universityEn": "Korea University",
+    "major": "지리교육과",
+    "year": 2023,
+    "admissionType": "수시",
+    "status": "합격",
+    "createdAt": "2026-01-11T15:13:28.712Z",
+    "source": "generated",
+    "username": "admit66875",
+    "testScores": {
+      "type": "내신"
+    },
+    "gpa": {
+      "unweighted": "2등급",
+      "weighted": "2등급"
+    },
+    "specialSkills": [
+      "리더십",
+      "과학실험"
+    ],
+    "review": "고려대학교(서울캠) 지리교육과에 합격하게 되어 정말 기쁩니다. 오랜 준비 끝에 원하는 결과를 얻을 수 있어서 감사합니다.",
+    "likes": 4,
+    "comments": []
+  },
+  {
+    "id": "generated-1768144408712-3",
+    "university": "부산대학교",
+    "universityEn": "Pusan National University",
+    "major": "경제학부",
+    "year": 2024,
+    "admissionType": "편입학",
+    "status": "합격",
+    "createdAt": "2026-01-11T15:13:28.712Z",
+    "source": "generated",
+    "username": "student2027492",
+    "testScores": {
+      "type": "내신"
+    },
+    "gpa": {
+      "unweighted": "2등급",
+      "weighted": "2등급"
+    },
+    "specialSkills": [
+      "체육",
+      "미술",
+      "음악",
+      "과학실험"
+    ],
+    "review": "부산대학교 경제학부는 제가 가장 관심 있던 분야입니다. 합격 소식을 듣고 정말 기뻤습니다.",
+    "likes": 13,
+    "comments": []
+  },
+  {
+    "id": "generated-1768144408712-4",
+    "university": "중앙대학교",
+    "universityEn": "Chung-Ang University",
+    "major": "화학공학과",
+    "year": 2023,
+    "admissionType": "편입학",
+    "status": "등록",
+    "createdAt": "2026-01-11T15:13:28.712Z",
+    "source": "generated",
+    "username": "future2025684",
+    "testScores": {
+      "type": "내신"
+    },
+    "gpa": {
+      "unweighted": "2등급",
+      "weighted": "2등급"
+    },
+    "specialSkills": [
+      "과학실험",
+      "영어",
+      "리더십"
+    ],
+    "review": "중앙대학교 화학공학과는 제가 가장 관심 있던 분야입니다. 합격 소식을 듣고 정말 기뻤습니다.",
+    "likes": 1,
+    "comments": []
+  },
+  {
+    "id": "generated-1768144408712-5",
+    "university": "건국대학교(서울캠)",
+    "universityEn": "Konkuk University",
+    "major": "전기전자공학과",
+    "year": 2026,
+    "admissionType": "수시",
+    "status": "합격",
+    "createdAt": "2026-01-11T15:13:28.712Z",
+    "source": "generated",
+    "username": "student2026962",
+    "testScores": {
+      "type": "내신"
+    },
+    "gpa": {
+      "unweighted": "2등급",
+      "weighted": "2등급"
+    },
+    "specialSkills": [
+      "미술",
+      "동아리활동",
+      "영어",
+      "수학올림피아드"
+    ],
+    "review": "열심히 준비한 결과 건국대학교(서울캠)에 합격할 수 있었습니다. 앞으로도 더 노력하겠습니다.",
+    "likes": 2,
+    "comments": []
+  },
+  {
+    "id": "generated-1768144408712-6",
+    "university": "MIT",
+    "universityEn": "Massachusetts Institute of Technology",
+    "major": "Computer Science",
+    "year": 2024,
+    "admissionType": "Round 1",
+    "status": "등록",
+    "createdAt": "2026-01-11T15:13:28.712Z",
+    "source": "generated",
+    "username": "success9991",
+    "testScores": {
+      "type": "ACT",
+      "score": "29"
+    },
+    "gpa": {
+      "unweighted": "3.5/4.0",
+      "weighted": "3.8/4.4",
+      "ap": [
+        "Calc AB"
+      ]
+    },
+    "specialSkills": [
+      "Robotics",
+      "Internship"
+    ],
+    "review": "MIT was my top choice and I'm excited to attend. The Computer Science program looks amazing.",
+    "likes": 2,
+    "comments": []
+  },
+  {
+    "id": "generated-1768144408712-7",
+    "university": "서울대학교",
+    "universityEn": "Seoul National University",
+    "major": "수학과",
+    "year": 2024,
+    "admissionType": "수시",
+    "status": "등록",
+    "createdAt": "2026-01-11T15:13:28.712Z",
+    "source": "generated",
+    "username": "future77258",
+    "testScores": {
+      "type": "내신"
+    },
+    "gpa": {
+      "unweighted": "2등급",
+      "weighted": "2등급"
+    },
+    "specialSkills": [
+      "독서",
+      "음악",
+      "토론",
+      "동아리활동"
+    ],
+    "review": "서울대학교 수학과는 제가 가장 관심 있던 분야입니다. 합격 소식을 듣고 정말 기뻤습니다.",
+    "likes": 7,
+    "comments": []
+  },
+  {
+    "id": "generated-1768144408712-8",
+    "university": "UCLA",
+    "universityEn": "University of California, Los Angeles",
+    "major": "Engineering",
+    "year": 2026,
+    "admissionType": "Early Action",
+    "status": "합격",
+    "createdAt": "2026-01-11T15:13:28.712Z",
+    "source": "generated",
+    "username": "admit66212",
+    "testScores": {
+      "type": "ACT",
+      "score": "29"
+    },
+    "gpa": {
+      "unweighted": "3.6/4.0",
+      "weighted": "4.0/4.4",
+      "ap": [
+        "Calc AB",
+        "Calc BC"
+      ]
+    },
+    "specialSkills": [
+      "Debate",
+      "Art",
+      "Programming",
+      "3D CAD modeling"
+    ],
+    "review": "Got accepted to UCLA! Can't wait to start my journey there.",
+    "likes": 2,
+    "comments": []
+  },
+  {
+    "id": "generated-1768144403847-1",
+    "university": "연세대학교(서울캠)",
+    "universityEn": "Yonsei University",
+    "major": "컴퓨터공학부",
+    "year": 2022,
+    "admissionType": "수시",
+    "status": "등록",
+    "createdAt": "2026-01-11T15:13:23.847Z",
+    "source": "generated",
+    "username": "dream88768",
+    "testScores": {
+      "type": "내신"
+    },
+    "gpa": {
+      "unweighted": "2등급",
+      "weighted": "2등급"
+    },
+    "specialSkills": [
+      "토론",
+      "동아리활동",
+      "봉사활동",
+      "인턴십"
+    ],
+    "review": "오랜 시간 준비한 끝에 연세대학교(서울캠)에 합격했습니다. 감사합니다.",
+    "likes": 15,
+    "comments": []
+  },
+  {
+    "id": "generated-1768144403847-2",
+    "university": "부경대학교",
+    "universityEn": "Pukyong National University",
+    "major": "수산생명과학과",
+    "year": 2025,
+    "admissionType": "편입학",
+    "status": "등록",
+    "createdAt": "2026-01-11T15:13:23.847Z",
+    "source": "generated",
+    "username": "bright2024701",
+    "testScores": {
+      "type": "내신"
+    },
+    "gpa": {
+      "unweighted": "1등급",
+      "weighted": "1등급"
+    },
+    "specialSkills": [
+      "인턴십"
+    ],
+    "review": "부경대학교 수산생명과학과는 제가 가장 관심 있던 분야입니다. 합격 소식을 듣고 정말 기뻤습니다.",
+    "likes": 9,
+    "comments": []
+  },
+  {
+    "id": "generated-1768144403847-3",
+    "university": "한양대학교",
+    "universityEn": "Hanyang University",
+    "major": "디자인학과",
+    "year": 2024,
+    "admissionType": "정시",
+    "status": "합격",
+    "createdAt": "2026-01-11T15:13:23.847Z",
+    "source": "generated",
+    "username": "student2026301",
+    "testScores": {
+      "type": "내신"
+    },
+    "gpa": {
+      "unweighted": "1등급",
+      "weighted": "1등급"
+    },
+    "specialSkills": [
+      "논술",
+      "동아리활동",
+      "미술"
+    ],
+    "review": "한양대학교 디자인학과에 합격하게 되어 정말 기쁩니다. 오랜 준비 끝에 원하는 결과를 얻을 수 있어서 감사합니다.",
+    "likes": 2,
+    "comments": []
+  },
+  {
+    "id": "generated-1768144403847-4",
+    "university": "UCLA",
+    "universityEn": "University of California, Los Angeles",
+    "major": "Business",
+    "year": 2026,
+    "admissionType": "Round 1",
+    "status": "등록",
+    "createdAt": "2026-01-11T15:13:23.847Z",
+    "source": "generated",
+    "username": "success2025812",
+    "testScores": {
+      "type": "Test free"
+    },
+    "gpa": {
+      "unweighted": "3.8/4.0",
+      "weighted": "4.0/4.4",
+      "ap": [
+        "Calc AB",
+        "Calc BC",
+        "Physics 1",
+        "Physics C"
+      ],
+      "dualEnrollment": "6"
+    },
+    "specialSkills": [
+      "Research"
+    ],
+    "review": "After all the hard work, I'm so grateful to be accepted to UCLA Business.",
+    "likes": 1,
+    "comments": []
+  },
+  {
+    "id": "generated-1768144403847-5",
+    "university": "Stanford University",
+    "universityEn": "Stanford University",
+    "major": "Computer Science",
+    "year": 2023,
+    "admissionType": "수시",
+    "status": "등록",
+    "createdAt": "2026-01-11T15:13:23.847Z",
+    "source": "generated",
+    "username": "hope2028275",
+    "testScores": {
+      "type": "내신"
+    },
+    "gpa": {
+      "unweighted": "2등급",
+      "weighted": "2등급"
+    },
+    "specialSkills": [
+      "디자인",
+      "체육"
+    ],
+    "review": "오랜 시간 준비한 끝에 Stanford University에 합격했습니다. 감사합니다.",
+    "likes": 15,
+    "comments": []
+  },
+  {
+    "id": "generated-1768144403847-6",
+    "university": "부경대학교",
+    "universityEn": "Pukyong National University",
+    "major": "기계공학과",
+    "year": 2025,
+    "admissionType": "정시",
+    "status": "등록",
+    "createdAt": "2026-01-11T15:13:23.847Z",
+    "source": "generated",
+    "username": "success77925",
+    "testScores": {
+      "type": "내신"
+    },
+    "gpa": {
+      "unweighted": "1등급",
+      "weighted": "1등급"
+    },
+    "specialSkills": [
+      "과학실험",
+      "독서",
+      "디자인"
+    ],
+    "review": "부경대학교 기계공학과에 합격하게 되어 정말 기쁩니다. 오랜 준비 끝에 원하는 결과를 얻을 수 있어서 감사합니다.",
+    "likes": 13,
+    "comments": []
+  },
+  {
+    "id": "generated-1768144403847-7",
+    "university": "건국대학교(서울캠)",
+    "universityEn": "Konkuk University",
+    "major": "경제학과",
+    "year": 2022,
+    "admissionType": "편입학",
+    "status": "등록",
+    "createdAt": "2026-01-11T15:13:23.847Z",
+    "source": "generated",
+    "username": "hope77117",
+    "testScores": {
+      "type": "내신"
+    },
+    "gpa": {
+      "unweighted": "2등급",
+      "weighted": "2등급"
+    },
+    "specialSkills": [
+      "과학실험",
+      "토론",
+      "미술",
+      "독서"
+    ],
+    "review": "건국대학교(서울캠) 경제학과는 제가 가장 관심 있던 분야입니다. 합격 소식을 듣고 정말 기뻤습니다.",
+    "likes": 11,
+    "comments": []
+  },
+  {
+    "id": "generated-1768144403847-8",
+    "university": "부경대학교",
+    "universityEn": "Pukyong National University",
+    "major": "해양공학과",
+    "year": 2026,
+    "admissionType": "편입학",
+    "status": "합격",
+    "createdAt": "2026-01-11T15:13:23.847Z",
+    "source": "generated",
+    "username": "bright2028372",
+    "testScores": {
+      "type": "내신"
+    },
+    "gpa": {
+      "unweighted": "2등급",
+      "weighted": "2등급"
+    },
+    "specialSkills": [
+      "체육",
+      "봉사활동",
+      "수학올림피아드",
+      "미술"
+    ],
+    "review": "부경대학교 해양공학과에 합격하게 되어 정말 기쁩니다. 오랜 준비 끝에 원하는 결과를 얻을 수 있어서 감사합니다.",
+    "likes": 15,
+    "comments": []
+  },
+  {
+    "id": "generated-1768144403847-9",
+    "university": "성균관대학교",
+    "universityEn": "Sungkyunkwan University",
+    "major": "전기전자공학과",
+    "year": 2025,
+    "admissionType": "수시",
+    "status": "합격",
+    "createdAt": "2026-01-11T15:13:23.847Z",
+    "source": "generated",
+    "username": "hope66490",
+    "testScores": {
+      "type": "내신"
+    },
+    "gpa": {
+      "unweighted": "2등급",
+      "weighted": "2등급"
+    },
+    "specialSkills": [
+      "음악",
+      "과학실험"
+    ],
+    "review": "성균관대학교는 제가 꿈꾸던 대학이었습니다. 좋은 환경에서 공부할 수 있어 기쁩니다.",
+    "likes": 9,
+    "comments": []
+  },
+  {
+    "id": "generated-1768144403846-0",
+    "university": "UCLA",
+    "universityEn": "University of California, Los Angeles",
+    "major": "Engineering",
+    "year": 2023,
+    "admissionType": "Early Decision",
+    "status": "합격",
+    "createdAt": "2026-01-11T15:13:23.846Z",
+    "source": "generated",
+    "username": "admit2024633",
+    "testScores": {
+      "type": "ACT",
+      "score": "21"
+    },
+    "gpa": {
+      "unweighted": "3.6/4.0",
+      "weighted": "3.9/4.4",
+      "ap": [
+        "Calc AB",
+        "Calc BC"
+      ],
+      "dualEnrollment": "23"
+    },
+    "specialSkills": [
+      "Journalism",
+      "Community service"
+    ],
+    "review": "After months of preparation, I finally got accepted to UCLA. I'm thrilled!",
+    "likes": 3,
+    "comments": []
+  },
+  {
+    "id": "generated-1768143229546-3",
+    "university": "서울대학교",
+    "universityEn": "Seoul National University",
+    "major": "경제학과",
+    "year": 2025,
+    "admissionType": "정시",
+    "status": "합격",
+    "createdAt": "2026-01-11T14:53:49.546Z",
+    "source": "generated"
+  },
+  {
+    "id": "generated-1768143229546-6",
+    "university": "고려대학교(서울캠)",
+    "universityEn": "Korea University",
+    "major": "컴퓨터공학부",
+    "year": 2025,
+    "admissionType": "정시",
+    "status": "합격",
+    "createdAt": "2026-01-11T14:53:49.546Z",
+    "source": "generated"
+  },
+  {
+    "id": "generated-1768143229546-0",
+    "university": "고려대학교(서울캠)",
+    "universityEn": "Korea University",
+    "major": "경제학과",
+    "year": 2025,
+    "admissionType": "정시",
+    "status": "합격",
+    "createdAt": "2026-01-11T14:53:49.546Z",
+    "source": "generated"
+  },
+  {
+    "id": "generated-1768143229546-1",
+    "university": "고려대학교(서울캠)",
+    "universityEn": "Korea University",
+    "major": "경영학과",
+    "year": 2024,
+    "admissionType": "수시",
+    "status": "등록",
+    "createdAt": "2026-01-11T14:53:49.546Z",
+    "source": "generated"
+  },
+  {
+    "id": "generated-1768143229546-2",
+    "university": "서울대학교",
+    "universityEn": "Seoul National University",
+    "major": "경제학과",
+    "year": 2026,
+    "admissionType": "수시",
+    "status": "합격",
+    "createdAt": "2026-01-11T14:53:49.546Z",
+    "source": "generated"
+  },
+  {
+    "id": "generated-1768143229546-4",
+    "university": "연세대학교(서울캠)",
+    "universityEn": "Yonsei University",
+    "major": "컴퓨터공학부",
+    "year": 2026,
+    "admissionType": "정시",
+    "status": "합격",
+    "createdAt": "2026-01-11T14:53:49.546Z",
+    "source": "generated"
+  },
+  {
+    "id": "generated-1768143229546-5",
+    "university": "고려대학교(서울캠)",
+    "universityEn": "Korea University",
+    "major": "경영학과",
+    "year": 2026,
+    "admissionType": "수시",
+    "status": "등록",
+    "createdAt": "2026-01-11T14:53:49.546Z",
+    "source": "generated"
+  },
+  {
+    "id": "generated-1768143229546-7",
+    "university": "서울대학교",
+    "universityEn": "Seoul National University",
+    "major": "경제학과",
+    "year": 2026,
+    "admissionType": "정시",
+    "status": "등록",
+    "createdAt": "2026-01-11T14:53:49.546Z",
+    "source": "generated"
+  },
+  {
+    "id": "generated-1768143229546-8",
+    "university": "연세대학교(서울캠)",
+    "universityEn": "Yonsei University",
+    "major": "경제학과",
+    "year": 2024,
+    "admissionType": "정시",
+    "status": "합격",
+    "createdAt": "2026-01-11T14:53:49.546Z",
+    "source": "generated"
+  },
+  {
+    "id": "generated-1768143229546-9",
+    "university": "연세대학교(서울캠)",
+    "universityEn": "Yonsei University",
+    "major": "경제학과",
+    "year": 2025,
+    "admissionType": "수시",
+    "status": "합격",
+    "createdAt": "2026-01-11T14:53:49.546Z",
+    "source": "generated"
+  },
+  {
+    "id": "generated-1765379672775-2",
+    "university": "서울대학교",
+    "universityEn": "Seoul National University",
+    "major": "컴퓨터공학부",
+    "year": 2024,
+    "admissionType": "수시",
+    "status": "등록",
+    "createdAt": "2025-12-10T15:14:32.775Z",
+    "source": "generated"
+  },
+  {
+    "id": "generated-1765379672775-4",
+    "university": "연세대학교(서울캠)",
+    "universityEn": "Yonsei University",
+    "major": "경제학과",
+    "year": 2024,
+    "admissionType": "수시",
+    "status": "등록",
+    "createdAt": "2025-12-10T15:14:32.775Z",
+    "source": "generated"
+  },
+  {
+    "id": "generated-1765379672775-6",
+    "university": "고려대학교(서울캠)",
+    "universityEn": "Korea University",
+    "major": "경영학과",
+    "year": 2023,
+    "admissionType": "수시",
+    "status": "합격",
+    "createdAt": "2025-12-10T15:14:32.775Z",
+    "source": "generated"
+  },
+  {
+    "id": "generated-1765379672775-0",
+    "university": "연세대학교(서울캠)",
+    "universityEn": "Yonsei University",
+    "major": "컴퓨터공학부",
+    "year": 2024,
+    "admissionType": "정시",
+    "status": "합격",
+    "createdAt": "2025-12-10T15:14:32.775Z",
+    "source": "generated"
+  },
+  {
+    "id": "generated-1765379672775-1",
+    "university": "연세대학교(서울캠)",
+    "universityEn": "Yonsei University",
+    "major": "경제학과",
+    "year": 2023,
+    "admissionType": "정시",
+    "status": "등록",
+    "createdAt": "2025-12-10T15:14:32.775Z",
+    "source": "generated"
+  },
+  {
+    "id": "generated-1765379672775-3",
+    "university": "서울대학교",
+    "universityEn": "Seoul National University",
+    "major": "컴퓨터공학부",
+    "year": 2023,
+    "admissionType": "수시",
+    "status": "합격",
+    "createdAt": "2025-12-10T15:14:32.775Z",
+    "source": "generated"
+  },
+  {
+    "id": "generated-1765379672775-5",
+    "university": "연세대학교(서울캠)",
+    "universityEn": "Yonsei University",
+    "major": "경영학과",
+    "year": 2023,
+    "admissionType": "정시",
+    "status": "합격",
+    "createdAt": "2025-12-10T15:14:32.775Z",
+    "source": "generated"
+  },
+  {
+    "id": "generated-1765379672775-7",
+    "university": "서울대학교",
+    "universityEn": "Seoul National University",
+    "major": "경제학과",
+    "year": 2023,
+    "admissionType": "수시",
+    "status": "합격",
+    "createdAt": "2025-12-10T15:14:32.775Z",
+    "source": "generated"
+  },
+  {
+    "id": "generated-1765379672775-8",
+    "university": "고려대학교(서울캠)",
+    "universityEn": "Korea University",
+    "major": "경제학과",
+    "year": 2023,
+    "admissionType": "수시",
+    "status": "등록",
+    "createdAt": "2025-12-10T15:14:32.775Z",
+    "source": "generated"
+  },
+  {
+    "id": "generated-1765379672775-9",
+    "university": "연세대학교(서울캠)",
+    "universityEn": "Yonsei University",
+    "major": "경제학과",
+    "year": 2025,
+    "admissionType": "수시",
+    "status": "등록",
+    "createdAt": "2025-12-10T15:14:32.775Z",
+    "source": "generated"
+  },
+  {
+    "id": "generated-1765379672088-4",
+    "university": "서울대학교",
+    "universityEn": "Seoul National University",
+    "major": "경영학과",
+    "year": 2025,
+    "admissionType": "수시",
+    "status": "등록",
+    "createdAt": "2025-12-10T15:14:32.088Z",
+    "source": "generated"
+  },
+  {
+    "id": "generated-1765379672088-1",
+    "university": "서울대학교",
+    "universityEn": "Seoul National University",
+    "major": "컴퓨터공학부",
+    "year": 2023,
+    "admissionType": "수시",
+    "status": "등록",
+    "createdAt": "2025-12-10T15:14:32.088Z",
+    "source": "generated"
+  },
+  {
+    "id": "generated-1765379672088-0",
+    "university": "서울대학교",
+    "universityEn": "Seoul National University",
+    "major": "경영학과",
+    "year": 2024,
+    "admissionType": "정시",
+    "status": "합격",
+    "createdAt": "2025-12-10T15:14:32.088Z",
+    "source": "generated"
+  },
+  {
+    "id": "generated-1765379672088-2",
+    "university": "연세대학교(서울캠)",
+    "universityEn": "Yonsei University",
+    "major": "경제학과",
+    "year": 2023,
+    "admissionType": "수시",
+    "status": "합격",
+    "createdAt": "2025-12-10T15:14:32.088Z",
+    "source": "generated"
+  },
+  {
+    "id": "generated-1765379672088-3",
+    "university": "고려대학교(서울캠)",
+    "universityEn": "Korea University",
+    "major": "경영학과",
+    "year": 2025,
+    "admissionType": "정시",
+    "status": "등록",
+    "createdAt": "2025-12-10T15:14:32.088Z",
+    "source": "generated"
+  },
+  {
+    "id": "generated-1765379672088-5",
+    "university": "고려대학교(서울캠)",
+    "universityEn": "Korea University",
+    "major": "경제학과",
+    "year": 2025,
+    "admissionType": "수시",
+    "status": "등록",
+    "createdAt": "2025-12-10T15:14:32.088Z",
+    "source": "generated"
+  },
+  {
+    "id": "generated-1765379672088-8",
+    "university": "서울대학교",
+    "universityEn": "Seoul National University",
+    "major": "경영학과",
+    "year": 2023,
+    "admissionType": "수시",
+    "status": "등록",
+    "createdAt": "2025-12-10T15:14:32.088Z",
+    "source": "generated"
+  },
+  {
+    "id": "generated-1765379671050-1",
+    "university": "고려대학교(서울캠)",
+    "universityEn": "Korea University",
+    "major": "경영학과",
+    "year": 2025,
+    "admissionType": "수시",
+    "status": "합격",
+    "createdAt": "2025-12-10T15:14:31.050Z",
+    "source": "generated"
+  },
+  {
+    "id": "generated-1765379671050-2",
+    "university": "서울대학교",
+    "universityEn": "Seoul National University",
+    "major": "경제학과",
+    "year": 2023,
+    "admissionType": "수시",
+    "status": "등록",
+    "createdAt": "2025-12-10T15:14:31.050Z",
+    "source": "generated"
+  },
+  {
+    "id": "generated-1765379671050-5",
+    "university": "고려대학교(서울캠)",
+    "universityEn": "Korea University",
+    "major": "컴퓨터공학부",
+    "year": 2024,
+    "admissionType": "수시",
+    "status": "합격",
+    "createdAt": "2025-12-10T15:14:31.050Z",
+    "source": "generated"
+  },
+  {
+    "id": "generated-1765379665259-1",
+    "university": "서울대학교",
+    "universityEn": "Seoul National University",
+    "major": "컴퓨터공학부",
+    "year": 2025,
+    "admissionType": "정시",
+    "status": "등록",
+    "createdAt": "2025-12-10T15:14:25.259Z",
+    "source": "generated"
+  }
+]

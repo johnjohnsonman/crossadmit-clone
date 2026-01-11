@@ -1,0 +1,270 @@
+[
+  {
+    "id": "generated-1768143555517-0",
+    "university": "경희대학교(서울캠)",
+    "universityEn": "Kyung Hee University",
+    "major": "경영학과",
+    "year": 2024,
+    "admissionType": "편입학",
+    "status": "등록",
+    "createdAt": "2026-01-11T14:59:15.517Z",
+    "source": "generated",
+    "username": "admit2028459",
+    "testScores": {
+      "type": "내신"
+    },
+    "gpa": {
+      "unweighted": "1등급",
+      "weighted": "1등급"
+    },
+    "specialSkills": [
+      "프로그래밍",
+      "리더십",
+      "토론",
+      "독서"
+    ],
+    "review": "오랜 시간 준비한 끝에 경희대학교(서울캠)에 합격했습니다. 감사합니다.",
+    "likes": 5,
+    "comments": []
+  },
+  {
+    "id": "generated-1768143555517-1",
+    "university": "UCLA",
+    "universityEn": "University of California, Los Angeles",
+    "major": "Computer Science",
+    "year": 2026,
+    "admissionType": "Early Decision",
+    "status": "등록",
+    "createdAt": "2026-01-11T14:59:15.517Z",
+    "source": "generated",
+    "username": "hope6688",
+    "testScores": {
+      "type": "Test free"
+    },
+    "gpa": {
+      "unweighted": "3.7/4.0",
+      "weighted": "4.0/4.4"
+    },
+    "specialSkills": [
+      "Debate",
+      "Music",
+      "Robotics"
+    ],
+    "review": "I'm so happy to get accepted to UCLA Computer Science. It's been my dream school for a long time.",
+    "likes": 18,
+    "comments": []
+  },
+  {
+    "id": "generated-1768143555517-2",
+    "university": "경희대학교(서울캠)",
+    "universityEn": "Kyung Hee University",
+    "major": "국제학과",
+    "year": 2023,
+    "admissionType": "정시",
+    "status": "등록",
+    "createdAt": "2026-01-11T14:59:15.517Z",
+    "source": "generated",
+    "username": "admit2026184",
+    "testScores": {
+      "type": "내신"
+    },
+    "gpa": {
+      "unweighted": "2등급",
+      "weighted": "2등급"
+    },
+    "specialSkills": [
+      "미술",
+      "디자인",
+      "토론",
+      "과학실험"
+    ],
+    "review": "오랜 시간 준비한 끝에 경희대학교(서울캠)에 합격했습니다. 감사합니다.",
+    "likes": 10,
+    "comments": []
+  },
+  {
+    "id": "generated-1768143555517-3",
+    "university": "Harvard University",
+    "universityEn": "Harvard University",
+    "major": "Business",
+    "year": 2025,
+    "admissionType": "정시",
+    "status": "등록",
+    "createdAt": "2026-01-11T14:59:15.517Z",
+    "source": "generated",
+    "username": "success2027585",
+    "testScores": {
+      "type": "내신"
+    },
+    "gpa": {
+      "unweighted": "2등급",
+      "weighted": "2등급"
+    },
+    "specialSkills": [
+      "수학올림피아드",
+      "음악",
+      "동아리활동",
+      "논술"
+    ],
+    "review": "Harvard University Business에 합격하게 되어 정말 기쁩니다. 오랜 준비 끝에 원하는 결과를 얻을 수 있어서 감사합니다.",
+    "likes": 11,
+    "comments": []
+  },
+  {
+    "id": "generated-1768143555517-4",
+    "university": "Columbia University",
+    "universityEn": "Columbia University",
+    "major": "Law School",
+    "year": 2023,
+    "admissionType": "편입학",
+    "status": "등록",
+    "createdAt": "2026-01-11T14:59:15.517Z",
+    "source": "generated",
+    "username": "bright99749",
+    "testScores": {
+      "type": "내신"
+    },
+    "gpa": {
+      "unweighted": "2등급",
+      "weighted": "2등급"
+    },
+    "specialSkills": [
+      "디자인",
+      "리더십",
+      "프로그래밍"
+    ],
+    "review": "열심히 준비한 결과 Columbia University에 합격할 수 있었습니다. 앞으로도 더 노력하겠습니다.",
+    "likes": 17,
+    "comments": []
+  },
+  {
+    "id": "generated-1768143555517-5",
+    "university": "동국대학교(서울캠)",
+    "universityEn": "Dongguk University",
+    "major": "컴퓨터공학부",
+    "year": 2024,
+    "admissionType": "정시",
+    "status": "등록",
+    "createdAt": "2026-01-11T14:59:15.517Z",
+    "source": "generated",
+    "username": "success2027708",
+    "testScores": {
+      "type": "내신"
+    },
+    "gpa": {
+      "unweighted": "1등급",
+      "weighted": "1등급"
+    },
+    "specialSkills": [
+      "미술"
+    ],
+    "review": "동국대학교(서울캠)는 제가 꿈꾸던 대학이었습니다. 좋은 환경에서 공부할 수 있어 기쁩니다.",
+    "likes": 0,
+    "comments": []
+  },
+  {
+    "id": "generated-1768143555517-6",
+    "university": "부경대학교",
+    "universityEn": "Pukyong National University",
+    "major": "수산생명과학과",
+    "year": 2025,
+    "admissionType": "편입학",
+    "status": "등록",
+    "createdAt": "2026-01-11T14:59:15.517Z",
+    "source": "generated",
+    "username": "admit2026180",
+    "testScores": {
+      "type": "내신"
+    },
+    "gpa": {
+      "unweighted": "1등급",
+      "weighted": "1등급"
+    },
+    "specialSkills": [
+      "인턴십",
+      "논술"
+    ],
+    "review": "부경대학교 수산생명과학과는 제가 가장 관심 있던 분야입니다. 합격 소식을 듣고 정말 기뻤습니다.",
+    "likes": 1,
+    "comments": []
+  },
+  {
+    "id": "generated-1768143555517-7",
+    "university": "Stanford University",
+    "universityEn": "Stanford University",
+    "major": "Economics",
+    "year": 2025,
+    "admissionType": "수시",
+    "status": "등록",
+    "createdAt": "2026-01-11T14:59:15.517Z",
+    "source": "generated",
+    "username": "future202715",
+    "testScores": {
+      "type": "내신"
+    },
+    "gpa": {
+      "unweighted": "1등급",
+      "weighted": "1등급"
+    },
+    "specialSkills": [
+      "프로그래밍"
+    ],
+    "review": "오랜 시간 준비한 끝에 Stanford University에 합격했습니다. 감사합니다.",
+    "likes": 8,
+    "comments": []
+  },
+  {
+    "id": "generated-1768143555517-8",
+    "university": "홍익대학교",
+    "universityEn": "Hongik University",
+    "major": "미술학과",
+    "year": 2025,
+    "admissionType": "편입학",
+    "status": "등록",
+    "createdAt": "2026-01-11T14:59:15.517Z",
+    "source": "generated",
+    "username": "student77361",
+    "testScores": {
+      "type": "내신"
+    },
+    "gpa": {
+      "unweighted": "1등급",
+      "weighted": "1등급"
+    },
+    "specialSkills": [
+      "인턴십",
+      "프로그래밍",
+      "토론",
+      "수학올림피아드"
+    ],
+    "review": "홍익대학교 미술학과는 제가 가장 관심 있던 분야입니다. 합격 소식을 듣고 정말 기뻤습니다.",
+    "likes": 11,
+    "comments": []
+  },
+  {
+    "id": "generated-1768143555517-9",
+    "university": "경희대학교(서울캠)",
+    "universityEn": "Kyung Hee University",
+    "major": "의과대학의예과",
+    "year": 2024,
+    "admissionType": "정시",
+    "status": "합격",
+    "createdAt": "2026-01-11T14:59:15.517Z",
+    "source": "generated",
+    "username": "bright99138",
+    "testScores": {
+      "type": "내신"
+    },
+    "gpa": {
+      "unweighted": "1등급",
+      "weighted": "1등급"
+    },
+    "specialSkills": [
+      "프로그래밍",
+      "체육"
+    ],
+    "review": "경희대학교(서울캠) 의과대학의예과에 합격하게 되어 정말 기쁩니다. 오랜 준비 끝에 원하는 결과를 얻을 수 있어서 감사합니다.",
+    "likes": 17,
+    "comments": []
+  }
+]
