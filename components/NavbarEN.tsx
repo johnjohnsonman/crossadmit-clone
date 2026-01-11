@@ -11,7 +11,7 @@ export default function NavbarEN() {
   return (
     <nav className="bg-white border-b border-sage-200 sticky top-0 z-50">
       <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-20">
+        <div className="flex items-center justify-between h-20 py-2">
           <div className="flex items-center space-x-8">
             <Link href="/en" className="flex items-center hover:opacity-80 transition-opacity">
               <Image 
@@ -19,9 +19,8 @@ export default function NavbarEN() {
                 alt="CROSSADMIT" 
                 width={140} 
                 height={40}
-                className="h-10 w-auto object-contain"
+                className="h-12 w-auto object-contain"
                 priority
-                style={{ maxHeight: '40px' }}
               />
             </Link>
             <div className="hidden md:flex items-center space-x-6">
