@@ -64,9 +64,6 @@ export default function FloatingAdmissions() {
               transform: `translateX(${100 + index * 150}vw)`,
             }}
           >
-            <span className="text-xs font-semibold text-tea-800">
-              {isEnglish ? "CrossAdmit" : "크로스어드밋"}
-            </span>
             <span className="text-sm font-medium text-sage-800">
               {comp.university1}
             </span>
@@ -92,9 +89,6 @@ export default function FloatingAdmissions() {
               transform: `translateX(${100 + (index + comparisons.length) * 150}vw)`,
             }}
           >
-            <span className="text-xs font-semibold text-tea-800">
-              {isEnglish ? "CrossAdmit" : "크로스어드밋"}
-            </span>
             <span className="text-sm font-medium text-sage-800">
               {comp.university1}
             </span>
