@@ -428,7 +428,7 @@ export default function CrossAdmitDetailPage() {
           {displayComparison.majorStats && (
             <>
               {/* 학과 매칭 통계 - 어떤 학과끼리 붙었는지 */}
-              {comparison.majorStats.majorMatches && comparison.majorStats.majorMatches.length > 0 && (
+              {displayComparison.majorStats.majorMatches && displayComparison.majorStats.majorMatches.length > 0 && (
                 <div className="mt-8 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                   <div className="bg-gradient-to-r from-blue-50 to-green-50 px-4 md:px-6 py-3 md:py-4 border-b border-gray-200">
                     <h2 className="text-lg md:text-xl font-bold text-gray-900">학과별 비교 통계</h2>
