@@ -63,6 +63,8 @@ export default function CrossAdmitPageEN() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedComparison, setSelectedComparison] = useState<CrossAdmitRecord | null>(null);
   const [sortOption, setSortOption] = useState<SortOption>("random");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   useEffect(() => {
     // Fetch data from API
@@ -109,6 +111,17 @@ export default function CrossAdmitPageEN() {
   const shuffledComparisons = sortOption === "random" 
     ? [...filteredComparisons].sort(() => Math.random() - 0.5)
     : filteredComparisons;
+
+  // 페이지네이션 계산
+  const totalPages = Math.ceil(shuffledComparisons.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedComparisons = shuffledComparisons.slice(startIndex, endIndex);
+
+  // 검색어나 필터 변경 시 첫 페이지로 리셋
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, sortOption]);
 
   // Structured data generation (multilingual support)
   const structuredData = {
@@ -257,38 +270,122 @@ export default function CrossAdmitPageEN() {
               )}
 
               {/* Comparison List */}
-              {shuffledComparisons.length > 0 && (
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6">
-                  <h2 className="text-base md:text-xl font-bold text-gray-900 mb-3 md:mb-4">All Comparisons</h2>
-                  <div className="space-y-2 md:space-y-3">
-                    {shuffledComparisons.map((comp) => (
-                      <div
-                        key={comp.id}
-                        onClick={() => setSelectedComparison(comp)}
-                        className={`p-3 md:p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                          selectedComparison?.id === comp.id
-                            ? "border-yellow-500 bg-yellow-50"
-                            : "border-gray-200 hover:border-gray-300"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex-1 min-w-0">
-                            <div className="text-sm md:text-base font-semibold text-gray-900 line-clamp-1">
-                              {comp.university1} vs {comp.university2}
-                            </div>
-                            <div className="text-xs md:text-sm text-gray-500 mt-1">
-                              {comp.totalAdmitted} people admitted
-                            </div>
+              <div className="space-y-2 md:space-y-3">
+                {paginatedComparisons.length > 0 ? (
+                  paginatedComparisons.map((comp) => (
+                    <Link
+                      key={comp.id}
+                      href={`/en/crossadmit/${comp.id}`}
+                      className="block bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-all"
+                    >
+                      <div className="flex items-center justify-between p-3 md:p-4">
+                        {/* Left: University 1 */}
+                        <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0">
+                          <div className={`text-lg md:text-2xl font-bold whitespace-nowrap ${
+                            comp.percentage1 > comp.percentage2
+                              ? "text-green-600"
+                              : "text-gray-400"
+                          }`}>
+                            {comp.percentage1}%
                           </div>
-                          <div className="text-right flex-shrink-0">
-                            <div className="text-sm md:text-lg font-bold text-gray-900">
-                              {comp.percentage1}% vs {comp.percentage2}%
-                            </div>
+                          <div className="text-sm md:text-base font-semibold text-blue-600 truncate">
+                            {comp.university1}
                           </div>
                         </div>
+
+                        {/* Center: VS */}
+                        <div className="px-2 md:px-4 text-xs md:text-sm text-gray-400 font-medium">
+                          vs
+                        </div>
+
+                        {/* Right: University 2 */}
+                        <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0 justify-end">
+                          <div className="text-sm md:text-base font-semibold text-blue-600 truncate text-right">
+                            {comp.university2}
+                          </div>
+                          <div className={`text-lg md:text-2xl font-bold whitespace-nowrap ${
+                            comp.percentage2 > comp.percentage1
+                              ? "text-red-600"
+                              : "text-gray-400"
+                          }`}>
+                            {comp.percentage2}%
+                          </div>
+                        </div>
+
+                        {/* Data count */}
+                        <div className="ml-3 md:ml-4 text-xs md:text-sm text-gray-500 whitespace-nowrap hidden md:block">
+                          ({comp.totalAdmitted})
+                        </div>
                       </div>
-                    ))}
+                    </Link>
+                  ))
+                ) : (
+                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center text-gray-500">
+                    No results found.
                   </div>
+                )}
+              </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex justify-center items-center gap-2 mt-6 md:mt-8">
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                    className={`px-3 md:px-4 py-2 text-sm md:text-base rounded-md transition-colors ${
+                      currentPage === 1
+                        ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                        : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
+                    }`}
+                  >
+                    Previous
+                  </button>
+                  
+                  <div className="flex gap-1 md:gap-2">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                      if (
+                        page === 1 ||
+                        page === totalPages ||
+                        (page >= currentPage - 2 && page <= currentPage + 2)
+                      ) {
+                        return (
+                          <button
+                            key={page}
+                            onClick={() => setCurrentPage(page)}
+                            className={`px-3 md:px-4 py-2 text-sm md:text-base rounded-md transition-colors ${
+                              currentPage === page
+                                ? "bg-blue-500 text-white"
+                                : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        );
+                      } else if (
+                        page === currentPage - 3 ||
+                        page === currentPage + 3
+                      ) {
+                        return (
+                          <span key={page} className="px-2 text-gray-400">
+                            ...
+                          </span>
+                        );
+                      }
+                      return null;
+                    })}
+                  </div>
+
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages}
+                    className={`px-3 md:px-4 py-2 text-sm md:text-base rounded-md transition-colors ${
+                      currentPage === totalPages
+                        ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                        : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
+                    }`}
+                  >
+                    Next
+                  </button>
                 </div>
               )}
             </div>

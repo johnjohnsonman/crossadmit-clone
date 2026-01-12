@@ -62,6 +62,8 @@ export default function CrossAdmitPage() {
   const [popularComparisons, setPopularComparisons] = useState<PopularComparison[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOption, setSortOption] = useState<SortOption>("random");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   useEffect(() => {
     const fetchData = async () => {
@@ -152,6 +154,17 @@ export default function CrossAdmitPage() {
   const shuffledComparisons = sortOption === "random" 
     ? [...filteredComparisons].sort(() => Math.random() - 0.5)
     : filteredComparisons;
+
+  // 페이지네이션 계산
+  const totalPages = Math.ceil(shuffledComparisons.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedComparisons = shuffledComparisons.slice(startIndex, endIndex);
+
+  // 검색어나 필터 변경 시 첫 페이지로 리셋
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, sortOption]);
 
   // 구조화된 데이터 생성 (다국어 지원)
   const structuredData = {
@@ -245,59 +258,125 @@ export default function CrossAdmitPage() {
             </div>
 
             {/* 비교 목록 */}
-            <div className="space-y-4 md:space-y-6">
-              {shuffledComparisons.map((comparison) => (
-                <Link
-                  key={comparison.id}
-                  href={`/crossadmit/${comparison.id}`}
-                  className="block bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
-                >
-                  <div className="grid grid-cols-2 divide-x divide-gray-200">
-                    {/* 왼쪽: 대학 1 */}
-                    <div className="p-4 md:p-8 text-center">
-                      <div className={`text-3xl md:text-6xl font-bold mb-1 md:mb-2 ${
-                        comparison.percentage1 > comparison.percentage2
-                          ? "text-green-600"
-                          : "text-gray-400"
-                      }`}>
-                        {comparison.percentage1}%
+            <div className="space-y-2 md:space-y-3">
+              {paginatedComparisons.length > 0 ? (
+                paginatedComparisons.map((comparison) => (
+                  <Link
+                    key={comparison.id}
+                    href={`/crossadmit/${comparison.id}`}
+                    className="block bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-all"
+                  >
+                    <div className="flex items-center justify-between p-3 md:p-4">
+                      {/* 왼쪽: 대학 1 */}
+                      <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0">
+                        <div className={`text-lg md:text-2xl font-bold whitespace-nowrap ${
+                          comparison.percentage1 > comparison.percentage2
+                            ? "text-green-600"
+                            : "text-gray-400"
+                        }`}>
+                          {comparison.percentage1}%
+                        </div>
+                        <div className="text-sm md:text-base font-semibold text-blue-600 truncate">
+                          {comparison.university1}
+                        </div>
                       </div>
-                      <div className="text-xs md:text-sm text-gray-500 mb-1">choose</div>
-                      <div className="text-sm md:text-lg font-semibold text-blue-600 mb-2 md:mb-4 line-clamp-2">
-                        {comparison.university1}
-                      </div>
-                      <div className="text-[10px] md:text-xs text-gray-500 hidden md:block">
-                        95% confidence interval: {comparison.confidenceInterval1.min}% to {comparison.confidenceInterval1.max}%
-                      </div>
-                    </div>
 
-                    {/* 오른쪽: 대학 2 */}
-                    <div className="p-4 md:p-8 text-center">
-                      <div className={`text-3xl md:text-6xl font-bold mb-1 md:mb-2 ${
-                        comparison.percentage2 > comparison.percentage1
-                          ? "text-red-600"
-                          : "text-gray-400"
-                      }`}>
-                        {comparison.percentage2}%
+                      {/* 중앙: VS */}
+                      <div className="px-2 md:px-4 text-xs md:text-sm text-gray-400 font-medium">
+                        vs
                       </div>
-                      <div className="text-xs md:text-sm text-gray-500 mb-1">choose</div>
-                      <div className="text-sm md:text-lg font-semibold text-blue-600 mb-2 md:mb-4 line-clamp-2">
-                        {comparison.university2}
-                      </div>
-                      <div className="text-[10px] md:text-xs text-gray-500 hidden md:block">
-                        95% confidence interval: {comparison.confidenceInterval2.min}% to {comparison.confidenceInterval2.max}%
-                      </div>
-                    </div>
-                  </div>
 
-                  <div className="bg-gray-50 px-4 md:px-8 py-2 md:py-4 border-t border-gray-200">
-                    <div className="text-center text-xs md:text-sm text-gray-600">
-                      총 {comparison.totalAdmitted.toLocaleString()}명이 두 대학에 동시에 합격
+                      {/* 오른쪽: 대학 2 */}
+                      <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0 justify-end">
+                        <div className="text-sm md:text-base font-semibold text-blue-600 truncate text-right">
+                          {comparison.university2}
+                        </div>
+                        <div className={`text-lg md:text-2xl font-bold whitespace-nowrap ${
+                          comparison.percentage2 > comparison.percentage1
+                            ? "text-red-600"
+                            : "text-gray-400"
+                        }`}>
+                          {comparison.percentage2}%
+                        </div>
+                      </div>
+
+                      {/* 데이터 수 */}
+                      <div className="ml-3 md:ml-4 text-xs md:text-sm text-gray-500 whitespace-nowrap hidden md:block">
+                        ({comparison.totalAdmitted}명)
+                      </div>
                     </div>
-                  </div>
-                </Link>
-              ))}
+                  </Link>
+                ))
+              ) : (
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center text-gray-500">
+                  검색 결과가 없습니다.
+                </div>
+              )}
             </div>
+
+            {/* 페이지네이션 */}
+            {totalPages > 1 && (
+              <div className="flex justify-center items-center gap-2 mt-6 md:mt-8">
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className={`px-3 md:px-4 py-2 text-sm md:text-base rounded-md transition-colors ${
+                    currentPage === 1
+                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                      : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  이전
+                </button>
+                
+                <div className="flex gap-1 md:gap-2">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                    // 현재 페이지 주변 2페이지씩만 표시
+                    if (
+                      page === 1 ||
+                      page === totalPages ||
+                      (page >= currentPage - 2 && page <= currentPage + 2)
+                    ) {
+                      return (
+                        <button
+                          key={page}
+                          onClick={() => setCurrentPage(page)}
+                          className={`px-3 md:px-4 py-2 text-sm md:text-base rounded-md transition-colors ${
+                            currentPage === page
+                              ? "bg-blue-500 text-white"
+                              : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      );
+                    } else if (
+                      page === currentPage - 3 ||
+                      page === currentPage + 3
+                    ) {
+                      return (
+                        <span key={page} className="px-2 text-gray-400">
+                          ...
+                        </span>
+                      );
+                    }
+                    return null;
+                  })}
+                </div>
+
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                  className={`px-3 md:px-4 py-2 text-sm md:text-base rounded-md transition-colors ${
+                    currentPage === totalPages
+                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                      : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  다음
+                </button>
+              </div>
+            )}
           </div>
 
           {/* 사이드바 */}
