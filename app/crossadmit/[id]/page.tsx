@@ -526,56 +526,51 @@ export default function CrossAdmitDetailPage() {
 
                   return (
                     <div key={submission.id} className="p-3 md:p-4 hover:bg-gray-50 transition-colors">
-                      <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-4">
-                        {/* 합격 대학 */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 md:gap-3 flex-wrap">
-                            <div className={`flex items-center gap-1 md:gap-2 px-2 md:px-3 py-1 md:py-1.5 rounded-md text-xs md:text-sm font-medium ${
-                              isRegistered1 
-                                ? "bg-blue-100 text-blue-700 border border-blue-300" 
-                                : "bg-gray-100 text-gray-700 border border-gray-300"
-                            }`}>
-                              <span>{comparison.university1}</span>
-                              {uni1Major && <span className="text-gray-500">({uni1Major})</span>}
-                              {isRegistered1 && (
-                                <span className="ml-1 text-blue-600 font-bold">✓</span>
-                              )}
-                            </div>
-                            <span className="text-gray-400 font-medium text-xs md:text-sm">vs</span>
-                            <div className={`flex items-center gap-1 md:gap-2 px-2 md:px-3 py-1 md:py-1.5 rounded-md text-xs md:text-sm font-medium ${
-                              isRegistered2 
-                                ? "bg-green-100 text-green-700 border border-green-300" 
-                                : "bg-gray-100 text-gray-700 border border-gray-300"
-                            }`}>
-                              <span>{comparison.university2}</span>
-                              {uni2Major && <span className="text-gray-500">({uni2Major})</span>}
-                              {isRegistered2 && (
-                                <span className="ml-1 text-green-600 font-bold">✓</span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* 등록 대학 */}
-                        <div className="flex items-center gap-2 md:gap-3">
-                          <div className="text-xs md:text-sm text-gray-500">등록:</div>
-                          <div className={`px-2 md:px-3 py-1 md:py-1.5 rounded-md text-xs md:text-sm font-semibold ${
-                            isRegistered1 
-                              ? "bg-blue-100 text-blue-700 border border-blue-300" 
-                              : isRegistered2 
-                              ? "bg-green-100 text-green-700 border border-green-300"
-                              : "bg-gray-100 text-gray-700 border border-gray-300"
+                      <div className="flex items-center gap-3 md:gap-4 flex-wrap">
+                        {/* 왼쪽 대학 */}
+                        <div className="flex items-center gap-2 md:gap-3 flex-1 min-w-0">
+                          <span className={`text-sm md:text-base font-bold ${
+                            isRegistered1 ? "text-green-600" : "text-gray-400"
                           }`}>
-                            {submission.registeredUniversity}
-                            {registeredMajor && (
-                              <span className="ml-1 text-gray-600">({registeredMajor})</span>
-                            )}
-                          </div>
+                            {isRegistered1 ? "100%" : "0%"}
+                          </span>
+                          <span className="text-sm md:text-base font-medium text-gray-900 truncate">
+                            {comparison.university1}
+                            {uni1Major && <span className="text-gray-500 ml-1">({uni1Major})</span>}
+                          </span>
                         </div>
 
-                        {/* 등록일 */}
-                        <div className="text-xs md:text-sm text-gray-500 whitespace-nowrap">
-                          {formattedDate}
+                        {/* VS */}
+                        <span className="text-xs md:text-sm text-gray-500 font-medium">vs</span>
+
+                        {/* 오른쪽 대학 */}
+                        <div className="flex items-center gap-2 md:gap-3 flex-1 min-w-0">
+                          <span className="text-sm md:text-base font-medium text-gray-900 truncate">
+                            {comparison.university2}
+                            {uni2Major && <span className="text-gray-500 ml-1">({uni2Major})</span>}
+                          </span>
+                          <span className={`text-sm md:text-base font-bold ${
+                            isRegistered2 ? "text-red-600" : "text-gray-400"
+                          }`}>
+                            {isRegistered2 ? "100%" : "0%"}
+                          </span>
+                          <span className="text-xs md:text-sm text-gray-500">(1명)</span>
+                        </div>
+
+                        {/* 등록 정보 (모바일에서만 표시) */}
+                        <div className="w-full md:hidden pt-2 border-t border-gray-200">
+                          <div className="text-xs text-gray-500">
+                            등록: <span className="font-medium text-gray-700">{submission.registeredUniversity}</span>
+                            {registeredMajor && <span className="text-gray-500"> ({registeredMajor})</span>}
+                          </div>
+                          <div className="text-xs text-gray-400 mt-1">{formattedDate}</div>
+                        </div>
+
+                        {/* 등록 정보 (데스크톱에서만 표시) */}
+                        <div className="hidden md:flex items-center gap-3 text-xs text-gray-500">
+                          <span>등록: <span className="font-medium text-gray-700">{submission.registeredUniversity}</span></span>
+                          {registeredMajor && <span>({registeredMajor})</span>}
+                          <span>{formattedDate}</span>
                         </div>
                       </div>
                     </div>
