@@ -55,10 +55,13 @@ function generateSampleData(): CrossAdmitRecord[] {
   return comparisons;
 }
 
+type SortOption = "random" | "data-desc";
+
 export default function CrossAdmitPage() {
   const [comparisons, setComparisons] = useState<CrossAdmitRecord[]>([]);
   const [popularComparisons, setPopularComparisons] = useState<PopularComparison[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [sortOption, setSortOption] = useState<SortOption>("random");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -126,13 +129,29 @@ export default function CrossAdmitPage() {
     fetchData();
   }, []);
 
-  const filteredComparisons = comparisons.filter((c) => {
-    const query = searchQuery.toLowerCase();
-    return (
-      c.university1.toLowerCase().includes(query) ||
-      c.university2.toLowerCase().includes(query)
-    );
-  });
+  // 필터링 및 정렬
+  const filteredComparisons = comparisons
+    .filter((c) => {
+      const query = searchQuery.toLowerCase();
+      return (
+        c.university1.toLowerCase().includes(query) ||
+        c.university2.toLowerCase().includes(query)
+      );
+    })
+    .sort((a, b) => {
+      if (sortOption === "data-desc") {
+        // 데이터 많은 순 (totalAdmitted 내림차순)
+        return b.totalAdmitted - a.totalAdmitted;
+      } else {
+        // 랜덤순 (매번 다른 순서를 위해 id 기반 정렬)
+        return 0; // 필터링 후 랜덤 셔플
+      }
+    });
+
+  // 랜덤 정렬을 위한 셔플 (sortOption이 "random"일 때)
+  const shuffledComparisons = sortOption === "random" 
+    ? [...filteredComparisons].sort(() => Math.random() - 0.5)
+    : filteredComparisons;
 
   // 구조화된 데이터 생성 (다국어 지원)
   const structuredData = {
@@ -188,20 +207,46 @@ export default function CrossAdmitPage() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 md:gap-8">
           {/* 메인 콘텐츠 */}
           <div className="lg:col-span-3">
-            {/* 검색 */}
+            {/* 검색 및 필터 */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 md:p-4 mb-4 md:mb-6">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="대학명 검색..."
-                className="w-full px-3 md:px-4 py-2 text-sm md:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
-              />
+              <div className="flex flex-col md:flex-row gap-3 md:gap-4">
+                <div className="flex-1">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="대학명 검색..."
+                    className="w-full px-3 md:px-4 py-2 text-sm md:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setSortOption("random")}
+                    className={`px-4 py-2 text-sm md:text-base font-medium rounded-md transition-colors whitespace-nowrap ${
+                      sortOption === "random"
+                        ? "bg-blue-500 text-white"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    }`}
+                  >
+                    랜덤순
+                  </button>
+                  <button
+                    onClick={() => setSortOption("data-desc")}
+                    className={`px-4 py-2 text-sm md:text-base font-medium rounded-md transition-colors whitespace-nowrap ${
+                      sortOption === "data-desc"
+                        ? "bg-blue-500 text-white"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    }`}
+                  >
+                    데이터많은 순
+                  </button>
+                </div>
+              </div>
             </div>
 
             {/* 비교 목록 */}
             <div className="space-y-4 md:space-y-6">
-              {filteredComparisons.map((comparison) => (
+              {shuffledComparisons.map((comparison) => (
                 <Link
                   key={comparison.id}
                   href={`/crossadmit/${comparison.id}`}

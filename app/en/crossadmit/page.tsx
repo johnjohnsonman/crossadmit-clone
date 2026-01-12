@@ -55,11 +55,14 @@ function generateSampleData(): CrossAdmitRecord[] {
   return comparisons;
 }
 
+type SortOption = "random" | "data-desc";
+
 export default function CrossAdmitPageEN() {
   const [comparisons, setComparisons] = useState<CrossAdmitRecord[]>([]);
   const [popularComparisons, setPopularComparisons] = useState<PopularComparison[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedComparison, setSelectedComparison] = useState<CrossAdmitRecord | null>(null);
+  const [sortOption, setSortOption] = useState<SortOption>("random");
 
   useEffect(() => {
     // Fetch data from API
@@ -87,11 +90,25 @@ export default function CrossAdmitPageEN() {
       });
   }, []);
 
-  const filteredComparisons = comparisons.filter(
-    (comp) =>
-      comp.university1.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      comp.university2.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // 필터링 및 정렬
+  const filteredComparisons = comparisons
+    .filter(
+      (comp) =>
+        comp.university1.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        comp.university2.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .sort((a, b) => {
+      if (sortOption === "data-desc") {
+        return b.totalAdmitted - a.totalAdmitted;
+      } else {
+        return 0;
+      }
+    });
+
+  // 랜덤 정렬을 위한 셔플
+  const shuffledComparisons = sortOption === "random" 
+    ? [...filteredComparisons].sort(() => Math.random() - 0.5)
+    : filteredComparisons;
 
   // Structured data generation (multilingual support)
   const structuredData = {
@@ -149,15 +166,41 @@ export default function CrossAdmitPageEN() {
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 md:gap-8">
             {/* Main Content */}
             <div className="lg:col-span-3">
-              {/* Search */}
+              {/* Search and Filter */}
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 md:p-4 mb-4 md:mb-6">
-                <input
-                  type="text"
-                  placeholder="Search university name..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full px-3 md:px-4 py-2 md:py-3 text-sm md:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
-                />
+                <div className="flex flex-col md:flex-row gap-3 md:gap-4">
+                  <div className="flex-1">
+                    <input
+                      type="text"
+                      placeholder="Search university name..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full px-3 md:px-4 py-2 md:py-3 text-sm md:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setSortOption("random")}
+                      className={`px-4 py-2 text-sm md:text-base font-medium rounded-md transition-colors whitespace-nowrap ${
+                        sortOption === "random"
+                          ? "bg-blue-500 text-white"
+                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      }`}
+                    >
+                      Random
+                    </button>
+                    <button
+                      onClick={() => setSortOption("data-desc")}
+                      className={`px-4 py-2 text-sm md:text-base font-medium rounded-md transition-colors whitespace-nowrap ${
+                        sortOption === "data-desc"
+                          ? "bg-blue-500 text-white"
+                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      }`}
+                    >
+                      Most Data
+                    </button>
+                  </div>
+                </div>
               </div>
 
               {/* Comparison Display */}
@@ -214,11 +257,11 @@ export default function CrossAdmitPageEN() {
               )}
 
               {/* Comparison List */}
-              {filteredComparisons.length > 0 && (
+              {shuffledComparisons.length > 0 && (
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6">
                   <h2 className="text-base md:text-xl font-bold text-gray-900 mb-3 md:mb-4">All Comparisons</h2>
                   <div className="space-y-2 md:space-y-3">
-                    {filteredComparisons.map((comp) => (
+                    {shuffledComparisons.map((comp) => (
                       <div
                         key={comp.id}
                         onClick={() => setSelectedComparison(comp)}
