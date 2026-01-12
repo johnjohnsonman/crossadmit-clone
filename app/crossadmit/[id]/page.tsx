@@ -135,33 +135,64 @@ export default function CrossAdmitDetailPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch("/api/crossadmit");
+        // comparisonId로 직접 조회
+        const response = await fetch(`/api/crossadmit?id=${encodeURIComponent(comparisonId)}`);
         const data = await response.json();
         
-        if (data.success && data.comparisons) {
-          const found = data.comparisons.find((c: any) => c.id === comparisonId);
-          if (found) {
-            setComparison({
-              id: found.id,
-              university1: found.university1,
-              university2: found.university2,
-              totalAdmitted: found.totalAdmitted,
-              choseUniversity1: found.choseUniversity1,
-              choseUniversity2: found.choseUniversity2,
-              percentage1: found.percentage1,
-              percentage2: found.percentage2,
-              confidenceInterval1: found.confidenceInterval1,
-              confidenceInterval2: found.confidenceInterval2,
-              majorStats: found.majorStats,
-            });
+        if (data.success && data.comparison) {
+          const found = data.comparison;
+          setComparison({
+            id: found.id,
+            university1: found.university1,
+            university2: found.university2,
+            totalAdmitted: found.totalAdmitted,
+            choseUniversity1: found.choseUniversity1,
+            choseUniversity2: found.choseUniversity2,
+            percentage1: found.percentage1,
+            percentage2: found.percentage2,
+            confidenceInterval1: found.confidenceInterval1,
+            confidenceInterval2: found.confidenceInterval2,
+            majorStats: found.majorStats,
+          });
 
-            // 개별 제출 데이터 가져오기
-            const submissionsResponse = await fetch(
-              `/api/crossadmit?university1=${encodeURIComponent(found.university1)}&university2=${encodeURIComponent(found.university2)}`
-            );
-            const submissionsData = await submissionsResponse.json();
-            if (submissionsData.success && submissionsData.submissions) {
-              setSubmissions(submissionsData.submissions);
+          // 개별 제출 데이터 가져오기
+          const submissionsResponse = await fetch(
+            `/api/crossadmit?university1=${encodeURIComponent(found.university1)}&university2=${encodeURIComponent(found.university2)}`
+          );
+          const submissionsData = await submissionsResponse.json();
+          if (submissionsData.success && submissionsData.submissions) {
+            setSubmissions(submissionsData.submissions);
+          }
+        } else {
+          // comparisonId로 찾지 못하면 전체 목록에서 검색
+          const allResponse = await fetch("/api/crossadmit");
+          const allData = await allResponse.json();
+          
+          if (allData.success && allData.comparisons) {
+            const found = allData.comparisons.find((c: any) => c.id === comparisonId);
+            if (found) {
+              setComparison({
+                id: found.id,
+                university1: found.university1,
+                university2: found.university2,
+                totalAdmitted: found.totalAdmitted,
+                choseUniversity1: found.choseUniversity1,
+                choseUniversity2: found.choseUniversity2,
+                percentage1: found.percentage1,
+                percentage2: found.percentage2,
+                confidenceInterval1: found.confidenceInterval1,
+                confidenceInterval2: found.confidenceInterval2,
+                majorStats: found.majorStats,
+              });
+
+              // 개별 제출 데이터 가져오기
+              const submissionsResponse = await fetch(
+                `/api/crossadmit?university1=${encodeURIComponent(found.university1)}&university2=${encodeURIComponent(found.university2)}`
+              );
+              const submissionsData = await submissionsResponse.json();
+              if (submissionsData.success && submissionsData.submissions) {
+                setSubmissions(submissionsData.submissions);
+              }
             }
           }
         }
@@ -172,7 +203,11 @@ export default function CrossAdmitDetailPage() {
       }
     };
 
-    fetchData();
+    if (comparisonId) {
+      fetchData();
+    } else {
+      setLoading(false);
+    }
   }, [comparisonId]);
 
   if (loading) {
@@ -185,7 +220,36 @@ export default function CrossAdmitDetailPage() {
     );
   }
 
-  if (!comparison) {
+  // comparisonId에서 대학명 추출 시도
+  const parseUniversityNames = (id: string): { uni1: string; uni2: string } | null => {
+    try {
+      const decoded = decodeURIComponent(id);
+      const parts = decoded.split("-vs-");
+      if (parts.length === 2) {
+        // 괄호 복원 시도 (서울캠 -> (서울캠))
+        let uni1 = parts[0];
+        let uni2 = parts[1];
+        
+        // 일반적인 패턴 복원
+        uni1 = uni1.replace(/(서울캠|서울캠퍼스)/, "($1)");
+        uni2 = uni2.replace(/(서울캠|서울캠퍼스)/, "($1)");
+        uni1 = uni1.replace(/(안산캠|안산캠퍼스)/, "($1)");
+        uni2 = uni2.replace(/(안산캠|안산캠퍼스)/, "($1)");
+        uni1 = uni1.replace(/(수원캠|수원캠퍼스)/, "($1)");
+        uni2 = uni2.replace(/(수원캠|수원캠퍼스)/, "($1)");
+        
+        return { uni1, uni2 };
+      }
+    } catch (e) {
+      // 파싱 실패
+    }
+    return null;
+  };
+
+  // 데이터가 없을 때 URL에서 대학명 추출
+  const parsedNames = !comparison && comparisonId ? parseUniversityNames(comparisonId) : null;
+  
+  if (!comparison && !parsedNames) {
     return (
       <main className="min-h-screen bg-[#f5f3f0] flex items-center justify-center">
         <div className="text-center">
@@ -198,35 +262,63 @@ export default function CrossAdmitDetailPage() {
     );
   }
 
-  const isSignificant = Math.abs(comparison.percentage1 - comparison.percentage2) > 5;
+  // 파싱된 대학명으로 기본 비교 데이터 생성
+  const displayComparison = comparison || (parsedNames ? {
+    id: comparisonId,
+    university1: parsedNames.uni1,
+    university2: parsedNames.uni2,
+    totalAdmitted: 0,
+    choseUniversity1: 0,
+    choseUniversity2: 0,
+    percentage1: 0,
+    percentage2: 0,
+    confidenceInterval1: { min: 0, max: 0 },
+    confidenceInterval2: { min: 0, max: 0 },
+    majorStats: undefined,
+  } : null);
+
+  if (!displayComparison) {
+    return (
+      <main className="min-h-screen bg-[#f5f3f0] flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">비교를 찾을 수 없습니다</h1>
+          <Link href="/crossadmit" className="text-blue-600 hover:underline">
+            크로스어드밋으로 돌아가기
+          </Link>
+        </div>
+      </main>
+    );
+  }
+
+  const isSignificant = Math.abs(displayComparison.percentage1 - displayComparison.percentage2) > 5;
 
   // 구조화된 데이터 생성 (다국어 지원)
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "StatisticalPopulation",
-    name: `${comparison.university1} vs ${comparison.university2}`,
+    name: `${displayComparison.university1} vs ${displayComparison.university2}`,
     alternateName: [
-      `${comparison.university1} vs ${comparison.university2}`,
-      `${comparison.university1} 对比 ${comparison.university2}`,
+      `${displayComparison.university1} vs ${displayComparison.university2}`,
+      `${displayComparison.university1} 对比 ${displayComparison.university2}`,
     ],
     description: `두 대학에 동시에 합격한 학생들의 선택 통계 | Admission statistics for students accepted to both universities | 同时被两所大学录取的学生的选择统计`,
     inLanguage: ["ko", "en", "zh-CN", "zh-TW", "es", "ja"],
     statistic: [
       {
         "@type": "StatisticalVariable",
-        name: comparison.university1,
-        value: comparison.percentage1,
+        name: displayComparison.university1,
+        value: displayComparison.percentage1,
         unitCode: "P1",
       },
       {
         "@type": "StatisticalVariable",
-        name: comparison.university2,
-        value: comparison.percentage2,
+        name: displayComparison.university2,
+        value: displayComparison.percentage2,
         unitCode: "P1",
       },
     ],
     populationType: "대학 합격자 | University Admitted Students | 大学录取学生",
-    size: comparison.totalAdmitted,
+    size: displayComparison.totalAdmitted,
     about: {
       "@type": "Thing",
       name: "Study in Korea | 留学韩国 | Estudiar en Corea",
@@ -250,56 +342,82 @@ export default function CrossAdmitDetailPage() {
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
             <div className="grid grid-cols-2 divide-x divide-gray-200">
               {/* 왼쪽 */}
-              <div className="p-12 text-center">
+                     <div className="p-12 text-center">
                 <div className={`text-7xl font-bold mb-4 ${
-                  comparison.percentage1 > comparison.percentage2
+                  displayComparison.percentage1 > displayComparison.percentage2
                     ? "text-green-600"
                     : "text-gray-400"
                 }`}>
-                  {comparison.percentage1}%
+                  {displayComparison.percentage1}%
                 </div>
                 <div className="text-base text-gray-500 mb-2">choose</div>
                 <div className="text-2xl font-bold text-blue-600 mb-6">
-                  {comparison.university1}
+                  {displayComparison.university1}
                 </div>
-                <div className="text-sm text-gray-500 mb-8">
-                  95% confidence interval: {comparison.confidenceInterval1.min}% to {comparison.confidenceInterval1.max}%
-                </div>
-                <div className="text-lg font-semibold text-gray-700 mb-2">
-                  {comparison.choseUniversity1.toLocaleString()}명 선택
-                </div>
+                {displayComparison.totalAdmitted > 0 && (
+                  <>
+                    <div className="text-sm text-gray-500 mb-8">
+                      95% confidence interval: {displayComparison.confidenceInterval1.min}% to {displayComparison.confidenceInterval1.max}%
+                    </div>
+                    <div className="text-lg font-semibold text-gray-700 mb-2">
+                      {displayComparison.choseUniversity1.toLocaleString()}명 선택
+                    </div>
+                  </>
+                )}
+                {displayComparison.totalAdmitted === 0 && (
+                  <div className="text-sm text-gray-500 mb-8">
+                    아직 데이터가 없습니다
+                  </div>
+                )}
               </div>
 
               {/* 오른쪽 */}
               <div className="p-12 text-center">
                 <div className={`text-7xl font-bold mb-4 ${
-                  comparison.percentage2 > comparison.percentage1
+                  displayComparison.percentage2 > displayComparison.percentage1
                     ? "text-red-600"
                     : "text-gray-400"
                 }`}>
-                  {comparison.percentage2}%
+                  {displayComparison.percentage2}%
                 </div>
                 <div className="text-base text-gray-500 mb-2">choose</div>
                 <div className="text-2xl font-bold text-blue-600 mb-6">
-                  {comparison.university2}
+                  {displayComparison.university2}
                 </div>
-                <div className="text-sm text-gray-500 mb-8">
-                  95% confidence interval: {comparison.confidenceInterval2.min}% to {comparison.confidenceInterval2.max}%
-                </div>
-                <div className="text-lg font-semibold text-gray-700 mb-2">
-                  {comparison.choseUniversity2.toLocaleString()}명 선택
-                </div>
+                {displayComparison.totalAdmitted > 0 && (
+                  <>
+                    <div className="text-sm text-gray-500 mb-8">
+                      95% confidence interval: {displayComparison.confidenceInterval2.min}% to {displayComparison.confidenceInterval2.max}%
+                    </div>
+                    <div className="text-lg font-semibold text-gray-700 mb-2">
+                      {displayComparison.choseUniversity2.toLocaleString()}명 선택
+                    </div>
+                  </>
+                )}
+                {displayComparison.totalAdmitted === 0 && (
+                  <div className="text-sm text-gray-500 mb-8">
+                    아직 데이터가 없습니다
+                  </div>
+                )}
               </div>
             </div>
 
             <div className="bg-gray-50 px-12 py-6 border-t border-gray-200">
               <div className="text-center">
-                <p className="text-gray-700 mb-2">
-                  총 <span className="font-bold">{comparison.totalAdmitted.toLocaleString()}</span>명이 두 대학에 동시에 합격했습니다
-                </p>
-                {isSignificant && (
-                  <p className="text-sm text-green-600 font-medium">
-                    ✓ 통계적으로 유의미한 차이가 있습니다 (95% 신뢰구간)
+                {displayComparison.totalAdmitted > 0 ? (
+                  <>
+                    <p className="text-gray-700 mb-2">
+                      총 <span className="font-bold">{displayComparison.totalAdmitted.toLocaleString()}</span>명이 두 대학에 동시에 합격했습니다
+                    </p>
+                    {isSignificant && (
+                      <p className="text-sm text-green-600 font-medium">
+                        ✓ 통계적으로 유의미한 차이가 있습니다 (95% 신뢰구간)
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-gray-700 mb-2">
+                    아직 이 비교에 대한 데이터가 없습니다. 첫 번째로 등록해보세요!
                   </p>
                 )}
               </div>
@@ -307,7 +425,7 @@ export default function CrossAdmitDetailPage() {
           </div>
 
           {/* 학과별 상세 통계 */}
-          {comparison.majorStats && (
+          {displayComparison.majorStats && (
             <>
               {/* 학과 매칭 통계 - 어떤 학과끼리 붙었는지 */}
               {comparison.majorStats.majorMatches && comparison.majorStats.majorMatches.length > 0 && (
@@ -319,7 +437,7 @@ export default function CrossAdmitDetailPage() {
                   
                   <div className="p-4 md:p-6">
                     <div className="space-y-3 md:space-y-4">
-                      {comparison.majorStats.majorMatches.map((match, idx) => (
+                      {displayComparison.majorStats.majorMatches.map((match, idx) => (
                         <div
                           key={idx}
                           className="bg-gradient-to-r from-blue-50 to-green-50 rounded-lg border-2 border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
@@ -329,11 +447,11 @@ export default function CrossAdmitDetailPage() {
                             <div className="flex items-center justify-between mb-3 md:mb-4">
                               <div className="flex items-center gap-2 md:gap-3 flex-1 min-w-0">
                                 <div className="bg-blue-100 text-blue-700 px-2 md:px-3 py-1 md:py-1.5 rounded-md text-xs md:text-sm font-semibold truncate">
-                                  {comparison.university1}
+                                  {displayComparison.university1}
                                 </div>
                                 <span className="text-gray-400 font-medium text-xs md:text-sm">vs</span>
                                 <div className="bg-green-100 text-green-700 px-2 md:px-3 py-1 md:py-1.5 rounded-md text-xs md:text-sm font-semibold truncate">
-                                  {comparison.university2}
+                                  {displayComparison.university2}
                                 </div>
                               </div>
                               <div className="text-xs md:text-sm text-gray-500 ml-2 whitespace-nowrap">
@@ -388,7 +506,7 @@ export default function CrossAdmitDetailPage() {
               )}
 
               {/* 각 대학별 학과 통계 */}
-              {(comparison.majorStats.university1.length > 0 || comparison.majorStats.university2.length > 0) && (
+              {(displayComparison.majorStats.university1.length > 0 || displayComparison.majorStats.university2.length > 0) && (
                 <div className="mt-6 md:mt-8 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                   <div className="bg-gray-50 px-4 md:px-6 py-3 md:py-4 border-b border-gray-200">
                     <h2 className="text-lg md:text-xl font-bold text-gray-900">각 학교별 학과 통계</h2>
@@ -399,11 +517,11 @@ export default function CrossAdmitDetailPage() {
                     {/* 왼쪽: 첫 번째 대학의 학과별 통계 */}
                     <div className="p-4 md:p-6">
                       <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-3 md:mb-4">
-                        {comparison.university1}
+                        {displayComparison.university1}
                       </h3>
-                      {comparison.majorStats.university1.length > 0 ? (
+                      {displayComparison.majorStats.university1.length > 0 ? (
                         <div className="space-y-2 md:space-y-3">
-                          {comparison.majorStats.university1.map((majorStat, idx) => (
+                          {displayComparison.majorStats.university1.map((majorStat, idx) => (
                             <div
                               key={idx}
                               className="flex items-center justify-between p-2 md:p-3 bg-gray-50 rounded-lg border border-gray-200"
@@ -432,11 +550,11 @@ export default function CrossAdmitDetailPage() {
                     {/* 오른쪽: 두 번째 대학의 학과별 통계 */}
                     <div className="p-4 md:p-6">
                       <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-3 md:mb-4">
-                        {comparison.university2}
+                        {displayComparison.university2}
                       </h3>
-                      {comparison.majorStats.university2.length > 0 ? (
+                      {displayComparison.majorStats.university2.length > 0 ? (
                         <div className="space-y-2 md:space-y-3">
-                          {comparison.majorStats.university2.map((majorStat, idx) => (
+                          {displayComparison.majorStats.university2.map((majorStat, idx) => (
                             <div
                               key={idx}
                               className="flex items-center justify-between p-2 md:p-3 bg-gray-50 rounded-lg border border-gray-200"
@@ -471,10 +589,10 @@ export default function CrossAdmitDetailPage() {
           <div className="mt-8 grid grid-cols-2 gap-6">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <h3 className="font-semibold text-gray-900 mb-4">
-                {comparison.university1}와 유사한 대학으로 교체:
+                {displayComparison.university1}와 유사한 대학으로 교체:
               </h3>
               <ul className="space-y-2">
-                {getSimilarUniversities(comparison.university1).map((uni, idx) => (
+                {getSimilarUniversities(displayComparison.university1).map((uni, idx) => (
                   <li key={idx}>
                     <Link
                       href={`/crossadmit?search=${encodeURIComponent(uni)}`}
@@ -489,10 +607,10 @@ export default function CrossAdmitDetailPage() {
 
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <h3 className="font-semibold text-gray-900 mb-4">
-                {comparison.university2}와 유사한 대학으로 교체:
+                {displayComparison.university2}와 유사한 대학으로 교체:
               </h3>
               <ul className="space-y-2">
-                {getSimilarUniversities(comparison.university2).map((uni, idx) => (
+                {getSimilarUniversities(displayComparison.university2).map((uni, idx) => (
                   <li key={idx}>
                     <Link
                       href={`/crossadmit?search=${encodeURIComponent(uni)}`}
@@ -516,11 +634,11 @@ export default function CrossAdmitDetailPage() {
               
               <div className="divide-y divide-gray-200">
                 {submissions.map((submission, idx) => {
-                  const uni1Major = submission.admittedMajors?.[comparison.university1] || "";
-                  const uni2Major = submission.admittedMajors?.[comparison.university2] || "";
+                  const uni1Major = submission.admittedMajors?.[displayComparison.university1] || "";
+                  const uni2Major = submission.admittedMajors?.[displayComparison.university2] || "";
                   const registeredMajor = submission.registeredMajor || "";
-                  const isRegistered1 = submission.registeredUniversity === comparison.university1;
-                  const isRegistered2 = submission.registeredUniversity === comparison.university2;
+                  const isRegistered1 = submission.registeredUniversity === displayComparison.university1;
+                  const isRegistered2 = submission.registeredUniversity === displayComparison.university2;
                   const date = new Date(submission.createdAt);
                   const formattedDate = `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`;
 
@@ -535,7 +653,7 @@ export default function CrossAdmitDetailPage() {
                             {isRegistered1 ? "100%" : "0%"}
                           </span>
                           <span className="text-sm md:text-base font-medium text-gray-900 truncate">
-                            {comparison.university1}
+                            {displayComparison.university1}
                             {uni1Major && <span className="text-gray-500 ml-1">({uni1Major})</span>}
                           </span>
                         </div>
@@ -546,7 +664,7 @@ export default function CrossAdmitDetailPage() {
                         {/* 오른쪽 대학 */}
                         <div className="flex items-center gap-2 md:gap-3 flex-1 min-w-0">
                           <span className="text-sm md:text-base font-medium text-gray-900 truncate">
-                            {comparison.university2}
+                            {displayComparison.university2}
                             {uni2Major && <span className="text-gray-500 ml-1">({uni2Major})</span>}
                           </span>
                           <span className={`text-sm md:text-base font-bold ${

@@ -313,6 +313,111 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const university1 = searchParams.get("university1");
     const university2 = searchParams.get("university2");
+    const comparisonId = searchParams.get("id");
+
+    // 특정 comparisonId로 조회
+    if (comparisonId) {
+      const submissions = loadCrossAdmitData();
+      const admissionRecords = loadAdmissionData();
+      const stats = calculateStats(submissions);
+      const majorStats = calculateMajorStats(submissions, admissionRecords);
+
+      // 모든 비교 데이터 생성
+      const allComparisons: Array<{
+        id: string;
+        university1: string;
+        university2: string;
+        totalAdmitted: number;
+        choseUniversity1: number;
+        choseUniversity2: number;
+        percentage1: number;
+        percentage2: number;
+        confidenceInterval1: { min: number; max: number };
+        confidenceInterval2: { min: number; max: number };
+        majorStats?: any;
+      }> = [];
+
+      Object.entries(stats).forEach(([key, data]) => {
+        const [uni1, uni2] = key.split(" vs ");
+        const total1 = data[uni1]?.total || 0;
+        const total2 = data[uni2]?.total || 0;
+        const chose1 = data[uni1]?.chose || 0;
+        const chose2 = data[uni2]?.chose || 0;
+        const totalAdmitted = Math.max(total1, total2);
+
+        if (totalAdmitted > 0) {
+          const percentage1 = Math.round((chose1 / totalAdmitted) * 100);
+          const percentage2 = Math.round((chose2 / totalAdmitted) * 100);
+          const margin1 = Math.round((1.96 * Math.sqrt((percentage1 * (100 - percentage1)) / totalAdmitted)) * 10) / 10;
+          const margin2 = Math.round((1.96 * Math.sqrt((percentage2 * (100 - percentage2)) / totalAdmitted)) * 10) / 10;
+
+          const majorData = majorStats[key];
+          const majorStats1: Array<{ major: string; total: number; chose: number; percentage: number }> = [];
+          const majorStats2: Array<{ major: string; total: number; chose: number; percentage: number }> = [];
+          const majorMatches: Array<{
+            major1: string;
+            major2: string;
+            total: number;
+            chose1: number;
+            chose2: number;
+            percentage1: number;
+            percentage2: number;
+          }> = [];
+
+          if (majorData) {
+            Object.entries(majorData.majors).forEach(([majorKey, stat]: [string, any]) => {
+              const [uni, major] = majorKey.split("::");
+              if (uni === uni1) {
+                majorStats1.push({ major, total: stat.total, chose: stat.chose, percentage: stat.percentage });
+              } else if (uni === uni2) {
+                majorStats2.push({ major, total: stat.total, chose: stat.chose, percentage: stat.percentage });
+              }
+            });
+            majorMatches.push(...majorData.majorMatches);
+            majorStats1.sort((a, b) => b.total - a.total);
+            majorStats2.sort((a, b) => b.total - a.total);
+            majorMatches.sort((a, b) => b.total - a.total);
+          }
+
+          allComparisons.push({
+            id: key.toLowerCase().replace(/\s+/g, "-").replace(/[()]/g, ""),
+            university1: uni1,
+            university2: uni2,
+            totalAdmitted,
+            choseUniversity1: chose1,
+            choseUniversity2: chose2,
+            percentage1,
+            percentage2,
+            confidenceInterval1: {
+              min: Math.max(0, Math.round((percentage1 - margin1) * 10) / 10),
+              max: Math.min(100, Math.round((percentage1 + margin1) * 10) / 10),
+            },
+            confidenceInterval2: {
+              min: Math.max(0, Math.round((percentage2 - margin2) * 10) / 10),
+              max: Math.min(100, Math.round((percentage2 + margin2) * 10) / 10),
+            },
+            majorStats: majorStats1.length > 0 || majorStats2.length > 0 || majorMatches.length > 0 ? {
+              university1: majorStats1,
+              university2: majorStats2,
+              majorMatches: majorMatches,
+            } : undefined,
+          });
+        }
+      });
+
+      const found = allComparisons.find((c) => c.id === comparisonId);
+      if (found) {
+        return NextResponse.json({
+          success: true,
+          comparison: found,
+        });
+      } else {
+        return NextResponse.json({
+          success: false,
+          error: "Comparison not found",
+        }, { status: 404 });
+      }
+    }
 
     // 특정 대학 쌍의 개별 제출 데이터 요청
     if (university1 && university2) {
