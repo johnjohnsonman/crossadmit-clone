@@ -26,6 +26,15 @@ interface CrossAdmitRecord {
   majorStats?: {
     university1: MajorStat[];
     university2: MajorStat[];
+    majorMatches?: Array<{
+      major1: string;
+      major2: string;
+      total: number;
+      chose1: number;
+      chose2: number;
+      percentage1: number;
+      percentage2: number;
+    }>;
   };
 }
 
@@ -279,81 +288,164 @@ export default function CrossAdmitDetailPage() {
           </div>
 
           {/* 학과별 상세 통계 */}
-          {comparison.majorStats && (comparison.majorStats.university1.length > 0 || comparison.majorStats.university2.length > 0) && (
-            <div className="mt-8 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-              <div className="bg-tea-50 px-6 py-4 border-b border-gray-200">
-                <h2 className="text-xl font-bold text-gray-900">학과별 상세 통계</h2>
-                <p className="text-sm text-gray-600 mt-1">각 학교의 학과별 선택 통계를 확인하세요</p>
-              </div>
-              
-              <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-gray-200">
-                {/* 왼쪽: 첫 번째 대학의 학과별 통계 */}
-                <div className="p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    {comparison.university1}
-                  </h3>
-                  {comparison.majorStats.university1.length > 0 ? (
-                    <div className="space-y-3">
-                      {comparison.majorStats.university1.map((majorStat, idx) => (
+          {comparison.majorStats && (
+            <>
+              {/* 학과 매칭 통계 - 어떤 학과끼리 붙었는지 */}
+              {comparison.majorStats.majorMatches && comparison.majorStats.majorMatches.length > 0 && (
+                <div className="mt-8 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                  <div className="bg-gradient-to-r from-blue-50 to-green-50 px-4 md:px-6 py-3 md:py-4 border-b border-gray-200">
+                    <h2 className="text-lg md:text-xl font-bold text-gray-900">학과별 비교 통계</h2>
+                    <p className="text-xs md:text-sm text-gray-600 mt-1">어떤 학과끼리 붙었고 어디에 등록했는지 확인하세요</p>
+                  </div>
+                  
+                  <div className="p-4 md:p-6">
+                    <div className="space-y-3 md:space-y-4">
+                      {comparison.majorStats.majorMatches.map((match, idx) => (
                         <div
                           key={idx}
-                          className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"
+                          className="bg-gradient-to-r from-blue-50 to-green-50 rounded-lg border-2 border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
                         >
-                          <div className="flex-1">
-                            <div className="font-medium text-gray-900">{majorStat.major}</div>
-                            <div className="text-xs text-gray-500 mt-1">
-                              {majorStat.total}명 합격 · {majorStat.chose}명 선택
+                          <div className="p-3 md:p-4">
+                            {/* 학과 매칭 헤더 */}
+                            <div className="flex items-center justify-between mb-3 md:mb-4">
+                              <div className="flex items-center gap-2 md:gap-3 flex-1 min-w-0">
+                                <div className="bg-blue-100 text-blue-700 px-2 md:px-3 py-1 md:py-1.5 rounded-md text-xs md:text-sm font-semibold truncate">
+                                  {comparison.university1}
+                                </div>
+                                <span className="text-gray-400 font-medium text-xs md:text-sm">vs</span>
+                                <div className="bg-green-100 text-green-700 px-2 md:px-3 py-1 md:py-1.5 rounded-md text-xs md:text-sm font-semibold truncate">
+                                  {comparison.university2}
+                                </div>
+                              </div>
+                              <div className="text-xs md:text-sm text-gray-500 ml-2 whitespace-nowrap">
+                                총 {match.total}명
+                              </div>
                             </div>
-                          </div>
-                          <div className="text-right ml-4">
-                            <div className={`text-lg font-bold ${
-                              majorStat.percentage >= 50 ? "text-green-600" : "text-gray-600"
-                            }`}>
-                              {majorStat.percentage}%
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-gray-500">학과별 데이터가 없습니다</p>
-                  )}
-                </div>
 
-                {/* 오른쪽: 두 번째 대학의 학과별 통계 */}
-                <div className="p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    {comparison.university2}
-                  </h3>
-                  {comparison.majorStats.university2.length > 0 ? (
-                    <div className="space-y-3">
-                      {comparison.majorStats.university2.map((majorStat, idx) => (
-                        <div
-                          key={idx}
-                          className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"
-                        >
-                          <div className="flex-1">
-                            <div className="font-medium text-gray-900">{majorStat.major}</div>
-                            <div className="text-xs text-gray-500 mt-1">
-                              {majorStat.total}명 합격 · {majorStat.chose}명 선택
+                            {/* 학과명 */}
+                            <div className="flex items-center gap-2 md:gap-3 mb-3 md:mb-4">
+                              <div className="flex-1 bg-white px-3 md:px-4 py-2 rounded-md border border-blue-200">
+                                <div className="text-xs text-gray-500 mb-1">학과</div>
+                                <div className="text-sm md:text-base font-semibold text-blue-700">{match.major1}</div>
+                              </div>
+                              <div className="text-gray-400 font-medium text-sm md:text-base">vs</div>
+                              <div className="flex-1 bg-white px-3 md:px-4 py-2 rounded-md border border-green-200">
+                                <div className="text-xs text-gray-500 mb-1">학과</div>
+                                <div className="text-sm md:text-base font-semibold text-green-700">{match.major2}</div>
+                              </div>
                             </div>
-                          </div>
-                          <div className="text-right ml-4">
-                            <div className={`text-lg font-bold ${
-                              majorStat.percentage >= 50 ? "text-red-600" : "text-gray-600"
-                            }`}>
-                              {majorStat.percentage}%
+
+                            {/* 선택 통계 */}
+                            <div className="grid grid-cols-2 gap-3 md:gap-4">
+                              <div className="bg-white rounded-md p-3 md:p-4 border-2 border-blue-300">
+                                <div className="text-xs text-gray-500 mb-1 md:mb-2">등록 선택</div>
+                                <div className={`text-xl md:text-3xl font-bold mb-1 ${
+                                  match.percentage1 >= 50 ? "text-blue-600" : "text-gray-400"
+                                }`}>
+                                  {match.percentage1}%
+                                </div>
+                                <div className="text-xs md:text-sm text-gray-600">
+                                  {match.chose1}명 / {match.total}명
+                                </div>
+                              </div>
+                              <div className="bg-white rounded-md p-3 md:p-4 border-2 border-green-300">
+                                <div className="text-xs text-gray-500 mb-1 md:mb-2">등록 선택</div>
+                                <div className={`text-xl md:text-3xl font-bold mb-1 ${
+                                  match.percentage2 >= 50 ? "text-green-600" : "text-gray-400"
+                                }`}>
+                                  {match.percentage2}%
+                                </div>
+                                <div className="text-xs md:text-sm text-gray-600">
+                                  {match.chose2}명 / {match.total}명
+                                </div>
+                              </div>
                             </div>
                           </div>
                         </div>
                       ))}
                     </div>
-                  ) : (
-                    <p className="text-sm text-gray-500">학과별 데이터가 없습니다</p>
-                  )}
+                  </div>
                 </div>
-              </div>
-            </div>
+              )}
+
+              {/* 각 대학별 학과 통계 */}
+              {(comparison.majorStats.university1.length > 0 || comparison.majorStats.university2.length > 0) && (
+                <div className="mt-6 md:mt-8 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                  <div className="bg-gray-50 px-4 md:px-6 py-3 md:py-4 border-b border-gray-200">
+                    <h2 className="text-lg md:text-xl font-bold text-gray-900">각 학교별 학과 통계</h2>
+                    <p className="text-xs md:text-sm text-gray-600 mt-1">각 학교의 학과별 선택 통계를 확인하세요</p>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-gray-200">
+                    {/* 왼쪽: 첫 번째 대학의 학과별 통계 */}
+                    <div className="p-4 md:p-6">
+                      <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-3 md:mb-4">
+                        {comparison.university1}
+                      </h3>
+                      {comparison.majorStats.university1.length > 0 ? (
+                        <div className="space-y-2 md:space-y-3">
+                          {comparison.majorStats.university1.map((majorStat, idx) => (
+                            <div
+                              key={idx}
+                              className="flex items-center justify-between p-2 md:p-3 bg-gray-50 rounded-lg border border-gray-200"
+                            >
+                              <div className="flex-1 min-w-0">
+                                <div className="font-medium text-gray-900 text-sm md:text-base truncate">{majorStat.major}</div>
+                                <div className="text-xs text-gray-500 mt-1">
+                                  {majorStat.total}명 합격 · {majorStat.chose}명 선택
+                                </div>
+                              </div>
+                              <div className="text-right ml-3 md:ml-4">
+                                <div className={`text-base md:text-lg font-bold ${
+                                  majorStat.percentage >= 50 ? "text-green-600" : "text-gray-600"
+                                }`}>
+                                  {majorStat.percentage}%
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-xs md:text-sm text-gray-500">학과별 데이터가 없습니다</p>
+                      )}
+                    </div>
+
+                    {/* 오른쪽: 두 번째 대학의 학과별 통계 */}
+                    <div className="p-4 md:p-6">
+                      <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-3 md:mb-4">
+                        {comparison.university2}
+                      </h3>
+                      {comparison.majorStats.university2.length > 0 ? (
+                        <div className="space-y-2 md:space-y-3">
+                          {comparison.majorStats.university2.map((majorStat, idx) => (
+                            <div
+                              key={idx}
+                              className="flex items-center justify-between p-2 md:p-3 bg-gray-50 rounded-lg border border-gray-200"
+                            >
+                              <div className="flex-1 min-w-0">
+                                <div className="font-medium text-gray-900 text-sm md:text-base truncate">{majorStat.major}</div>
+                                <div className="text-xs text-gray-500 mt-1">
+                                  {majorStat.total}명 합격 · {majorStat.chose}명 선택
+                                </div>
+                              </div>
+                              <div className="text-right ml-3 md:ml-4">
+                                <div className={`text-base md:text-lg font-bold ${
+                                  majorStat.percentage >= 50 ? "text-red-600" : "text-gray-600"
+                                }`}>
+                                  {majorStat.percentage}%
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-xs md:text-sm text-gray-500">학과별 데이터가 없습니다</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
           )}
 
           {/* 유사한 대학 비교 */}

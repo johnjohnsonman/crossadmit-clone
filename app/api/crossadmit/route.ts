@@ -155,7 +155,7 @@ function loadAdmissionData() {
   return [];
 }
 
-// 학과별 통계 계산 (합격DB 데이터 기반)
+// 학과별 통계 계산 (실제 제출 데이터 기반)
 function calculateMajorStats(
   submissions: CrossAdmitSubmission[],
   admissionRecords: any[]
@@ -165,6 +165,15 @@ function calculateMajorStats(
     chose: number;
     percentage: number;
   }>;
+  majorMatches: Array<{
+    major1: string;
+    major2: string;
+    total: number;
+    chose1: number;
+    chose2: number;
+    percentage1: number;
+    percentage2: number;
+  }>;
 }> {
   const majorStats: Record<string, {
     majors: Record<string, {
@@ -172,11 +181,20 @@ function calculateMajorStats(
       chose: number;
       percentage: number;
     }>;
+    majorMatches: Array<{
+      major1: string;
+      major2: string;
+      total: number;
+      chose1: number;
+      chose2: number;
+      percentage1: number;
+      percentage2: number;
+    }>;
   }> = {};
 
   // 각 대학 쌍에 대해 학과별 통계 계산
   submissions.forEach((submission) => {
-    const { admittedUniversities, registeredUniversity } = submission;
+    const { admittedUniversities, registeredUniversity, admittedMajors = {}, registeredMajor = "" } = submission;
 
     for (let i = 0; i < admittedUniversities.length; i++) {
       for (let j = i + 1; j < admittedUniversities.length; j++) {
@@ -185,68 +203,91 @@ function calculateMajorStats(
         const key = [uni1, uni2].sort().join(" vs ");
 
         if (!majorStats[key]) {
-          majorStats[key] = { majors: {} };
+          majorStats[key] = { majors: {}, majorMatches: [] };
         }
 
-        // 합격DB에서 해당 학교의 학과별 합격 데이터 가져오기
-        const uni1Records = admissionRecords.filter((r) => r.university === uni1);
-        const uni2Records = admissionRecords.filter((r) => r.university === uni2);
+        // 각 대학의 학과 정보 가져오기
+        const uni1Major = admittedMajors[uni1] || "미지정";
+        const uni2Major = admittedMajors[uni2] || "미지정";
 
-        // 첫 번째 대학의 학과별 통계
-        const uni1MajorCounts: Record<string, number> = {};
-        uni1Records.forEach((record) => {
-          const major = record.major || "미지정";
-          if (!uni1MajorCounts[major]) {
-            uni1MajorCounts[major] = 0;
-          }
-          uni1MajorCounts[major]++;
-        });
+        // 각 대학별 학과 통계
+        const uni1MajorKey = `${uni1}::${uni1Major}`;
+        const uni2MajorKey = `${uni2}::${uni2Major}`;
 
-        Object.keys(uni1MajorCounts).forEach((major) => {
-          const majorKey = `${uni1}::${major}`;
-          if (!majorStats[key].majors[majorKey]) {
-            majorStats[key].majors[majorKey] = { total: 0, chose: 0, percentage: 0 };
-          }
-          majorStats[key].majors[majorKey].total += uni1MajorCounts[major];
-          // 등록한 대학이 첫 번째 대학이면 선택 카운트 증가
-          if (registeredUniversity === uni1) {
-            majorStats[key].majors[majorKey].chose += uni1MajorCounts[major];
-          }
-        });
+        if (!majorStats[key].majors[uni1MajorKey]) {
+          majorStats[key].majors[uni1MajorKey] = { total: 0, chose: 0, percentage: 0 };
+        }
+        if (!majorStats[key].majors[uni2MajorKey]) {
+          majorStats[key].majors[uni2MajorKey] = { total: 0, chose: 0, percentage: 0 };
+        }
 
-        // 두 번째 대학의 학과별 통계
-        const uni2MajorCounts: Record<string, number> = {};
-        uni2Records.forEach((record) => {
-          const major = record.major || "미지정";
-          if (!uni2MajorCounts[major]) {
-            uni2MajorCounts[major] = 0;
-          }
-          uni2MajorCounts[major]++;
-        });
+        majorStats[key].majors[uni1MajorKey].total++;
+        majorStats[key].majors[uni2MajorKey].total++;
 
-        Object.keys(uni2MajorCounts).forEach((major) => {
-          const majorKey = `${uni2}::${major}`;
-          if (!majorStats[key].majors[majorKey]) {
-            majorStats[key].majors[majorKey] = { total: 0, chose: 0, percentage: 0 };
+        if (registeredUniversity === uni1) {
+          majorStats[key].majors[uni1MajorKey].chose++;
+        }
+        if (registeredUniversity === uni2) {
+          majorStats[key].majors[uni2MajorKey].chose++;
+        }
+
+        // 학과 매칭 통계 (같은 학과끼리 매칭)
+        const matchKey = `${uni1Major}::${uni2Major}`;
+        let matchFound = false;
+        
+        // 기존 매칭 찾기
+        for (const match of majorStats[key].majorMatches) {
+          if (
+            (match.major1 === uni1Major && match.major2 === uni2Major) ||
+            (match.major1 === uni2Major && match.major2 === uni1Major)
+          ) {
+            match.total++;
+            if (registeredUniversity === uni1) {
+              match.chose1++;
+            } else if (registeredUniversity === uni2) {
+              match.chose2++;
+            }
+            matchFound = true;
+            break;
           }
-          majorStats[key].majors[majorKey].total += uni2MajorCounts[major];
-          // 등록한 대학이 두 번째 대학이면 선택 카운트 증가
-          if (registeredUniversity === uni2) {
-            majorStats[key].majors[majorKey].chose += uni2MajorCounts[major];
-          }
-        });
+        }
+
+        // 새로운 매칭 추가
+        if (!matchFound) {
+          majorStats[key].majorMatches.push({
+            major1: uni1Major,
+            major2: uni2Major,
+            total: 1,
+            chose1: registeredUniversity === uni1 ? 1 : 0,
+            chose2: registeredUniversity === uni2 ? 1 : 0,
+            percentage1: 0,
+            percentage2: 0,
+          });
+        }
       }
     }
   });
 
   // 퍼센트 계산
   Object.keys(majorStats).forEach((key) => {
+    // 각 대학별 학과 퍼센트
     Object.keys(majorStats[key].majors).forEach((majorKey) => {
       const stat = majorStats[key].majors[majorKey];
       if (stat.total > 0) {
         stat.percentage = Math.round((stat.chose / stat.total) * 100);
       }
     });
+
+    // 학과 매칭 퍼센트
+    majorStats[key].majorMatches.forEach((match) => {
+      if (match.total > 0) {
+        match.percentage1 = Math.round((match.chose1 / match.total) * 100);
+        match.percentage2 = Math.round((match.chose2 / match.total) * 100);
+      }
+    });
+
+    // 매칭 정렬 (total 내림차순)
+    majorStats[key].majorMatches.sort((a, b) => b.total - a.total);
   });
 
   return majorStats;
@@ -274,6 +315,15 @@ export async function GET() {
       majorStats?: {
         university1: Array<{ major: string; total: number; chose: number; percentage: number }>;
         university2: Array<{ major: string; total: number; chose: number; percentage: number }>;
+        majorMatches: Array<{
+          major1: string;
+          major2: string;
+          total: number;
+          chose1: number;
+          chose2: number;
+          percentage1: number;
+          percentage2: number;
+        }>;
       };
     }> = [];
 
@@ -299,8 +349,18 @@ export async function GET() {
         const majorData = majorStats[key];
         const majorStats1: Array<{ major: string; total: number; chose: number; percentage: number }> = [];
         const majorStats2: Array<{ major: string; total: number; chose: number; percentage: number }> = [];
+        const majorMatches: Array<{
+          major1: string;
+          major2: string;
+          total: number;
+          chose1: number;
+          chose2: number;
+          percentage1: number;
+          percentage2: number;
+        }> = [];
 
         if (majorData) {
+          // 각 대학별 학과 통계
           Object.keys(majorData.majors).forEach((majorKey) => {
             const [university, major] = majorKey.split("::");
             const stat = majorData.majors[majorKey];
@@ -325,6 +385,11 @@ export async function GET() {
           // 정렬 (total 내림차순)
           majorStats1.sort((a, b) => b.total - a.total);
           majorStats2.sort((a, b) => b.total - a.total);
+
+          // 학과 매칭 정보
+          if (majorData.majorMatches) {
+            majorMatches.push(...majorData.majorMatches);
+          }
         }
 
         comparisons.push({
@@ -344,9 +409,10 @@ export async function GET() {
             min: Math.max(0, Math.round((percentage2 - margin2) * 10) / 10),
             max: Math.min(100, Math.round((percentage2 + margin2) * 10) / 10),
           },
-          majorStats: majorStats1.length > 0 || majorStats2.length > 0 ? {
+          majorStats: majorStats1.length > 0 || majorStats2.length > 0 || majorMatches.length > 0 ? {
             university1: majorStats1,
             university2: majorStats2,
+            majorMatches: majorMatches,
           } : undefined,
         });
       }
