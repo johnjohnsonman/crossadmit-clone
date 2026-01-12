@@ -23,16 +23,22 @@ function loadCrossAdmitData(): CrossAdmitSubmission[] {
     const dataDir = path.join(process.cwd(), "data");
     const filePath = path.join(dataDir, "crossadmit.json");
     
+    console.log(`[CrossAdmit] Loading data from: ${filePath}`);
+    console.log(`[CrossAdmit] File exists: ${fs.existsSync(filePath)}`);
+    
     if (fs.existsSync(filePath)) {
       const data = fs.readFileSync(filePath, "utf-8");
       const submissions: CrossAdmitSubmission[] = JSON.parse(data);
+      console.log(`[CrossAdmit] Loaded ${submissions.length} submissions`);
       return submissions.map((s) => ({
         ...s,
         createdAt: new Date(s.createdAt),
       }));
+    } else {
+      console.log(`[CrossAdmit] File does not exist, returning empty array`);
     }
   } catch (error) {
-    console.error("Error loading crossadmit data:", error);
+    console.error("[CrossAdmit] Error loading crossadmit data:", error);
   }
   return [];
 }
