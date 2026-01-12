@@ -71,34 +71,58 @@ export default function CrossAdmitPage() {
         const response = await fetch("/api/crossadmit");
         const data = await response.json();
         
-        if (data.success && data.comparisons && data.comparisons.length > 0) {
-          // API 데이터를 CrossAdmitRecord 형식으로 변환
-          const apiComparisons: CrossAdmitRecord[] = data.comparisons.map((c: any) => ({
-            id: c.id,
-            university1: c.university1,
-            university2: c.university2,
-            totalAdmitted: c.totalAdmitted,
-            choseUniversity1: c.choseUniversity1,
-            choseUniversity2: c.choseUniversity2,
-            percentage1: c.percentage1,
-            percentage2: c.percentage2,
-            confidenceInterval1: c.confidenceInterval1,
-            confidenceInterval2: c.confidenceInterval2,
-          }));
-          
-          setComparisons(apiComparisons);
-          
-          // 인기 비교 목록
-          const popular = apiComparisons.slice(0, 5).map((c) => ({
-            id: c.id,
-            university1: c.university1,
-            university2: c.university2,
-            percentage1: c.percentage1,
-            percentage2: c.percentage2,
-          }));
-          setPopularComparisons(popular);
+        console.log("[CrossAdmit Page] API Response:", {
+          success: data.success,
+          comparisonsCount: data.comparisons?.length || 0,
+          totalSubmissions: data.totalSubmissions || 0,
+        });
+        
+        if (data.success) {
+          if (data.comparisons && data.comparisons.length > 0) {
+            // API 데이터를 CrossAdmitRecord 형식으로 변환
+            const apiComparisons: CrossAdmitRecord[] = data.comparisons.map((c: any) => ({
+              id: c.id,
+              university1: c.university1,
+              university2: c.university2,
+              totalAdmitted: c.totalAdmitted,
+              choseUniversity1: c.choseUniversity1,
+              choseUniversity2: c.choseUniversity2,
+              percentage1: c.percentage1,
+              percentage2: c.percentage2,
+              confidenceInterval1: c.confidenceInterval1,
+              confidenceInterval2: c.confidenceInterval2,
+            }));
+            
+            console.log("[CrossAdmit Page] Setting comparisons:", apiComparisons.length);
+            setComparisons(apiComparisons);
+            
+            // 인기 비교 목록
+            const popular = apiComparisons.slice(0, 5).map((c) => ({
+              id: c.id,
+              university1: c.university1,
+              university2: c.university2,
+              percentage1: c.percentage1,
+              percentage2: c.percentage2,
+            }));
+            setPopularComparisons(popular);
+          } else {
+            // 데이터가 없을 때만 샘플 데이터 사용
+            console.log("[CrossAdmit Page] No comparisons found, using sample data");
+            const sampleData = generateSampleData();
+            setComparisons(sampleData);
+            
+            const popular = sampleData.slice(0, 5).map((c) => ({
+              id: c.id,
+              university1: c.university1,
+              university2: c.university2,
+              percentage1: c.percentage1,
+              percentage2: c.percentage2,
+            }));
+            setPopularComparisons(popular);
+          }
         } else {
-          // API에 데이터가 없으면 샘플 데이터 사용
+          console.error("[CrossAdmit Page] API returned success: false", data.error);
+          // API 실패 시 샘플 데이터 사용
           const sampleData = generateSampleData();
           setComparisons(sampleData);
           
@@ -112,7 +136,7 @@ export default function CrossAdmitPage() {
           setPopularComparisons(popular);
         }
       } catch (error) {
-        console.error("Error fetching crossadmit data:", error);
+        console.error("[CrossAdmit Page] Error fetching crossadmit data:", error);
         // 에러 발생 시 샘플 데이터 사용
         const sampleData = generateSampleData();
         setComparisons(sampleData);

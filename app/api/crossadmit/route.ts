@@ -448,8 +448,10 @@ export async function GET(request: Request) {
 
     // 전체 통계 요청
     const submissions = loadCrossAdmitData();
+    console.log(`[CrossAdmit API] Loaded ${submissions.length} submissions`);
     const admissionRecords = loadAdmissionData();
     const stats = calculateStats(submissions);
+    console.log(`[CrossAdmit API] Calculated stats for ${Object.keys(stats).length} comparisons`);
     const majorStats = calculateMajorStats(submissions, admissionRecords);
 
     // 통계를 비교 가능한 형식으로 변환
@@ -572,6 +574,8 @@ export async function GET(request: Request) {
 
     // 총 합격 인원순으로 정렬
     comparisons.sort((a, b) => b.totalAdmitted - a.totalAdmitted);
+
+    console.log(`[CrossAdmit API] Returning ${comparisons.length} comparisons`);
 
     return NextResponse.json({
       success: true,
