@@ -293,8 +293,55 @@ function calculateMajorStats(
   return majorStats;
 }
 
-export async function GET() {
+// 특정 대학 쌍에 대한 개별 제출 데이터 가져오기
+function getSubmissionsForComparison(
+  submissions: CrossAdmitSubmission[],
+  university1: string,
+  university2: string
+): CrossAdmitSubmission[] {
+  return submissions.filter((submission) => {
+    const { admittedUniversities } = submission;
+    return (
+      admittedUniversities.includes(university1) &&
+      admittedUniversities.includes(university2)
+    );
+  });
+}
+
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const university1 = searchParams.get("university1");
+    const university2 = searchParams.get("university2");
+
+    // 특정 대학 쌍의 개별 제출 데이터 요청
+    if (university1 && university2) {
+      const submissions = loadCrossAdmitData();
+      const filteredSubmissions = getSubmissionsForComparison(
+        submissions,
+        university1,
+        university2
+      );
+
+      // 날짜순 정렬 (최신순)
+      filteredSubmissions.sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+
+      return NextResponse.json({
+        success: true,
+        submissions: filteredSubmissions.map((s) => ({
+          id: s.id,
+          admittedUniversities: s.admittedUniversities,
+          registeredUniversity: s.registeredUniversity,
+          admittedMajors: s.admittedMajors || {},
+          registeredMajor: s.registeredMajor || "",
+          createdAt: s.createdAt,
+        })),
+      });
+    }
+
+    // 전체 통계 요청
     const submissions = loadCrossAdmitData();
     const admissionRecords = loadAdmissionData();
     const stats = calculateStats(submissions);

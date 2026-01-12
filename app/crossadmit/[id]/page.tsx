@@ -38,6 +38,15 @@ interface CrossAdmitRecord {
   };
 }
 
+interface SubmissionRecord {
+  id: string;
+  admittedUniversities: string[];
+  registeredUniversity: string;
+  admittedMajors: Record<string, string>;
+  registeredMajor: string;
+  createdAt: string;
+}
+
 function getSimilarUniversities(university: string): string[] {
   const similarMap: Record<string, string[]> = {
     "University of California, Los Angeles": [
@@ -120,6 +129,7 @@ export default function CrossAdmitDetailPage() {
   const params = useParams();
   const comparisonId = (params.id as string) || "";
   const [comparison, setComparison] = useState<CrossAdmitRecord | null>(null);
+  const [submissions, setSubmissions] = useState<SubmissionRecord[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -144,6 +154,15 @@ export default function CrossAdmitDetailPage() {
               confidenceInterval2: found.confidenceInterval2,
               majorStats: found.majorStats,
             });
+
+            // 개별 제출 데이터 가져오기
+            const submissionsResponse = await fetch(
+              `/api/crossadmit?university1=${encodeURIComponent(found.university1)}&university2=${encodeURIComponent(found.university2)}`
+            );
+            const submissionsData = await submissionsResponse.json();
+            if (submissionsData.success && submissionsData.submissions) {
+              setSubmissions(submissionsData.submissions);
+            }
           }
         }
       } catch (error) {
@@ -487,11 +506,90 @@ export default function CrossAdmitDetailPage() {
             </div>
           </div>
 
+          {/* 개별 제출 데이터 게시판 */}
+          {submissions.length > 0 && (
+            <div className="mt-6 md:mt-8 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+              <div className="bg-gray-50 px-4 md:px-6 py-3 md:py-4 border-b border-gray-200">
+                <h2 className="text-lg md:text-xl font-bold text-gray-900">제출 데이터</h2>
+                <p className="text-xs md:text-sm text-gray-600 mt-1">각 학생의 합격 및 등록 정보를 확인하세요</p>
+              </div>
+              
+              <div className="divide-y divide-gray-200">
+                {submissions.map((submission, idx) => {
+                  const uni1Major = submission.admittedMajors?.[comparison.university1] || "";
+                  const uni2Major = submission.admittedMajors?.[comparison.university2] || "";
+                  const registeredMajor = submission.registeredMajor || "";
+                  const isRegistered1 = submission.registeredUniversity === comparison.university1;
+                  const isRegistered2 = submission.registeredUniversity === comparison.university2;
+                  const date = new Date(submission.createdAt);
+                  const formattedDate = `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`;
+
+                  return (
+                    <div key={submission.id} className="p-3 md:p-4 hover:bg-gray-50 transition-colors">
+                      <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-4">
+                        {/* 합격 대학 */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 md:gap-3 flex-wrap">
+                            <div className={`flex items-center gap-1 md:gap-2 px-2 md:px-3 py-1 md:py-1.5 rounded-md text-xs md:text-sm font-medium ${
+                              isRegistered1 
+                                ? "bg-blue-100 text-blue-700 border border-blue-300" 
+                                : "bg-gray-100 text-gray-700 border border-gray-300"
+                            }`}>
+                              <span>{comparison.university1}</span>
+                              {uni1Major && <span className="text-gray-500">({uni1Major})</span>}
+                              {isRegistered1 && (
+                                <span className="ml-1 text-blue-600 font-bold">✓</span>
+                              )}
+                            </div>
+                            <span className="text-gray-400 font-medium text-xs md:text-sm">vs</span>
+                            <div className={`flex items-center gap-1 md:gap-2 px-2 md:px-3 py-1 md:py-1.5 rounded-md text-xs md:text-sm font-medium ${
+                              isRegistered2 
+                                ? "bg-green-100 text-green-700 border border-green-300" 
+                                : "bg-gray-100 text-gray-700 border border-gray-300"
+                            }`}>
+                              <span>{comparison.university2}</span>
+                              {uni2Major && <span className="text-gray-500">({uni2Major})</span>}
+                              {isRegistered2 && (
+                                <span className="ml-1 text-green-600 font-bold">✓</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* 등록 대학 */}
+                        <div className="flex items-center gap-2 md:gap-3">
+                          <div className="text-xs md:text-sm text-gray-500">등록:</div>
+                          <div className={`px-2 md:px-3 py-1 md:py-1.5 rounded-md text-xs md:text-sm font-semibold ${
+                            isRegistered1 
+                              ? "bg-blue-100 text-blue-700 border border-blue-300" 
+                              : isRegistered2 
+                              ? "bg-green-100 text-green-700 border border-green-300"
+                              : "bg-gray-100 text-gray-700 border border-gray-300"
+                          }`}>
+                            {submission.registeredUniversity}
+                            {registeredMajor && (
+                              <span className="ml-1 text-gray-600">({registeredMajor})</span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* 등록일 */}
+                        <div className="text-xs md:text-sm text-gray-500 whitespace-nowrap">
+                          {formattedDate}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* 등록 버튼 */}
-          <div className="mt-8 text-center">
+          <div className="mt-6 md:mt-8 text-center">
             <Link
               href="/crossadmit/register"
-              className="inline-block px-8 py-3 bg-yellow-500 hover:bg-yellow-600 text-white font-semibold rounded-lg shadow-md transition-colors"
+              className="inline-block px-6 md:px-8 py-2 md:py-3 text-sm md:text-base bg-yellow-500 hover:bg-yellow-600 text-white font-semibold rounded-lg shadow-md transition-colors"
             >
               내 학교 등록 인증하기 →
             </Link>
