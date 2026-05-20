@@ -6,7 +6,7 @@ import type {
 } from "../../scripts/sources/types";
 import { videoUrl } from "../../scripts/sources/youtube-studyinkorea";
 
-const MODEL = "claude-sonnet-4-20250514";
+const MODEL = "claude-haiku-4-5-20251001";
 const MIN_RELEVANCE = 0.4;
 
 function getClient(): Anthropic {
