@@ -11,6 +11,16 @@ export interface RedditPost {
   permalink: string;
 }
 
+export interface YouTubeVideo {
+  videoId: string;
+  title: string;
+  description: string;
+  channelTitle: string;
+  publishedAt: string;
+  thumbnailUrl: string;
+  viewCount: number;
+}
+
 export interface ProcessedAdmission {
   university?: string;
   university_en?: string;

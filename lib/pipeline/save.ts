@@ -32,7 +32,12 @@ function toInsertRow(item: ProcessedAdmission): AdmissionsInsert {
     created_at: new Date().toISOString(),
     source: item.source,
     nationality: item.nationality ?? null,
-    username: item.source_author ? `u/${item.source_author}` : null,
+    username:
+      item.source === "youtube"
+        ? item.source_author
+        : item.source_author
+          ? `u/${item.source_author}`
+          : null,
     test_scores: {
       type: "study_abroad_experience",
       topik_level: item.topik_level ?? null,
@@ -97,4 +102,36 @@ export async function saveAdmissions(
   }
 
   return { inserted, skipped, failed };
+}
+
+/**
+ * source=youtube 레코드의 source_url 집합을 반환합니다.
+ */
+export async function getExistingYouTubeSourceUrls(
+  urls: string[]
+): Promise<Set<string>> {
+  if (urls.length === 0) return new Set();
+
+  const supabase = getSupabaseAdmin();
+  const existing = new Set<string>();
+
+  const { data, error } = await supabase
+    .from("admissions")
+    .select("test_scores")
+    .eq("source", "youtube");
+
+  if (error) {
+    console.error("[save] existing URL lookup failed:", error.message);
+    return existing;
+  }
+
+  const urlSet = new Set(urls);
+  for (const row of data ?? []) {
+    const scores = row.test_scores as { source_url?: string } | null;
+    if (scores?.source_url && urlSet.has(scores.source_url)) {
+      existing.add(scores.source_url);
+    }
+  }
+
+  return existing;
 }
