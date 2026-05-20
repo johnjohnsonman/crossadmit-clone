@@ -151,6 +151,8 @@ export interface Database {
           language: string | null;
           content_type: string | null;
           university_tags: string[] | null;
+          /** generated: array_to_string(university_tags) */
+          university_tags_search?: string | null;
           created_at: string;
         };
         Insert: {
@@ -168,6 +170,7 @@ export interface Database {
           language?: string | null;
           content_type?: string | null;
           university_tags?: string[] | null;
+          university_tags_search?: never;
           created_at?: string;
         };
         Update: {
@@ -185,6 +188,7 @@ export interface Database {
           language?: string | null;
           content_type?: string | null;
           university_tags?: string[] | null;
+          university_tags_search?: never;
           created_at?: string;
         };
         Relationships: [];
