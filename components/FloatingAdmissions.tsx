@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Fragment, useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -10,6 +10,48 @@ interface CrossAdmitComparison {
   university2: string;
   percentage1: number;
   percentage2: number;
+}
+
+function ComparisonStrip({
+  comparisons,
+  basePath,
+  copyKey,
+}: {
+  comparisons: CrossAdmitComparison[];
+  basePath: string;
+  copyKey: string;
+}) {
+  return (
+    <>
+      {comparisons.map((comp, index) => (
+        <Fragment key={`${comp.id}-${index}-${copyKey}`}>
+          <Link
+            href={`${basePath}/${comp.id}`}
+            className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap px-10 transition-opacity hover:opacity-80"
+          >
+            <span className="text-xs font-medium text-sage-800 md:text-sm">
+              {comp.university1}
+            </span>
+            <span className="text-[10px] font-medium text-sage-600 md:text-xs">
+              vs
+            </span>
+            <span className="text-xs font-medium text-sage-800 md:text-sm">
+              {comp.university2}
+            </span>
+            <span className="text-[10px] text-sage-500 md:text-xs">
+              ({comp.percentage1}% vs {comp.percentage2}%)
+            </span>
+          </Link>
+          <span
+            className="inline-flex shrink-0 select-none items-center justify-center text-sm tabular-nums text-sage-400"
+            aria-hidden
+          >
+            ·
+          </span>
+        </Fragment>
+      ))}
+    </>
+  );
 }
 
 export default function FloatingAdmissions() {
@@ -49,60 +91,26 @@ export default function FloatingAdmissions() {
   const basePath = isEnglish ? "/en/crossadmit" : "/crossadmit";
 
   return (
-    <div className="bg-tea-100 border-b border-tea-200 py-1.5 md:py-2.5 overflow-hidden relative h-9 md:h-11 z-40 mt-0">
-      <div className="absolute inset-0 flex items-center" style={{ pointerEvents: 'none' }}>
-        {/* 첫 번째 세트 */}
-        {comparisons.map((comp, index) => (
-          <Link
-            key={`${comp.id}-${index}`}
-            href={`${basePath}/${comp.id}`}
-            className="flex items-center space-x-1 md:space-x-2 whitespace-nowrap animate-scroll hover:opacity-80 transition-opacity cursor-pointer px-4 md:px-8"
-            style={{
-              pointerEvents: 'auto',
-              animationDelay: `${index * 6}s`,
-              animationDuration: "40s",
-              transform: `translateX(${100 + index * 150}vw)`,
-            }}
-          >
-            <span className="text-xs md:text-sm font-medium text-sage-800">
-              {comp.university1}
-            </span>
-            <span className="text-[10px] md:text-xs text-sage-600 font-medium">vs</span>
-            <span className="text-xs md:text-sm font-medium text-sage-800">
-              {comp.university2}
-            </span>
-            <span className="text-[10px] md:text-xs text-sage-500">
-              ({comp.percentage1}% vs {comp.percentage2}%)
-            </span>
-          </Link>
-        ))}
-        {/* 반복을 위해 같은 데이터를 한 번 더 */}
-        {comparisons.map((comp, index) => (
-          <Link
-            key={`${comp.id}-${index}-dup`}
-            href={`${basePath}/${comp.id}`}
-            className="flex items-center space-x-1 md:space-x-2 whitespace-nowrap animate-scroll hover:opacity-80 transition-opacity cursor-pointer px-4 md:px-8"
-            style={{
-              pointerEvents: 'auto',
-              animationDelay: `${(index + comparisons.length) * 6}s`,
-              animationDuration: "40s",
-              transform: `translateX(${100 + (index + comparisons.length) * 150}vw)`,
-            }}
-          >
-            <span className="text-xs md:text-sm font-medium text-sage-800">
-              {comp.university1}
-            </span>
-            <span className="text-[10px] md:text-xs text-sage-600 font-medium">vs</span>
-            <span className="text-xs md:text-sm font-medium text-sage-800">
-              {comp.university2}
-            </span>
-            <span className="text-[10px] md:text-xs text-sage-500">
-              ({comp.percentage1}% vs {comp.percentage2}%)
-            </span>
-          </Link>
-        ))}
+    <div className="relative z-40 mt-0 h-9 overflow-hidden border-b border-tea-200 bg-tea-100 py-1.5 md:h-11 md:py-2.5">
+      <div className="flex overflow-hidden">
+        {/* 한 트랙 = 동일 패턴 2벌 나란히, 끝에 pr로 복사본 사이 간격을 항목 간 gap과 동일하게 맞춤 */}
+        <div className="flex w-max animate-ticker items-center">
+          <div className="flex shrink-0 flex-row items-center gap-[60px] pr-[60px]">
+            <ComparisonStrip
+              comparisons={comparisons}
+              basePath={basePath}
+              copyKey="a"
+            />
+          </div>
+          <div className="flex shrink-0 flex-row items-center gap-[60px] pr-[60px]">
+            <ComparisonStrip
+              comparisons={comparisons}
+              basePath={basePath}
+              copyKey="b"
+            />
+          </div>
+        </div>
       </div>
     </div>
   );
 }
-

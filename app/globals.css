@@ -41,17 +41,24 @@ main {
   }
 }
 
-@keyframes scroll {
+/** 상단 크로스어드밋 비교 결과 티커: 트랙을 2벌 깔아 -50% 이동으로 끊김 없이 루프 */
+@keyframes ticker-track {
   0% {
-    transform: translateX(100vw);
+    transform: translateX(0);
   }
   100% {
-    transform: translateX(-100%);
+    transform: translateX(-50%);
   }
 }
 
-.animate-scroll {
-  animation: scroll 40s linear infinite;
+.animate-ticker {
+  animation: ticker-track 50s linear infinite;
   will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-ticker {
+    animation: none;
+  }
 }
 
