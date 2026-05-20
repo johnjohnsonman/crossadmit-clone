@@ -1,16 +1,16 @@
 import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import type { AdmissionsInsert } from "@/lib/supabase/types";
+import type { AdmissionsInsert, Json } from "@/lib/supabase/types";
 
 export const runtime = "nodejs";
 
-function splitNonEmptyLines(text: string): string[] {
-  return text
-    .split(/\r?\n/)
-    .map((l) => l.trim())
-    .filter(Boolean);
-}
+export type SchoolAppliedPayload = {
+  university: string;
+  university_en: string;
+  major: string;
+  status: string;
+};
 
 function parseTopikGrade(raw: unknown): number | null {
   if (raw === null || raw === undefined || raw === "") return null;
@@ -19,6 +19,52 @@ function parseTopikGrade(raw: unknown): number | null {
   const n = parseInt(s, 10);
   if (Number.isNaN(n) || n < 1 || n > 6) return null;
   return n;
+}
+
+function isSchoolApplied(x: unknown): x is SchoolAppliedPayload {
+  if (!x || typeof x !== "object") return false;
+  const o = x as Record<string, unknown>;
+  const st = String(o.status ?? "");
+  return (
+    typeof o.university === "string" &&
+    typeof o.university_en === "string" &&
+    typeof o.major === "string" &&
+    o.university.trim().length > 0 &&
+    o.major.trim().length > 0 &&
+    ["합격", "등록", "불합격"].includes(st)
+  );
+}
+
+function pickPrimarySchool(
+  schools: SchoolAppliedPayload[]
+): SchoolAppliedPayload {
+  const registered = schools.find((s) => s.status === "등록");
+  return registered ?? schools[0];
+}
+
+function buildTestScoresJson(body: Record<string, unknown>): Json | null {
+  const csat_total = String(body.csat_total ?? "").trim();
+  const csat_korean = String(body.csat_korean ?? "").trim();
+  const csat_math = String(body.csat_math ?? "").trim();
+  const csat_english = String(body.csat_english ?? "").trim();
+  const csat_inquiry = String(body.csat_inquiry ?? "").trim();
+  const sat_act = String(body.sat_act ?? "").trim();
+  const english_test = String(body.english_test ?? "").trim();
+
+  const csat: Record<string, string> = {};
+  if (csat_korean) csat.korean = csat_korean;
+  if (csat_math) csat.math = csat_math;
+  if (csat_english) csat.english = csat_english;
+  if (csat_inquiry) csat.inquiry = csat_inquiry;
+
+  const obj: Record<string, unknown> = {};
+  if (csat_total) obj.csat_total_or_percentile = csat_total;
+  if (Object.keys(csat).length) obj.csat = csat;
+  if (sat_act) obj.sat_act = sat_act;
+  if (english_test) obj.english_proficiency = english_test;
+
+  if (Object.keys(obj).length === 0) return null;
+  return obj as Json;
 }
 
 export async function POST(request: NextRequest) {
@@ -33,34 +79,38 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const university = String(body.university ?? "").trim();
-    const major = String(body.major ?? "").trim();
+    const rawSchools = body.schools_applied;
+    const schools: SchoolAppliedPayload[] = Array.isArray(rawSchools)
+      ? rawSchools.filter(isSchoolApplied).map((s) => ({
+          university: String(s.university).trim(),
+          university_en: String(s.university_en).trim(),
+          major: String(s.major).trim(),
+          status: String(s.status).trim(),
+        }))
+      : [];
+
     const yearRaw = body.year;
     const admission_type = String(body.admission_type ?? "").trim();
-    const status = String(body.status ?? "").trim();
-    const review = String(body.review ?? "").trim();
     const nickname = String(body.nickname ?? "").trim();
     const nationality = String(body.nationality ?? "").trim();
-    const prosText = String(body.pros ?? "");
-    const consText = String(body.cons ?? "");
-    const tipsText = String(body.tips ?? "");
-
-    const errors: string[] = [];
-    if (!university) errors.push("대학교명을 입력해주세요.");
-    if (!major) errors.push("학과를 입력해주세요.");
-    if (!admission_type) errors.push("전형 종류를 선택해주세요.");
-    if (!status) errors.push("결과를 선택해주세요.");
-    if (review.length < 50) errors.push("후기는 최소 50자 이상 입력해주세요.");
+    const review = String(body.review ?? "").trim();
+    const gpa_grade = String(body.gpa_grade ?? "").trim();
 
     const year =
       typeof yearRaw === "number"
         ? yearRaw
         : parseInt(String(yearRaw ?? ""), 10);
+
+    const errors: string[] = [];
+    if (schools.length === 0) {
+      errors.push("지원 학교를 1개 이상 입력해주세요.");
+    }
     if (yearRaw === undefined || yearRaw === null || yearRaw === "") {
       errors.push("입학 연도를 선택해주세요.");
     } else if (Number.isNaN(year) || year < 1990 || year > 2030) {
       errors.push("입학 연도가 올바르지 않습니다.");
     }
+    if (!admission_type) errors.push("전형 종류를 선택해주세요.");
 
     if (errors.length > 0) {
       return NextResponse.json(
@@ -69,42 +119,47 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const primary = pickPrimarySchool(schools);
     const student_handle = nickname || "익명";
     const topik_grade = parseTopikGrade(body.topik);
-    const pros = splitNonEmptyLines(prosText);
-    const cons = splitNonEmptyLines(consText);
-    const tips = splitNonEmptyLines(tipsText);
+
+    const gpaJson: Json | null = gpa_grade
+      ? ({ unweighted: gpa_grade, label: "학생부 교과 등급" } as Json)
+      : null;
+
+    const testScores = buildTestScoresJson(body);
 
     const row: AdmissionsInsert = {
       id: `user-sub-${randomUUID()}`,
-      university,
-      university_en: university,
-      major,
+      university: primary.university,
+      university_en: primary.university_en || primary.university,
+      major: primary.major,
       year,
       admission_type,
-      status,
+      status: primary.status,
       created_at: new Date().toISOString(),
       source: "user_submission",
       nationality: nationality || null,
       username: student_handle,
       student_handle,
-      test_scores: null,
-      gpa: null,
+      test_scores: testScores,
+      gpa: gpaJson,
       special_skills: null,
-      review,
+      review: review || null,
       summary: null,
       raw_content: null,
       likes: 0,
       comments: null,
       published: false,
       verified: false,
-      pros: pros.length ? pros : null,
-      cons: cons.length ? cons : null,
-      tips: tips.length ? tips : null,
+      pros: null,
+      cons: null,
+      tips: null,
       visa_type: null,
       language_proficiency: null,
       topik_level: topik_grade != null ? String(topik_grade) : null,
       topik_grade,
+      schools_applied: schools as unknown as Json,
     };
 
     const supabase = createAdminClient();

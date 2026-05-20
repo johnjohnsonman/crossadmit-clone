@@ -29,7 +29,8 @@ create table if not exists public.admissions (
   topik_level text,
   verified boolean not null default false,
   student_handle text,
-  topik_grade smallint
+  topik_grade smallint,
+  schools_applied jsonb default '[]'::jsonb
 );
 
 create index if not exists admissions_university_idx on public.admissions (university);

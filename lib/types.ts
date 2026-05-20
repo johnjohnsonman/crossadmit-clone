@@ -23,6 +23,13 @@ export interface AdmissionRecord {
   verified?: boolean;
   topikGrade?: number | null;
   studentHandle?: string | null;
+  /** 다중 지원 학교 */
+  schoolsApplied?: Array<{
+    university: string;
+    university_en: string;
+    major: string;
+    status: string;
+  }>;
   topikLevel?: string;
   nationality?: string | null;
   // 상세 정보

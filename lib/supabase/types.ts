@@ -40,6 +40,7 @@ export interface Database {
           verified: boolean;
           student_handle: string | null;
           topik_grade: number | null;
+          schools_applied: Json | null;
         };
         Insert: {
           id: string;
@@ -71,6 +72,7 @@ export interface Database {
           verified?: boolean;
           student_handle?: string | null;
           topik_grade?: number | null;
+          schools_applied?: Json | null;
         };
         Update: {
           id?: string;
@@ -102,6 +104,7 @@ export interface Database {
           verified?: boolean;
           student_handle?: string | null;
           topik_grade?: number | null;
+          schools_applied?: Json | null;
         };
         Relationships: [];
       };
