@@ -38,6 +38,9 @@ function statusBadgeClasses(status: string): string {
   if (status === "불합격") {
     return "border-red-200 bg-red-50 text-red-800";
   }
+  if (status === "대기중") {
+    return "border-amber-200 bg-amber-50 text-amber-900";
+  }
   return "border-gray-200 bg-gray-100 text-gray-700";
 }
 
@@ -136,15 +139,25 @@ export default function AdmissionsDbList() {
     <main className="min-h-screen bg-[#f5f4f0]">
       <div className="border-b border-sage-200/80 bg-white shadow-sm">
         <div className="container mx-auto max-w-5xl px-4 py-8">
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900">
-            합격DB
-          </h1>
-          <p className="mt-2 text-gray-600">
-            합격 스펙 및 후기를 공유하고 볼 수 있습니다
-          </p>
-          <p className="mt-4 text-sm font-medium text-sage-800">
-            전체 ({total.toLocaleString()}건)
-          </p>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+                합격DB
+              </h1>
+              <p className="mt-2 text-gray-600">
+                합격 스펙 및 후기를 공유하고 볼 수 있습니다
+              </p>
+              <p className="mt-4 text-sm font-medium text-sage-800">
+                전체 ({total.toLocaleString()}건)
+              </p>
+            </div>
+            <Link
+              href="/admissions/new"
+              className="inline-flex w-full shrink-0 items-center justify-center rounded-lg bg-tea-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-tea-700 sm:w-auto"
+            >
+              ✏️ 합격 후기 등록하기
+            </Link>
+          </div>
         </div>
       </div>
 
@@ -268,7 +281,10 @@ export default function AdmissionsDbList() {
         ) : (
           <div className="space-y-3">
             {records.map((record) => {
-              const nick = record.username?.trim() || "익명";
+              const nick =
+                record.studentHandle?.trim() ||
+                record.username?.trim() ||
+                "익명";
               const schools = splitUniversities(record.university);
               const likes = record.likes ?? 0;
               const comments = commentCount(record);

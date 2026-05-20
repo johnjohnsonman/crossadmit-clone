@@ -8,7 +8,7 @@ export interface AdmissionRecord {
   /** DB 값: 합격 / 등록 / 불합격 등 */
   status: string;
   createdAt: Date;
-  source: "web" | "generated";
+  source: string;
   /** 상세 후기 요약(신규 스키마) */
   summary?: string;
   rawContent?: string;
@@ -17,8 +17,13 @@ export interface AdmissionRecord {
   tips?: string[];
   visaType?: string;
   languageProficiency?: string;
-  topikLevel?: string;
+  /** 합격DB 공개 여부 */
   published?: boolean;
+  /** 관리자 검증(사용자 제출) */
+  verified?: boolean;
+  topikGrade?: number | null;
+  studentHandle?: string | null;
+  topikLevel?: string;
   nationality?: string | null;
   // 상세 정보
   username?: string;

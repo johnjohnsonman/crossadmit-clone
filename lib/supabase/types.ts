@@ -37,6 +37,9 @@ export interface Database {
           visa_type: string | null;
           language_proficiency: string | null;
           topik_level: string | null;
+          verified: boolean;
+          student_handle: string | null;
+          topik_grade: number | null;
         };
         Insert: {
           id: string;
@@ -65,6 +68,9 @@ export interface Database {
           visa_type?: string | null;
           language_proficiency?: string | null;
           topik_level?: string | null;
+          verified?: boolean;
+          student_handle?: string | null;
+          topik_grade?: number | null;
         };
         Update: {
           id?: string;
@@ -93,6 +99,9 @@ export interface Database {
           visa_type?: string | null;
           language_proficiency?: string | null;
           topik_level?: string | null;
+          verified?: boolean;
+          student_handle?: string | null;
+          topik_grade?: number | null;
         };
         Relationships: [];
       };

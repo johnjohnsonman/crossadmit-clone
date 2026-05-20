@@ -26,7 +26,10 @@ create table if not exists public.admissions (
   raw_content text,
   visa_type text,
   language_proficiency text,
-  topik_level text
+  topik_level text,
+  verified boolean not null default false,
+  student_handle text,
+  topik_grade smallint
 );
 
 create index if not exists admissions_university_idx on public.admissions (university);

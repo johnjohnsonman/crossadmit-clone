@@ -19,6 +19,9 @@ function statusBadgeClasses(status: string): string {
   if (status === "불합격") {
     return "border-red-200 bg-red-50 text-red-800";
   }
+  if (status === "대기중") {
+    return "border-amber-200 bg-amber-50 text-amber-900";
+  }
   return "border-gray-200 bg-gray-100 text-gray-700";
 }
 

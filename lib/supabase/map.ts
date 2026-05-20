@@ -13,7 +13,7 @@ export function rowToAdmissionRecord(row: AdmissionsRow): AdmissionRecord {
     admissionType: row.admission_type,
     status: row.status,
     createdAt: new Date(row.created_at),
-    source: row.source as AdmissionRecord["source"],
+    source: row.source,
     username: row.username ?? undefined,
     testScores: (row.test_scores as AdmissionRecord["testScores"]) ?? undefined,
     gpa: (row.gpa as AdmissionRecord["gpa"]) ?? undefined,
@@ -27,7 +27,13 @@ export function rowToAdmissionRecord(row: AdmissionsRow): AdmissionRecord {
     tips: row.tips ?? undefined,
     visaType: row.visa_type ?? undefined,
     languageProficiency: row.language_proficiency ?? undefined,
-    topikLevel: row.topik_level ?? undefined,
+    topikLevel:
+      row.topik_grade != null
+        ? `${row.topik_grade}급`
+        : (row.topik_level ?? undefined),
+    topikGrade: row.topik_grade ?? undefined,
+    studentHandle: row.student_handle ?? undefined,
+    verified: row.verified,
     published: row.published,
     nationality: row.nationality ?? undefined,
     likes: row.likes ?? undefined,
