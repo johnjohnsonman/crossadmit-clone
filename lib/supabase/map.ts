@@ -39,7 +39,11 @@ export function rowToAdmissionRecord(row: AdmissionsRow): AdmissionRecord {
     schoolsApplied: Array.isArray(row.schools_applied)
       ? (row.schools_applied as NonNullable<AdmissionRecord["schoolsApplied"]>)
       : undefined,
-    likes: row.likes ?? undefined,
+    likes:
+      typeof row.likes_count === "number"
+        ? row.likes_count
+        : (row.likes ?? undefined),
+    isFeatured: row.is_featured ?? undefined,
     comments: commentsRaw?.map((c) => ({
       ...c,
       createdAt:

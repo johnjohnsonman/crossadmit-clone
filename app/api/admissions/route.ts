@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdmissions } from "@/lib/supabase/admissions-service";
+import { getDcCommentCounts } from "@/lib/supabase/comment-counts";
 import { rowToAdmissionRecord } from "@/lib/supabase/map";
+import type { AdmissionsRow } from "@/lib/supabase/types";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
@@ -22,7 +24,7 @@ export async function GET(request: NextRequest) {
   const usePagination = limitParam !== null || offsetParam !== null;
 
   const sort =
-    sortRaw === "popular" || sortRaw === "latest" ? sortRaw : undefined;
+    sortRaw === "likes" || sortRaw === "popular" ? "likes" : "latest";
 
   try {
     const { data, total } = await getAdmissions({
@@ -33,12 +35,18 @@ export async function GET(request: NextRequest) {
       admission_type: admissionType?.trim() || undefined,
       status: status?.trim() || undefined,
       search: search?.trim() || undefined,
-      sort: sort ?? "latest",
+      sort,
       limit: usePagination ? limit : undefined,
       offset: usePagination ? offset : undefined,
     });
 
-    const records = (data ?? []).map(rowToAdmissionRecord);
+    const ids = (data ?? []).map((r) => r.id);
+    const dcCounts = await getDcCommentCounts(ids);
+
+    const records = (data ?? []).map((row) => ({
+      ...rowToAdmissionRecord(row as AdmissionsRow),
+      dcCommentCount: dcCounts[row.id] ?? 0,
+    }));
 
     if (usePagination) {
       return NextResponse.json({

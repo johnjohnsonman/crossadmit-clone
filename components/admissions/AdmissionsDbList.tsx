@@ -15,10 +15,82 @@ const selectClass =
 const toggleBtn =
   "rounded-lg border px-4 py-2 text-sm font-medium transition-colors ";
 
-function commentCount(record: AdmissionRecord): number {
+function dcCommentTotal(record: AdmissionRecord): number {
+  if (typeof record.dcCommentCount === "number") return record.dcCommentCount;
   const c = record.comments;
   if (!Array.isArray(c)) return 0;
   return c.length;
+}
+
+const LIKED_LS = "adliked:";
+
+function AdmissionLikeButton({
+  admissionId,
+  initialCount,
+}: {
+  admissionId: string;
+  initialCount: number;
+}) {
+  const [count, setCount] = useState(initialCount);
+  const [liked, setLiked] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    setCount(initialCount);
+  }, [initialCount]);
+
+  useEffect(() => {
+    try {
+      setLiked(localStorage.getItem(LIKED_LS + admissionId) === "1");
+    } catch {
+      setLiked(false);
+    }
+  }, [admissionId]);
+
+  const onClick = async () => {
+    if (liked || busy) return;
+    const prev = count;
+    setBusy(true);
+    setCount((c) => c + 1);
+    try {
+      const res = await fetch(
+        `/api/admissions/${encodeURIComponent(admissionId)}/like`,
+        { method: "POST", credentials: "include" }
+      );
+      const data = (await res.json()) as {
+        likes_count?: number;
+        error?: string;
+      };
+      if (!res.ok) throw new Error(data.error || "실패");
+      if (typeof data.likes_count === "number") setCount(data.likes_count);
+      else setCount(prev);
+      setLiked(true);
+      try {
+        localStorage.setItem(LIKED_LS + admissionId, "1");
+      } catch {
+        /* ignore */
+      }
+    } catch {
+      setCount(prev);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      disabled={liked || busy}
+      onClick={() => void onClick()}
+      className={
+        liked
+          ? "cursor-default rounded-lg border border-blue-600 bg-blue-50 px-2 py-1 text-sm text-blue-800"
+          : "rounded-lg border border-gray-200 bg-white px-2 py-1 text-sm text-gray-700 hover:border-tea-400"
+      }
+    >
+      👍 공감 {count}
+    </button>
+  );
 }
 
 function splitUniversities(text: string): string[] {
@@ -91,7 +163,7 @@ export default function AdmissionsDbList() {
   const [school, setSchool] = useState("");
   const [year, setYear] = useState("");
   const [admissionType, setAdmissionType] = useState("");
-  const [sort, setSort] = useState<"latest" | "popular">("latest");
+  const [sort, setSort] = useState<"latest" | "likes">("latest");
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
@@ -246,17 +318,17 @@ export default function AdmissionsDbList() {
             <button
               type="button"
               onClick={() => {
-                setSort("popular");
+                setSort("likes");
                 setPage(1);
               }}
               className={
                 toggleBtn +
-                (sort === "popular"
+                (sort === "likes"
                   ? "border-tea-600 bg-tea-50 text-tea-900"
                   : "border-gray-200 bg-white text-gray-600 hover:border-tea-300")
               }
             >
-              인기순
+              공감순
             </button>
           </div>
         </div>
@@ -287,13 +359,20 @@ export default function AdmissionsDbList() {
                 "익명";
               const schools = splitUniversities(record.university);
               const likes = record.likes ?? 0;
-              const comments = commentCount(record);
+              const comments = dcCommentTotal(record);
 
               return (
                 <div
                   key={record.id}
                   className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
                 >
+                  {record.isFeatured ? (
+                    <div className="mb-3">
+                      <span className="inline-block rounded-full bg-amber-100 px-3 py-0.5 text-xs font-semibold text-amber-900">
+                        ⭐ 오늘의 DB
+                      </span>
+                    </div>
+                  ) : null}
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-stretch">
                     {/* 왼쪽 */}
                     <div className="shrink-0 sm:w-36 sm:pt-0.5">
@@ -328,9 +407,12 @@ export default function AdmissionsDbList() {
 
                     {/* 오른쪽 */}
                     <div className="flex shrink-0 flex-row items-center justify-between gap-3 border-t border-gray-100 pt-3 sm:flex-col sm:items-end sm:border-t-0 sm:pt-0">
-                      <div className="flex gap-4 text-sm text-gray-600">
-                        <span>👍 {likes}</span>
-                        <span>💬 {comments}</span>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <AdmissionLikeButton
+                          admissionId={record.id}
+                          initialCount={likes}
+                        />
+                        <span className="text-sm text-gray-600">💬 {comments}</span>
                       </div>
                       <Link
                         href={`/admissions/${record.id}`}

@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import type { AdmissionsRow } from "@/lib/supabase/types";
 
-export type AdmissionsSort = "latest" | "popular";
+export type AdmissionsSort = "latest" | "likes";
 
 export interface GetAdmissionsParams {
   university?: string;
@@ -137,7 +137,15 @@ export async function getAdmissions(
 
   let query = supabase.from("admissions").select("*", { count: "exact" });
   query = applyCommonFilters(query, params);
-  query = query.order("created_at", { ascending: false });
+
+  query = query.order("is_featured", { ascending: false });
+  const sortMode = params.sort ?? "latest";
+  if (sortMode === "likes") {
+    query = query.order("likes_count", { ascending: false });
+    query = query.order("created_at", { ascending: false });
+  } else {
+    query = query.order("created_at", { ascending: false });
+  }
 
   const from = params.offset ?? 0;
   const lim = params.limit;

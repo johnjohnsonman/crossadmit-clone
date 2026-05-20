@@ -62,3 +62,21 @@ create table if not exists public.universities (
 
 alter table public.admissions enable row level security;
 create policy "admissions read" on public.admissions for select using (true);
+
+/* 합격DB 공감·피처드·DC 댓글: 실제 DDL은 migrations/007_likes_and_comments.sql 참고 */
+
+alter table public.admissions add column if not exists likes_count integer not null default 0;
+alter table public.admissions add column if not exists is_featured boolean not null default false;
+
+create table if not exists public.comments (
+  id uuid primary key default gen_random_uuid(),
+  admission_id text not null references public.admissions(id) on delete cascade,
+  nickname text not null default '익명',
+  password_hash text not null,
+  content text not null,
+  is_deleted boolean not null default false,
+  ip_hash text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_comments_admission_id on public.comments (admission_id);

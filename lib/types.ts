@@ -44,6 +44,10 @@ export interface AdmissionRecord {
   specialSkills?: string[];
   review?: string;
   likes?: number;
+  /** 새 댓글 테이블 건수(API에서 병합) */
+  dcCommentCount?: number;
+  /** 목록 상단 노출(⭐ 오늘의 DB) */
+  isFeatured?: boolean;
   comments?: Comment[];
 }
 

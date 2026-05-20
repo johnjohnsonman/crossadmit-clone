@@ -6,6 +6,7 @@ import type { AdmissionRecord } from "@/lib/types";
 import { getAdmissionById } from "@/lib/supabase/admissions-service";
 import { rowToAdmissionRecord } from "@/lib/supabase/map";
 import StructuredData from "@/components/StructuredData";
+import CommentSection from "@/components/CommentSection";
 
 type PageProps = { params: Promise<{ id: string }> };
 
@@ -267,9 +268,8 @@ export default async function AdmissionDetailPage({ params }: PageProps) {
           </section>
         ) : null}
 
-        {/* 댓글 placeholder */}
-        <section className="mt-6 rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center shadow-sm">
-          <p className="text-sm text-gray-500">댓글 기능 준비 중입니다</p>
+        <section className="mt-6">
+          <CommentSection admissionId={id} />
         </section>
       </div>
     </main>

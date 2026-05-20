@@ -27,8 +27,10 @@ export interface Database {
           special_skills: Json | null;
           review: string | null;
           likes: number | null;
+          likes_count: number;
           comments: Json | null;
           published: boolean;
+          is_featured: boolean;
           pros: string[] | null;
           cons: string[] | null;
           tips: string[] | null;
@@ -59,8 +61,10 @@ export interface Database {
           special_skills?: Json | null;
           review?: string | null;
           likes?: number | null;
+          likes_count?: number;
           comments?: Json | null;
           published?: boolean;
+          is_featured?: boolean;
           pros?: string[] | null;
           cons?: string[] | null;
           tips?: string[] | null;
@@ -91,8 +95,10 @@ export interface Database {
           special_skills?: Json | null;
           review?: string | null;
           likes?: number | null;
+          likes_count?: number;
           comments?: Json | null;
           published?: boolean;
+          is_featured?: boolean;
           pros?: string[] | null;
           cons?: string[] | null;
           tips?: string[] | null;
@@ -105,6 +111,39 @@ export interface Database {
           student_handle?: string | null;
           topik_grade?: number | null;
           schools_applied?: Json | null;
+        };
+        Relationships: [];
+      };
+      comments: {
+        Row: {
+          id: string;
+          admission_id: string;
+          nickname: string;
+          password_hash: string;
+          content: string;
+          is_deleted: boolean;
+          ip_hash: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          admission_id: string;
+          nickname?: string;
+          password_hash: string;
+          content: string;
+          is_deleted?: boolean;
+          ip_hash?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          admission_id?: string;
+          nickname?: string;
+          password_hash?: string;
+          content?: string;
+          is_deleted?: boolean;
+          ip_hash?: string | null;
+          created_at?: string;
         };
         Relationships: [];
       };
@@ -250,3 +289,5 @@ export type UniversitiesRow =
   Database["public"]["Tables"]["universities"]["Row"];
 export type UniversityVideosRow =
   Database["public"]["Tables"]["university_videos"]["Row"];
+export type CommentsRow =
+  Database["public"]["Tables"]["comments"]["Row"];
