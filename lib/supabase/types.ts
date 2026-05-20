@@ -28,6 +28,15 @@ export interface Database {
           review: string | null;
           likes: number | null;
           comments: Json | null;
+          published: boolean;
+          pros: string[] | null;
+          cons: string[] | null;
+          tips: string[] | null;
+          summary: string | null;
+          raw_content: string | null;
+          visa_type: string | null;
+          language_proficiency: string | null;
+          topik_level: string | null;
         };
         Insert: {
           id: string;
@@ -47,6 +56,15 @@ export interface Database {
           review?: string | null;
           likes?: number | null;
           comments?: Json | null;
+          published?: boolean;
+          pros?: string[] | null;
+          cons?: string[] | null;
+          tips?: string[] | null;
+          summary?: string | null;
+          raw_content?: string | null;
+          visa_type?: string | null;
+          language_proficiency?: string | null;
+          topik_level?: string | null;
         };
         Update: {
           id?: string;
@@ -66,6 +84,15 @@ export interface Database {
           review?: string | null;
           likes?: number | null;
           comments?: Json | null;
+          published?: boolean;
+          pros?: string[] | null;
+          cons?: string[] | null;
+          tips?: string[] | null;
+          summary?: string | null;
+          raw_content?: string | null;
+          visa_type?: string | null;
+          language_proficiency?: string | null;
+          topik_level?: string | null;
         };
         Relationships: [];
       };

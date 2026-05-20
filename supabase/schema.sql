@@ -17,7 +17,16 @@ create table if not exists public.admissions (
   special_skills jsonb,
   review text,
   likes integer default 0,
-  comments jsonb
+  comments jsonb,
+  published boolean not null default true,
+  pros text[],
+  cons text[],
+  tips text[],
+  summary text,
+  raw_content text,
+  visa_type text,
+  language_proficiency text,
+  topik_level text
 );
 
 create index if not exists admissions_university_idx on public.admissions (university);

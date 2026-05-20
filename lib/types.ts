@@ -5,23 +5,32 @@ export interface AdmissionRecord {
   major: string;
   year: number;
   admissionType: string;
-  status: "합격" | "등록";
+  /** DB 값: 합격 / 등록 / 불합격 등 */
+  status: string;
   createdAt: Date;
   source: "web" | "generated";
+  /** 상세 후기 요약(신규 스키마) */
+  summary?: string;
+  rawContent?: string;
+  pros?: string[];
+  cons?: string[];
+  tips?: string[];
+  visaType?: string;
+  languageProficiency?: string;
+  topikLevel?: string;
+  published?: boolean;
+  nationality?: string | null;
   // 상세 정보
   username?: string;
-  testScores?: {
-    type: string; // "Test optional", "SAT", "ACT" 등
-    score?: string;
-  };
+  testScores?: Record<string, unknown> | null;
   gpa?: {
-    unweighted?: string; // "4.0/4.0"
-    weighted?: string; // "4.4/4.4"
+    unweighted?: string;
+    weighted?: string;
     ap?: string[];
     dualEnrollment?: string;
-  };
+  } | null;
   specialSkills?: string[];
-  review?: string; // 후기 및 학교 선택 이유
+  review?: string;
   likes?: number;
   comments?: Comment[];
 }
@@ -39,7 +48,7 @@ export interface AdmissionFilters {
   major?: string;
   year?: number;
   admissionType?: string;
-  status?: "합격" | "등록";
+  status?: string;
 }
 
 export interface ForumPost {
