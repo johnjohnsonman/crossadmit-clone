@@ -130,6 +130,7 @@ function applyCommonFilters(query: any, params: FilterParams): any {
   return q;
 }
 
+export async function getAdmissions(
   params: GetAdmissionsParams
 ): Promise<{ data: AdmissionsRow[]; total: number }> {
   const supabase = await createClient();
