@@ -45,6 +45,7 @@ function toInsertRow(item: ProcessedAdmission): AdmissionsInsert {
       original_language: item.original_language,
       relevance_score: item.relevance_score,
       source_url: item.source_url,
+      ...(item.published !== undefined ? { published: item.published } : {}),
     },
     gpa: null,
     special_skills: item.tips.length ? item.tips : null,

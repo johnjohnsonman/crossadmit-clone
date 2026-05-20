@@ -24,6 +24,13 @@ interface PopularComparison {
   percentage2: number;
 }
 
+interface VideoPreview {
+  id: string;
+  title: string;
+  thumbnail_url: string | null;
+  source_url: string;
+}
+
 // 샘플 데이터 (API에 데이터가 없을 때 사용)
 function generateSampleData(): CrossAdmitRecord[] {
   const comparisons: CrossAdmitRecord[] = [
@@ -60,6 +67,7 @@ type SortOption = "random" | "data-desc";
 export default function CrossAdmitPage() {
   const [comparisons, setComparisons] = useState<CrossAdmitRecord[]>([]);
   const [popularComparisons, setPopularComparisons] = useState<PopularComparison[]>([]);
+  const [latestVideos, setLatestVideos] = useState<VideoPreview[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOption, setSortOption] = useState<SortOption>("random");
   const [currentPage, setCurrentPage] = useState(1);
@@ -189,6 +197,20 @@ export default function CrossAdmitPage() {
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, sortOption]);
+
+  useEffect(() => {
+    const fetchLatestVideos = async () => {
+      try {
+        const response = await fetch("/api/videos?limit=4&offset=0");
+        const data = await response.json();
+        setLatestVideos((data.data || []) as VideoPreview[]);
+      } catch (error) {
+        console.error("[CrossAdmit Page] Error fetching latest videos:", error);
+      }
+    };
+
+    fetchLatestVideos();
+  }, []);
 
   // 구조화된 데이터 생성 (다국어 지원)
   const structuredData = {
@@ -439,6 +461,46 @@ export default function CrossAdmitPage() {
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      <div className="container mx-auto px-4 pb-8 md:pb-12">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg md:text-2xl font-bold text-gray-900">최신 유학 영상</h2>
+            <Link
+              href="/videos"
+              className="text-sm text-tea-600 hover:text-tea-700 font-medium"
+            >
+              더보기
+            </Link>
+          </div>
+          {latestVideos.length === 0 ? (
+            <p className="text-sm text-gray-500">아직 영상이 없습니다</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {latestVideos.map((video) => (
+                <a
+                  key={video.id}
+                  href={video.source_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow"
+                >
+                  <img
+                    src={video.thumbnail_url || "https://picsum.photos/640/360"}
+                    alt={video.title}
+                    className="w-full h-32 object-cover"
+                  />
+                  <div className="p-3">
+                    <p className="text-sm font-medium text-gray-900 line-clamp-2">
+                      {video.title}
+                    </p>
+                  </div>
+                </a>
+              ))}
+            </div>
+          )}
         </div>
       </div>
       </main>

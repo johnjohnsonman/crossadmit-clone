@@ -135,6 +135,60 @@ export interface Database {
         };
         Relationships: [];
       };
+      university_videos: {
+        Row: {
+          id: string;
+          video_id: string;
+          title: string;
+          description: string | null;
+          channel_name: string | null;
+          channel_id: string | null;
+          thumbnail_url: string | null;
+          view_count: number | null;
+          published_at: string | null;
+          duration_seconds: number | null;
+          source_url: string;
+          language: string | null;
+          content_type: string | null;
+          university_tags: string[] | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          video_id: string;
+          title: string;
+          description?: string | null;
+          channel_name?: string | null;
+          channel_id?: string | null;
+          thumbnail_url?: string | null;
+          view_count?: number | null;
+          published_at?: string | null;
+          duration_seconds?: number | null;
+          source_url: string;
+          language?: string | null;
+          content_type?: string | null;
+          university_tags?: string[] | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          video_id?: string;
+          title?: string;
+          description?: string | null;
+          channel_name?: string | null;
+          channel_id?: string | null;
+          thumbnail_url?: string | null;
+          view_count?: number | null;
+          published_at?: string | null;
+          duration_seconds?: number | null;
+          source_url?: string;
+          language?: string | null;
+          content_type?: string | null;
+          university_tags?: string[] | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
@@ -151,3 +205,5 @@ export type PipelineRunsRow =
   Database["public"]["Tables"]["pipeline_runs"]["Row"];
 export type UniversitiesRow =
   Database["public"]["Tables"]["universities"]["Row"];
+export type UniversityVideosRow =
+  Database["public"]["Tables"]["university_videos"]["Row"];

@@ -40,4 +40,6 @@ export interface ProcessedAdmission {
   source_author: string;
   original_language: string;
   relevance_score: number;
+  /** admissions.test_scores JSON에 포함 */
+  published?: boolean;
 }
