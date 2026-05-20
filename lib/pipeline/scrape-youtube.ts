@@ -21,9 +21,14 @@ export interface ScrapeYouTubeOptions {
 export interface ScrapeYouTubeResult {
   collected: number;
   processed: number;
+  /** university_videos upsert 성공 수 (주요 지표) */
   saved: number;
+  /** 이미 DB에 있어 스크랩하지 않은 수 (source_url 중복) */
   skipped: number;
+  /** university_videos 저장 실패 수 */
   failed: number;
+  /** admissions 테이블 저장 성공 수 (보조) */
+  admissions_saved: number;
   duration_ms: number;
   sample_titles: string[];
   errors?: string[];
@@ -72,18 +77,17 @@ export async function scrapeYouTubeStudyInKorea(
 ): Promise<ScrapeYouTubeResult> {
   const start = Date.now();
   const errors: string[] = [];
-  let skipped = 0;
-  let failed = 0;
 
   const videos = await fetchYouTubeStudyInKoreaVideos({ limit: options.limit });
   const urls = videos.map((v) => videoUrl(v.videoId));
   const existingUrls = await getExistingYouTubeSourceUrls(urls);
   const existingVideoUrls = await getExistingUniversityVideoSourceUrls(urls);
 
+  let skippedDuplicates = 0;
   const newVideos = videos.filter((v) => {
     const url = videoUrl(v.videoId);
     if (existingUrls.has(url) || existingVideoUrls.has(url)) {
-      skipped++;
+      skippedDuplicates++;
       return false;
     }
     return true;
@@ -127,42 +131,52 @@ export async function scrapeYouTubeStudyInKorea(
       });
       console.log(`[youtube] ok ${video.videoId} → ${uni ?? "Korea (General)"}`);
     } catch (error) {
-      failed++;
       const msg = error instanceof Error ? error.message : String(error);
-      errors.push(`${video.videoId}: ${msg}`);
-      console.error(`[youtube] fail ${video.videoId}:`, msg);
+      errors.push(`build ${video.videoId}: ${msg}`);
+      console.error(`[youtube] build fail ${video.videoId}:`, msg);
     }
   }
 
   const saveResult = await saveAdmissions(admissions);
   const videoSaveResult = await saveYouTubeVideosToTable(videoRows);
 
-  skipped += saveResult.skipped;
-  failed += saveResult.failed + videoSaveResult.failed;
-
   const result: ScrapeYouTubeResult = {
     collected: videos.length,
     processed: newVideos.length,
-    saved: saveResult.inserted,
-    skipped,
-    failed,
+    saved: videoSaveResult.saved,
+    skipped: skippedDuplicates,
+    failed: videoSaveResult.failed,
+    admissions_saved: saveResult.inserted,
     duration_ms: Date.now() - start,
     sample_titles: videos.slice(0, 5).map((v) => v.title),
     ...(errors.length > 0 ? { errors } : {}),
   };
 
+  const videoFailed = videoSaveResult.failed;
+  const videoSaved = videoSaveResult.saved;
+
   const status =
-    failed > 0 && saveResult.inserted === 0
+    videoFailed > 0 && videoSaved === 0
       ? "failed"
-      : failed > 0
+      : videoFailed > 0
         ? "partial"
         : "success";
 
   await recordPipelineRun({
     pipelineType: "youtube/studyinkorea",
     status,
-    recordsProcessed: saveResult.inserted,
-    errorMessage: errors.length > 0 ? errors.join("; ") : undefined,
+    recordsProcessed: videoSaved,
+    errorMessage:
+      errors.length > 0 || saveResult.failed > 0
+        ? [
+            errors.length > 0 ? errors.join("; ") : "",
+            saveResult.failed > 0
+              ? `admissions insert failed: ${saveResult.failed}`
+              : "",
+          ]
+            .filter(Boolean)
+            .join(" | ")
+        : undefined,
     metadata: result,
   });
 
