@@ -8,7 +8,6 @@ export default function AutoScrapeButton() {
     success: boolean;
     message?: string;
     scraped?: number;
-    generated?: number;
     total?: number;
     new?: number;
     error?: string;
@@ -48,7 +47,7 @@ export default function AutoScrapeButton() {
         자동 데이터 수집
       </h3>
       <p className="text-sm text-sage-600 mb-4">
-        crossadmit.com에서 최신 합격자 데이터를 수집하고 가상 데이터를 생성합니다.
+        crossadmit.com에서 최신 합격자 데이터를 수집합니다.
       </p>
       <button
         onClick={handleScrape}
@@ -77,7 +76,6 @@ export default function AutoScrapeButton() {
               </p>
               <div className="text-sm text-tea-700 space-y-1">
                 <p>웹 수집: {result.scraped}개</p>
-                <p>가상 생성: {result.generated}개</p>
                 <p>전체 데이터: {result.total}개</p>
                 <p>신규 추가: {result.new}개</p>
               </div>

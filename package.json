@@ -13,14 +13,16 @@
     "start": "next start",
     "lint": "next lint",
     "scrape": "ts-node --project tsconfig.scripts.json scripts/scraper.ts",
-    "generate": "ts-node --project tsconfig.scripts.json scripts/dataGenerator.ts",
     "scheduler": "ts-node --project tsconfig.scripts.json scripts/scheduler.ts",
+    "migrate": "tsx scripts/migrate-to-supabase.ts",
     "postinstall": "echo 'Build completed'"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@supabase/ssr": "^0.6.1",
+    "@supabase/supabase-js": "^2.49.8",
     "@types/node": "^24.10.2",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
@@ -38,6 +40,7 @@
     "eslint-config-next": "^16.0.8",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.18",
-    "ts-node": "^10.9.2"
+    "ts-node": "^10.9.2",
+    "tsx": "^4.19.4"
   }
 }
