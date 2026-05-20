@@ -5,7 +5,11 @@
     "esModuleInterop": true,
     "resolveJsonModule": true
   },
-  "include": ["scripts/**/*"]
+  "include": [
+    "scripts/**/*",
+    "lib/ai/**/*",
+    "lib/pipeline/**/*"
+  ]
 }
 
 
