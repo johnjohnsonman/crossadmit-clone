@@ -78,38 +78,44 @@ export default function CrossAdmitPage() {
       try {
         const response = await fetch("/api/cross-comparisons?stats=1");
         const data = await response.json();
+        const stats = (data.stats ?? []) as Array<{
+          id: string;
+          univ_name_win: string;
+          univ_name_lose: string;
+          count: number;
+          percentage_win: number;
+          percentage_lose: number;
+        }>;
 
-        if (data.success) {
-          if (data.comparisons && data.comparisons.length > 0) {
-            // API 데이터를 CrossAdmitRecord 형식으로 변환
-            const apiComparisons: CrossAdmitRecord[] = data.comparisons.map((c: any) => ({
+        if (stats.length > 0) {
+          const apiComparisons: CrossAdmitRecord[] = stats.map((s) => ({
+            id: s.id,
+            university1: s.univ_name_win,
+            university2: s.univ_name_lose,
+            totalAdmitted: s.count,
+            choseUniversity1: Math.round((s.count * s.percentage_win) / 100),
+            choseUniversity2: Math.round((s.count * s.percentage_lose) / 100),
+            percentage1: s.percentage_win,
+            percentage2: s.percentage_lose,
+            confidenceInterval1: {
+              min: Math.max(0, s.percentage_win - 5),
+              max: Math.min(100, s.percentage_win + 5),
+            },
+            confidenceInterval2: {
+              min: Math.max(0, s.percentage_lose - 5),
+              max: Math.min(100, s.percentage_lose + 5),
+            },
+          }));
+          setComparisons(apiComparisons);
+          setPopularComparisons(
+            apiComparisons.slice(0, 5).map((c) => ({
               id: c.id,
               university1: c.university1,
               university2: c.university2,
-              totalAdmitted: c.totalAdmitted,
-              choseUniversity1: c.choseUniversity1,
-              choseUniversity2: c.choseUniversity2,
               percentage1: c.percentage1,
               percentage2: c.percentage2,
-              confidenceInterval1: c.confidenceInterval1,
-              confidenceInterval2: c.confidenceInterval2,
-            }));
-            
-            setComparisons(apiComparisons);
-            
-            // 인기 비교 목록
-            const popular = apiComparisons.slice(0, 5).map((c) => ({
-              id: c.id,
-              university1: c.university1,
-              university2: c.university2,
-              percentage1: c.percentage1,
-              percentage2: c.percentage2,
-            }));
-            setPopularComparisons(popular);
-          } else {
-            setComparisons([]);
-            setPopularComparisons([]);
-          }
+            }))
+          );
         } else {
           setComparisons([]);
           setPopularComparisons([]);
@@ -121,7 +127,7 @@ export default function CrossAdmitPage() {
       }
     };
 
-    fetchData();
+    void fetchData();
   }, []);
 
   // 필터링 및 정렬
@@ -314,11 +320,13 @@ export default function CrossAdmitPage() {
                     </div>
                   </Link>
                 ))
+              ) : comparisons.length === 0 && !searchQuery.trim() ? (
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center text-gray-500">
+                  데이터 준비 중입니다.
+                </div>
               ) : (
-                <div className="rounded-lg border border-gray-200 bg-white p-8 text-center text-gray-500 shadow-sm">
-                  {comparisons.length === 0
-                    ? "데이터 준비 중입니다. MySQL 덤프 마이그레이션 후 비교 통계가 표시됩니다."
-                    : "검색 결과가 없습니다."}
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center text-gray-500">
+                  검색 결과가 없습니다.
                 </div>
               )}
             </div>

@@ -8,6 +8,10 @@ export type AutocompleteInputProps = {
   searchHints?: string[];
   value: string;
   onChange: (v: string) => void;
+  /** 목록에서 항목 선택 시 */
+  onSelect?: (v: string) => void;
+  /** 비동기 옵션 로드 (검색어 변경 시) */
+  loadOptions?: (q: string) => Promise<string[]>;
   placeholder?: string;
   className?: string;
   id?: string;
@@ -24,6 +28,8 @@ export default function AutocompleteInput({
   searchHints,
   value,
   onChange,
+  onSelect,
+  loadOptions,
   placeholder,
   className = "",
   id,
@@ -31,20 +37,37 @@ export default function AutocompleteInput({
 }: AutocompleteInputProps) {
   const [open, setOpen] = useState(false);
   const [highlight, setHighlight] = useState(0);
+  const [asyncOptions, setAsyncOptions] = useState<string[] | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!loadOptions) {
+      setAsyncOptions(null);
+      return;
+    }
+    let cancelled = false;
+    void loadOptions(value).then((list) => {
+      if (!cancelled) setAsyncOptions(list);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [value, loadOptions]);
+
+  const optionList = asyncOptions ?? options;
 
   const filtered = useMemo(() => {
     const q = normalize(value);
     if (!q) {
-      return options.slice(0, maxSuggestions).map((label, i) => ({
+      return optionList.slice(0, maxSuggestions).map((label, i) => ({
         label,
         index: i,
       }));
     }
     const out: { label: string; index: number }[] = [];
-    for (let i = 0; i < options.length; i++) {
-      const label = options[i];
+    for (let i = 0; i < optionList.length; i++) {
+      const label = optionList[i];
       const hint = searchHints?.[i] ?? "";
       const match =
         normalize(label).includes(q) ||
@@ -56,7 +79,7 @@ export default function AutocompleteInput({
       }
     }
     return out;
-  }, [options, searchHints, value, maxSuggestions]);
+  }, [optionList, searchHints, value, maxSuggestions]);
 
   useEffect(() => {
     function handleDoc(e: MouseEvent) {
@@ -74,6 +97,7 @@ export default function AutocompleteInput({
 
   function pick(label: string) {
     onChange(label);
+    onSelect?.(label);
     setOpen(false);
     inputRef.current?.blur();
   }

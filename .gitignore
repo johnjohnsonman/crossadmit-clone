@@ -34,6 +34,10 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# MySQL dumps (로컬 마이그레이션용)
+crossadmin_*.sql
+*.sql.dump
+
 # Data files (선택사항 - 배포 시 초기 데이터 포함하려면 주석 처리)
 # data/*.json
 # !data/all-admissions.json

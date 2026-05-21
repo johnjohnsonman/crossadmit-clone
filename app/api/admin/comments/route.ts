@@ -10,9 +10,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const admissionIdParam = request.nextUrl.searchParams.get("admission_id")?.trim();
-  const admissionId = admissionIdParam ? parseInt(admissionIdParam, 10) : NaN;
-  if (!admissionIdParam || Number.isNaN(admissionId)) {
+  const admissionId = request.nextUrl.searchParams.get("admission_id")?.trim();
+  if (!admissionId) {
     return NextResponse.json({ error: "admission_id 필수" }, { status: 400 });
   }
 

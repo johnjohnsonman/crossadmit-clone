@@ -11,13 +11,12 @@ import {
 import { useSearchParams } from "next/navigation";
 
 type AdminAdmission = {
-  id: string;
-  university: string;
-  major: string;
+  id: number;
+  title: string;
+  user_handle: string;
   year: number;
   published: boolean | null;
   likes_count?: number | null;
-  likes?: number | null;
   is_featured?: boolean | null;
 };
 
@@ -29,9 +28,8 @@ type AdminComment = {
   created_at: string;
 };
 
-function shortId(id: string): string {
-  if (!id || id.length <= 10) return id;
-  return `${id.slice(0, 6)}…${id.slice(-4)}`;
+function shortId(id: number): string {
+  return String(id);
 }
 
 function AdminInner() {
@@ -237,8 +235,8 @@ function AdminInner() {
               <thead className="border-b bg-gray-50">
                 <tr>
                   <th className="p-3 font-semibold">ID</th>
-                  <th className="p-3 font-semibold">학교</th>
-                  <th className="p-3 font-semibold">학과</th>
+                  <th className="p-3 font-semibold">제목</th>
+                  <th className="p-3 font-semibold">닉네임</th>
                   <th className="p-3 font-semibold">연도</th>
                   <th className="p-3 font-semibold">공개</th>
                   <th className="p-3 font-semibold">공감수</th>
@@ -250,9 +248,7 @@ function AdminInner() {
               <tbody>
                 {rows.map((r) => {
                   const lc =
-                    typeof r.likes_count === "number"
-                      ? r.likes_count
-                      : (r.likes ?? 0);
+                    typeof r.likes_count === "number" ? r.likes_count : 0;
                   const lcStr =
                     likesDraft[r.id] !== undefined
                       ? likesDraft[r.id]
@@ -270,8 +266,8 @@ function AdminInner() {
                         <td className="max-w-[7rem] p-3 font-mono text-xs">
                           {shortId(r.id)}
                         </td>
-                        <td className="p-3">{r.university}</td>
-                        <td className="p-3">{r.major}</td>
+                        <td className="p-3 max-w-xs truncate">{r.title}</td>
+                        <td className="p-3">{r.user_handle}</td>
                         <td className="p-3">{r.year}</td>
                         <td className="p-3">
                           <label className="inline-flex cursor-pointer items-center gap-2">

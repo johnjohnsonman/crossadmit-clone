@@ -11,14 +11,14 @@ import {
 
 export type DcComment = {
   id: string;
-  admission_id: string;
+  admission_id: number;
   nickname: string;
   content: string;
   created_at: string;
 };
 
 export type Props = {
-  admissionId: string;
+  admissionId: number | string;
 };
 
 function formatRelativeTime(iso: string): string {
@@ -33,7 +33,8 @@ function formatRelativeTime(iso: string): string {
   return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
 }
 
-export default function CommentSection({ admissionId }: Props) {
+export default function CommentSection({ admissionId: admissionIdProp }: Props) {
+  const admissionId = String(admissionIdProp);
   const [comments, setComments] = useState<DcComment[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadErr, setLoadErr] = useState<string | null>(null);

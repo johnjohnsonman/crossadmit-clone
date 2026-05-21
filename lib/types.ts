@@ -1,70 +1,57 @@
-export interface AdmissionRecord {
-  id: string;
-  university: string;
-  universityEn: string;
-  major: string;
-  year: number;
+/** UI/API 레이어 (camelCase) */
+export interface AdmissionSchoolRecord {
+  id: number;
+  admissionId: number;
+  univId: number;
+  deptId: number;
+  univName: string;
+  deptName: string;
+  isApply: boolean;
+  isAccept: boolean;
+  isRegist: boolean;
+  isGrad: boolean;
   admissionType: string;
-  /** DB 값: 합격 / 등록 / 불합격 등 */
-  status: string;
-  createdAt: Date;
-  source: string;
-  /** 상세 후기 요약(신규 스키마) */
-  summary?: string;
-  rawContent?: string;
-  pros?: string[];
-  cons?: string[];
-  tips?: string[];
-  visaType?: string;
-  languageProficiency?: string;
-  /** 합격DB 공개 여부 */
-  published?: boolean;
-  /** 관리자 검증(사용자 제출) */
-  verified?: boolean;
-  topikGrade?: number | null;
-  studentHandle?: string | null;
-  /** 다중 지원 학교 */
-  schoolsApplied?: Array<{
-    university: string;
-    university_en: string;
-    major: string;
-    status: string;
-  }>;
-  topikLevel?: string;
-  nationality?: string | null;
-  // 상세 정보
-  username?: string;
-  testScores?: Record<string, unknown> | null;
-  gpa?: {
-    unweighted?: string;
-    weighted?: string;
-    ap?: string[];
-    dualEnrollment?: string;
-  } | null;
-  specialSkills?: string[];
   review?: string;
-  likes?: number;
-  /** 새 댓글 테이블 건수(API에서 병합) */
-  dcCommentCount?: number;
-  /** 목록 상단 노출(⭐ 오늘의 DB) */
-  isFeatured?: boolean;
-  comments?: Comment[];
+  thumbnail?: string;
 }
 
-export interface Comment {
-  id: string;
-  author: string;
-  content: string;
+export interface CrossComparisonRecord {
+  id: number;
+  admissionId: number;
+  univIdWin: number;
+  univIdLose: number;
+  univNameWin: string;
+  univNameLose: string;
+  deptNameWin: string;
+  deptNameLose: string;
+  count?: number;
+}
+
+export interface AdmissionRecord {
+  id: number;
+  userHandle: string;
+  year: number;
+  yearEnd?: number;
+  title: string;
+  inputScore?: string;
+  inputGpa?: string;
+  inputSpecialty?: string;
+  viewCount: number;
+  likesCount: number;
+  isVerified: boolean;
+  isFeatured: boolean;
+  published: boolean;
+  source: string;
   createdAt: Date;
-  isAnonymous?: boolean;
+  admissionSchools: AdmissionSchoolRecord[];
+  crossComparisons?: CrossComparisonRecord[];
+  dcCommentCount?: number;
 }
 
 export interface AdmissionFilters {
-  university?: string;
-  major?: string;
   year?: number;
   admissionType?: string;
-  status?: string;
+  search?: string;
 }
 
 export interface ForumPost {
@@ -88,11 +75,9 @@ export interface FamousAlumni {
 }
 
 export interface UniversityInfo {
-  id: string;
+  id: number;
   name: string;
   nameEn: string;
-  location: string;
-  type: "국립" | "사립" | "외국";
-  images: string[];
-  description: string;
+  country: string;
+  logo?: string;
 }

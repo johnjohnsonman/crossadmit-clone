@@ -1,182 +1,262 @@
-export type University = {
-  id: number
-  country: string
-  name_kr: string
-  name_en: string
-  logo: string
-  is_active: boolean
-  continent?: string
-  address?: string
-  sort_order?: number
-  created_at?: string
-}
-
-export type UniversityDepartment = {
-  id: number
-  univ_id: number
-  dept_name: string
-  dept_name_en: string
-  is_active?: boolean
-}
-
-export type Admission = {
-  id: number
-  original_user_id: number
-  user_handle: string
-  year: number
-  year_end: number
-  title: string
-  input_score: string
-  input_gpa: string
-  input_specialty: string
-  view_count: number
-  likes_count: number
-  is_verified: boolean
-  is_featured: boolean
-  published: boolean
-  source: string
-  created_at: string
-  admission_schools?: AdmissionSchool[]
-  cross_comparisons?: CrossComparison[]
-}
-
-export type AdmissionSchool = {
-  id: number
-  admission_id: number
-  univ_id: number
-  dept_id: number
-  univ_name: string
-  dept_name: string
-  is_apply: boolean
-  is_accept: boolean
-  is_regist: boolean
-  is_grad: boolean
-  admission_type: string
-  review: string
-  thumbnail: string
-  is_active?: boolean
-  created_at?: string | null
-}
-
-export type CrossComparison = {
-  id: number
-  admission_id: number
-  univ_id_win: number
-  univ_id_lose: number
-  univ_name_win: string
-  univ_name_lose: string
-  dept_name_win: string
-  dept_name_lose: string
-  dept_id_win?: number
-  dept_id_lose?: number
-  count?: number
-}
-
-export type CrossComparisonStat = {
-  univ_id_win: number
-  univ_id_lose: number
-  univ_name_win: string
-  univ_name_lose: string
-  dept_name_win: string
-  dept_name_lose: string
-  dept_id_win?: number
-  dept_id_lose?: number
-  count: number
-  percentage_win: number
-}
-
-export type CommentRow = {
-  id: string
-  admission_id: number
-  nickname: string
-  content: string
-  created_at: string
-}
-
 export type Json =
   | string
   | number
   | boolean
   | null
   | { [key: string]: Json | undefined }
-  | Json[]
+  | Json[];
 
+/** 도메인 타입 (앱·API 공용) */
+export type University = {
+  id: number;
+  country: string;
+  name_kr: string;
+  name_en: string;
+  logo: string;
+  is_active: boolean;
+};
+
+export type UniversityDepartment = {
+  id: number;
+  univ_id: number;
+  dept_name: string;
+  dept_name_en: string;
+};
+
+export type Admission = {
+  id: number;
+  original_user_id: number;
+  user_handle: string;
+  year: number;
+  year_end: number;
+  title: string;
+  input_score: string;
+  input_gpa: string;
+  input_specialty: string;
+  view_count: number;
+  likes_count: number;
+  is_verified: boolean;
+  is_featured: boolean;
+  published: boolean;
+  source: string;
+  created_at: string;
+  admission_schools?: AdmissionSchool[];
+};
+
+export type AdmissionSchool = {
+  id: number;
+  admission_id: number;
+  univ_id: number;
+  dept_id: number;
+  univ_name: string;
+  dept_name: string;
+  is_apply: boolean;
+  is_accept: boolean;
+  is_regist: boolean;
+  is_grad: boolean;
+  admission_type: string;
+  review: string;
+  thumbnail: string;
+};
+
+export type CrossComparison = {
+  id: number;
+  admission_id: number;
+  univ_id_win: number;
+  univ_id_lose: number;
+  univ_name_win: string;
+  univ_name_lose: string;
+  dept_name_win: string;
+  dept_name_lose: string;
+  count?: number;
+};
+
+export type Comment = {
+  id: string;
+  admission_id: number;
+  nickname: string;
+  password_hash: string;
+  content: string;
+  is_deleted: boolean;
+  ip_hash: string | null;
+  created_at: string;
+};
+
+/** Supabase generated-style Database */
 export interface Database {
   public: {
     Tables: {
       universities: {
-        Row: University
-        Insert: Partial<University> & Pick<University, "id" | "name_kr" | "name_en">
-        Update: Partial<University>
-        Relationships: []
-      }
+        Row: University;
+        Insert: Partial<University> & Pick<University, "country" | "name_kr" | "name_en">;
+        Update: Partial<University>;
+        Relationships: [];
+      };
       university_departments: {
-        Row: UniversityDepartment
-        Insert: Partial<UniversityDepartment> & Pick<UniversityDepartment, "id" | "univ_id" | "dept_name">
-        Update: Partial<UniversityDepartment>
-        Relationships: []
-      }
+        Row: UniversityDepartment;
+        Insert: Partial<UniversityDepartment> & Pick<UniversityDepartment, "univ_id" | "dept_name">;
+        Update: Partial<UniversityDepartment>;
+        Relationships: [];
+      };
       admissions: {
-        Row: Admission
-        Insert: Omit<Admission, "admission_schools" | "cross_comparisons"> & {
-          id?: number
-        }
-        Update: Partial<Admission>
-        Relationships: []
-      }
+        Row: Omit<Admission, "admission_schools">;
+        Insert: Partial<Omit<Admission, "id" | "admission_schools">> &
+          Pick<Admission, "user_handle" | "year" | "title">;
+        Update: Partial<Omit<Admission, "admission_schools">>;
+        Relationships: [];
+      };
       admission_schools: {
-        Row: AdmissionSchool
-        Insert: Omit<AdmissionSchool, "id"> & { id?: number }
-        Update: Partial<AdmissionSchool>
-        Relationships: []
-      }
+        Row: AdmissionSchool;
+        Insert: Partial<AdmissionSchool> &
+          Pick<AdmissionSchool, "admission_id" | "univ_name" | "dept_name">;
+        Update: Partial<AdmissionSchool>;
+        Relationships: [];
+      };
       cross_comparisons: {
-        Row: CrossComparison & { dept_id_win?: number; dept_id_lose?: number; is_active?: boolean }
-        Insert: Partial<CrossComparison>
-        Update: Partial<CrossComparison>
-        Relationships: []
-      }
+        Row: CrossComparison;
+        Insert: Partial<CrossComparison> &
+          Pick<
+            CrossComparison,
+            | "admission_id"
+            | "univ_id_win"
+            | "univ_id_lose"
+            | "univ_name_win"
+            | "univ_name_lose"
+            | "dept_name_win"
+            | "dept_name_lose"
+          >;
+        Update: Partial<CrossComparison>;
+        Relationships: [];
+      };
       comments: {
-        Row: CommentRow & { password_hash: string; is_deleted: boolean; ip_hash: string | null }
+        Row: Comment;
         Insert: {
-          admission_id: number
-          nickname?: string
-          password_hash: string
-          content: string
-          is_deleted?: boolean
-          ip_hash?: string | null
-        }
-        Update: Partial<CommentRow>
-        Relationships: []
-      }
+          id?: string;
+          admission_id: number;
+          nickname?: string;
+          password_hash: string;
+          content: string;
+          is_deleted?: boolean;
+          ip_hash?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Comment>;
+        Relationships: [];
+      };
       pipeline_runs: {
         Row: {
-          id: string
-          pipeline_type: string
-          status: string
-          started_at: string
-          completed_at: string | null
-          records_processed: number | null
-          error_message: string | null
-          metadata: Json | null
-        }
-        Insert: Record<string, unknown>
-        Update: Record<string, unknown>
-        Relationships: []
-      }
+          id: string;
+          pipeline_type: string;
+          status: string;
+          started_at: string;
+          completed_at: string | null;
+          records_processed: number | null;
+          error_message: string | null;
+          metadata: Json | null;
+        };
+        Insert: {
+          id?: string;
+          pipeline_type: string;
+          status: string;
+          started_at?: string;
+          completed_at?: string | null;
+          records_processed?: number | null;
+          error_message?: string | null;
+          metadata?: Json | null;
+        };
+        Update: {
+          id?: string;
+          pipeline_type?: string;
+          status?: string;
+          started_at?: string;
+          completed_at?: string | null;
+          records_processed?: number | null;
+          error_message?: string | null;
+          metadata?: Json | null;
+        };
+        Relationships: [];
+      };
       university_videos: {
-        Row: Record<string, unknown>
-        Insert: Record<string, unknown>
-        Update: Record<string, unknown>
-        Relationships: []
-      }
-    }
-    Views: Record<string, never>
-    Functions: Record<string, never>
-    Enums: Record<string, never>
-    CompositeTypes: Record<string, never>
-  }
+        Row: {
+          id: string;
+          video_id: string;
+          title: string;
+          description: string | null;
+          channel_name: string | null;
+          channel_id: string | null;
+          thumbnail_url: string | null;
+          view_count: number | null;
+          published_at: string | null;
+          duration_seconds: number | null;
+          source_url: string;
+          language: string | null;
+          content_type: string | null;
+          university_tags: string[] | null;
+          university_tags_search?: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          video_id: string;
+          title: string;
+          description?: string | null;
+          channel_name?: string | null;
+          channel_id?: string | null;
+          thumbnail_url?: string | null;
+          view_count?: number | null;
+          published_at?: string | null;
+          duration_seconds?: number | null;
+          source_url: string;
+          language?: string | null;
+          content_type?: string | null;
+          university_tags?: string[] | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          video_id?: string;
+          title?: string;
+          description?: string | null;
+          channel_name?: string | null;
+          channel_id?: string | null;
+          thumbnail_url?: string | null;
+          view_count?: number | null;
+          published_at?: string | null;
+          duration_seconds?: number | null;
+          source_url?: string;
+          language?: string | null;
+          content_type?: string | null;
+          university_tags?: string[] | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+    };
+    Views: Record<string, never>;
+    Functions: Record<string, never>;
+    Enums: Record<string, never>;
+    CompositeTypes: Record<string, never>;
+  };
 }
 
-export type AdmissionsInsert =
-  Database["public"]["Tables"]["admissions"]["Insert"];
+export type AdmissionsRow = Database["public"]["Tables"]["admissions"]["Row"];
+export type AdmissionsInsert = Database["public"]["Tables"]["admissions"]["Insert"];
+export type AdmissionSchoolRow =
+  Database["public"]["Tables"]["admission_schools"]["Row"];
+export type AdmissionSchoolInsert =
+  Database["public"]["Tables"]["admission_schools"]["Insert"];
+export type CrossComparisonRow =
+  Database["public"]["Tables"]["cross_comparisons"]["Row"];
+export type CrossComparisonInsert =
+  Database["public"]["Tables"]["cross_comparisons"]["Insert"];
+export type UniversityRow = Database["public"]["Tables"]["universities"]["Row"];
+export type UniversityDepartmentRow =
+  Database["public"]["Tables"]["university_departments"]["Row"];
+export type CommentsRow = Database["public"]["Tables"]["comments"]["Row"];
+export type PipelineRunsRow =
+  Database["public"]["Tables"]["pipeline_runs"]["Row"];
+export type UniversityVideosRow =
+  Database["public"]["Tables"]["university_videos"]["Row"];
+
+/** admissions + nested schools (Supabase select) */
+export type AdmissionWithSchools = Admission;

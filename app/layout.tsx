@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import FloatingAdmissions from "@/components/FloatingAdmissions";
-import RegistrationTicker from "@/components/RegistrationTicker";
 import Footer from "@/components/Footer";
 import StructuredData from "@/components/StructuredData";
 
@@ -152,7 +151,6 @@ export default function RootLayout({
       </head>
       <body className="antialiased">
         <Navbar />
-        <RegistrationTicker />
         <FloatingAdmissions />
         {children}
         <Footer />

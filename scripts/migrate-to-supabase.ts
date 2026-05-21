@@ -1,6 +1,3 @@
-/**
- * @deprecated MySQL 덤프 마이그레이션은 scripts/migrate-mysql-dump.py 를 사용하세요.
- */
 import { createClient } from "@supabase/supabase-js";
 import fs from "fs";
 import path from "path";
@@ -28,68 +25,101 @@ function loadEnvLocal(): void {
   }
 }
 
-function toInsertRow(record: AdmissionRecord, numericId: number): AdmissionsInsert {
+function toInsertRow(record: AdmissionRecord): AdmissionsInsert {
   const createdAt =
     record.createdAt instanceof Date
       ? record.createdAt.toISOString()
       : new Date(record.createdAt).toISOString();
 
   return {
-    id: numericId,
-    original_user_id: 0,
-    user_handle: record.username ?? record.studentHandle ?? "익명",
+    id: record.id,
+    university: record.university,
+    university_en: record.universityEn,
+    major: record.major,
     year: record.year,
-    year_end: record.year,
-    title: `${record.university} ${record.major}`.trim(),
-    input_score: "",
-    input_gpa: record.gpa != null ? String(record.gpa) : "",
-    input_specialty: record.review ?? "",
-    view_count: 0,
-    likes_count: record.likes ?? 0,
-    is_verified: record.verified ?? false,
-    is_featured: record.isFeatured ?? false,
-    published: record.published !== false,
-    source: record.source ?? "json",
+    admission_type: record.admissionType,
+    status: record.status,
     created_at: createdAt,
+    source: record.source,
+    nationality: (record as AdmissionRecord & { nationality?: string }).nationality ?? null,
+    username: record.username ?? null,
+    test_scores: record.testScores ?? null,
+    gpa: record.gpa ?? null,
+    special_skills: record.specialSkills ?? null,
+    review: record.review ?? null,
+    likes: record.likes ?? 0,
+    comments: record.comments ?? null,
   };
 }
 
 async function main() {
   loadEnvLocal();
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) {
-    console.error("NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY 필요");
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    console.error(
+      "오류: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY가 .env.local에 설정되어 있어야 합니다."
+    );
     process.exit(1);
   }
 
   if (!fs.existsSync(DATA_PATH)) {
-    console.error(`데이터 파일 없음: ${DATA_PATH}`);
+    console.error(
+      `오류: ${DATA_PATH} 파일이 없습니다.\n먼저 스크래핑을 실행하거나 기존 데이터 파일을 data/ 폴더에 배치하세요.`
+    );
     process.exit(1);
   }
 
-  const raw = JSON.parse(fs.readFileSync(DATA_PATH, "utf-8")) as AdmissionRecord[];
-  const supabase = createClient<Database>(url, key);
+  const raw = fs.readFileSync(DATA_PATH, "utf-8");
+  const allRecords: AdmissionRecord[] = JSON.parse(raw);
+
+  const records = allRecords.filter((r) => r.source !== "generated");
+  const skipped = allRecords.length - records.length;
+
+  console.log(`전체 레코드: ${allRecords.length}`);
+  console.log(`제외 (source=generated): ${skipped}`);
+  console.log(`마이그레이션 대상: ${records.length}`);
+
+  if (records.length === 0) {
+    console.log("마이그레이션할 레코드가 없습니다.");
+    process.exit(0);
+  }
+
+  const supabase = createClient<Database>(supabaseUrl, serviceRoleKey);
 
   let inserted = 0;
-  for (let i = 0; i < raw.length; i += BATCH_SIZE) {
-    const batch = raw.slice(i, i + BATCH_SIZE);
-    const rows = batch.map((r, j) => toInsertRow(r, i + j + 1));
+  let failed = 0;
+
+  for (let i = 0; i < records.length; i += BATCH_SIZE) {
+    const batch = records.slice(i, i + BATCH_SIZE);
+    const rows = batch.map(toInsertRow);
+    const batchNum = Math.floor(i / BATCH_SIZE) + 1;
+    const totalBatches = Math.ceil(records.length / BATCH_SIZE);
+
     const { error } = await supabase.from("admissions").upsert(rows, {
       onConflict: "id",
-      ignoreDuplicates: true,
     });
+
     if (error) {
-      console.error("batch error:", error.message);
+      console.error(`배치 ${batchNum}/${totalBatches} 실패:`, error.message);
+      failed += batch.length;
     } else {
-      inserted += rows.length;
+      inserted += batch.length;
+      console.log(
+        `배치 ${batchNum}/${totalBatches} 완료 (${inserted}/${records.length})`
+      );
     }
   }
 
-  console.log(`완료: ${inserted}건 처리 (중복은 무시)`);
+  console.log("\n--- 마이그레이션 완료 ---");
+  console.log(`성공: ${inserted}`);
+  console.log(`실패: ${failed}`);
+  console.log(`제외 (generated): ${skipped}`);
 }
 
-main().catch((e) => {
-  console.error(e);
+main().catch((err) => {
+  console.error("마이그레이션 중 오류:", err);
   process.exit(1);
 });

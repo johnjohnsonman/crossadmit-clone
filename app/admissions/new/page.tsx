@@ -2,18 +2,23 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
-import ApiAutocompleteInput from "@/components/ApiAutocompleteInput";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
+import AutocompleteInput from "@/components/AutocompleteInput";
+import { KOREAN_MAJORS } from "@/lib/data/korean-majors";
+import {
+  KOREAN_UNIVERSITIES,
+  resolveUniversityInput,
+} from "@/lib/data/korean-universities";
 
 type SchoolStatus = "합격" | "등록" | "불합격";
 
 type SchoolRow = {
   id: string;
-  univId: number;
-  deptId: number;
   universityInput: string;
   majorInput: string;
   status: SchoolStatus;
+  univId: number;
+  deptId: number;
 };
 
 function newRow(): SchoolRow {
@@ -23,11 +28,11 @@ function newRow(): SchoolRow {
       : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
   return {
     id,
-    univId: 0,
-    deptId: 0,
     universityInput: "",
     majorInput: "",
     status: "합격",
+    univId: 0,
+    deptId: 0,
   };
 }
 
@@ -61,6 +66,9 @@ const TOPIK_OPTIONS = [
   { value: "5", label: "5급" },
   { value: "6", label: "6급" },
 ];
+
+const uniLabels = KOREAN_UNIVERSITIES.map((u) => u.nameKo);
+const uniHints = KOREAN_UNIVERSITIES.map((u) => u.nameEn);
 
 const inputBase =
   "block w-full rounded-lg border border-[#ddd] bg-white px-3 py-2 text-sm text-gray-900 shadow-sm " +
@@ -108,61 +116,72 @@ export default function AdmissionNewPage() {
   const [formError, setFormError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  const fetchUniversities = useCallback(async (query: string) => {
-    const q = encodeURIComponent(query.trim());
-    const res = await fetch(`/api/universities?country=kr&search=${q}`);
-    if (!res.ok) return [];
-    const data = (await res.json()) as {
-      universities?: { id: number; name_kr: string; name_en?: string }[];
-    };
-    return (data.universities ?? []).map((u) => ({
-      id: u.id,
-      label: u.name_kr || u.name_en || String(u.id),
-    }));
-  }, []);
-
-  const fetchDepartments = useCallback(
-    async (univId: number, query: string) => {
-      if (!univId) return [];
-      const q = encodeURIComponent(query.trim());
-      const res = await fetch(
-        `/api/universities?univ_id=${univId}&dept_search=${q}`
-      );
-      if (!res.ok) return [];
-      const data = (await res.json()) as {
-        departments?: { id: number; dept_name: string }[];
-      };
-      return (data.departments ?? []).map((d) => ({
-        id: d.id,
-        label: d.dept_name,
-      }));
-    },
-    []
-  );
+  const [deptOptions, setDeptOptions] = useState<Record<string, string[]>>({});
 
   const schoolsPayload = useMemo(() => {
     const list: {
       univ_id: number;
       dept_id: number;
-      university: string;
-      major: string;
-      status: string;
+      univ_name: string;
+      dept_name: string;
+      status: SchoolStatus;
     }[] = [];
     for (const r of rows) {
-      const univ = r.universityInput.trim();
-      const major = r.majorInput.trim();
-      if (!univ && !major) continue;
-      if (!univ || !major) return { ok: false as const, list };
+      const { nameKo } = resolveUniversityInput(r.universityInput);
+      const univName = r.universityInput.trim() || nameKo;
+      const deptName = r.majorInput.trim();
+      if (!univName && !deptName) continue;
+      if (!univName || !deptName) return { ok: false as const, list };
       list.push({
         univ_id: r.univId,
         dept_id: r.deptId,
-        university: univ,
-        major,
+        univ_name: univName,
+        dept_name: deptName,
         status: r.status,
       });
     }
     return { ok: true as const, list };
   }, [rows]);
+
+  async function loadUniversities(q: string): Promise<string[]> {
+    if (!q.trim()) return uniLabels;
+    try {
+      const res = await fetch(
+        `/api/universities?search=${encodeURIComponent(q.trim())}`
+      );
+      const data = await res.json();
+      const names = (data.universities ?? []).map(
+        (u: { name_kr: string }) => u.name_kr
+      );
+      return names.length > 0 ? names : uniLabels;
+    } catch {
+      return uniLabels;
+    }
+  }
+
+  async function onUniversityPick(rowId: string, name: string) {
+    updateRow(rowId, { universityInput: name, univId: 0, deptId: 0 });
+    try {
+      const res = await fetch(
+        `/api/universities?search=${encodeURIComponent(name.trim())}`
+      );
+      const data = await res.json();
+      const match = (data.universities ?? []).find(
+        (u: { name_kr: string; id: number }) => u.name_kr === name
+      );
+      if (match) {
+        updateRow(rowId, { univId: match.id });
+        const dRes = await fetch(`/api/universities?univ_id=${match.id}`);
+        const dData = await dRes.json();
+        const opts = (dData.departments ?? []).map(
+          (d: { dept_name: string }) => d.dept_name
+        );
+        setDeptOptions((prev) => ({ ...prev, [rowId]: opts }));
+      }
+    } catch {
+      /* fallback static lists */
+    }
+  }
 
   useEffect(() => {
     if (!success) return;
@@ -213,32 +232,16 @@ export default function AdmissionNewPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          schools: schoolsPayload.list,
           year: parseInt(year, 10),
-          user_handle: nickname.trim() || "익명",
-          input_score: [
-            csatTotal && `총점 ${csatTotal}`,
-            csatKorean && `국어 ${csatKorean}`,
-            csatMath && `수학 ${csatMath}`,
-            csatEnglish && `영어 ${csatEnglish}`,
-            csatInquiry && `탐구 ${csatInquiry}`,
-            satAct.trim(),
-            englishTest.trim(),
-          ]
-            .filter(Boolean)
-            .join("\n"),
+          admission_type: admissionType,
+          nickname: nickname.trim(),
+          input_score: csatTotal.trim(),
           input_gpa: gpaGrade.trim(),
-          input_specialty: review.trim(),
-          schools: schoolsPayload.list.map((s) => ({
-            univ_id: s.univ_id,
-            dept_id: s.dept_id,
-            univ_name: s.university,
-            dept_name: s.major,
-            is_apply: s.status !== "불합격",
-            is_accept: s.status === "합격" || s.status === "등록",
-            is_regist: s.status === "등록",
-            admission_type: admissionType,
-            review: review.trim(),
-          })),
+          input_specialty: [satAct.trim(), englishTest.trim()]
+            .filter(Boolean)
+            .join(" / "),
+          review: review.trim(),
         }),
       });
       const data = (await res.json()) as { success?: boolean; error?: string };
@@ -321,10 +324,11 @@ export default function AdmissionNewPage() {
                         <label className={labelClass} htmlFor={`u-${row.id}`}>
                           학교명
                         </label>
-                        <ApiAutocompleteInput
+                        <AutocompleteInput
                           id={`u-${row.id}`}
+                          options={uniLabels}
+                          searchHints={uniHints}
                           value={row.universityInput}
-                          fetchOptions={fetchUniversities}
                           onChange={(v) =>
                             updateRow(row.id, {
                               universityInput: v,
@@ -332,15 +336,9 @@ export default function AdmissionNewPage() {
                               deptId: 0,
                             })
                           }
-                          onSelect={(item) =>
-                            updateRow(row.id, {
-                              universityInput: item.label,
-                              univId: item.id,
-                              deptId: 0,
-                              majorInput: "",
-                            })
-                          }
-                          placeholder="대학교 검색"
+                          onSelect={(v) => void onUniversityPick(row.id, v)}
+                          loadOptions={loadUniversities}
+                          placeholder="검색 또는 직접 입력"
                           className={inputClass}
                         />
                       </div>
@@ -348,24 +346,18 @@ export default function AdmissionNewPage() {
                         <label className={labelClass} htmlFor={`m-${row.id}`}>
                           학과
                         </label>
-                        <ApiAutocompleteInput
+                        <AutocompleteInput
                           id={`m-${row.id}`}
+                          options={
+                            deptOptions[row.id]?.length
+                              ? deptOptions[row.id]
+                              : KOREAN_MAJORS
+                          }
                           value={row.majorInput}
-                          fetchOptions={(q) => fetchDepartments(row.univId, q)}
                           onChange={(v) =>
                             updateRow(row.id, { majorInput: v, deptId: 0 })
                           }
-                          onSelect={(item) =>
-                            updateRow(row.id, {
-                              majorInput: item.label,
-                              deptId: item.id,
-                            })
-                          }
-                          placeholder={
-                            row.univId
-                              ? "학과 검색"
-                              : "학교 선택 후 학과 검색"
-                          }
+                          placeholder="검색 또는 직접 입력"
                           className={inputClass}
                         />
                       </div>

@@ -2,15 +2,8 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { AdmissionApiRecord } from "@/lib/supabase/api-map";
-
-const SCHOOL_SEARCH: Record<string, string> = {
-  snu: "서울대",
-  yonsei: "연세",
-  korea: "고려",
-  kaist: "KAIST",
-  skku: "성균관",
-};
+import type { AdmissionRecord } from "@/lib/types";
+import { schoolDisplayLines } from "@/lib/supabase/map";
 
 const PAGE_SIZE = 20;
 const YEARS = [2025, 2024, 2023, 2022, 2021, 2020, 2019];
@@ -23,13 +16,25 @@ const selectClass =
 const toggleBtn =
   "rounded-lg border px-4 py-2 text-sm font-medium transition-colors ";
 
+function dcCommentTotal(record: AdmissionRecord): number {
+  return record.dcCommentCount ?? 0;
+}
+
+const SCHOOL_SEARCH: Record<string, string> = {
+  snu: "서울대",
+  yonsei: "연세",
+  korea: "고려",
+  kaist: "KAIST",
+  skku: "성균관",
+};
+
 const LIKED_LS = "adliked:";
 
 function AdmissionLikeButton({
   admissionId,
   initialCount,
 }: {
-  admissionId: string;
+  admissionId: number;
   initialCount: number;
 }) {
   const [count, setCount] = useState(initialCount);
@@ -42,7 +47,7 @@ function AdmissionLikeButton({
 
   useEffect(() => {
     try {
-      setLiked(localStorage.getItem(LIKED_LS + admissionId) === "1");
+      setLiked(localStorage.getItem(LIKED_LS + String(admissionId)) === "1");
     } catch {
       setLiked(false);
     }
@@ -67,7 +72,7 @@ function AdmissionLikeButton({
       else setCount(prev);
       setLiked(true);
       try {
-        localStorage.setItem(LIKED_LS + admissionId, "1");
+        localStorage.setItem(LIKED_LS + String(admissionId), "1");
       } catch {
         /* ignore */
       }
@@ -92,13 +97,6 @@ function AdmissionLikeButton({
       👍 공감 {count}
     </button>
   );
-}
-
-function splitUniversities(text: string): string[] {
-  return text
-    .split(/,\s*/)
-    .map((s) => s.trim())
-    .filter(Boolean);
 }
 
 function statusBadgeClasses(status: string): string {
@@ -157,7 +155,7 @@ function PageNumbers({
 }
 
 export default function AdmissionsDbList() {
-  const [records, setRecords] = useState<AdmissionApiRecord[]>([]);
+  const [records, setRecords] = useState<AdmissionRecord[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -178,7 +176,10 @@ export default function AdmissionsDbList() {
         offset: String(offset),
         sort,
       });
-      if (school) params.set("search", SCHOOL_SEARCH[school] ?? school);
+      if (school && school !== "other") {
+        const q = SCHOOL_SEARCH[school];
+        if (q) params.set("search", q);
+      }
       if (year) params.set("year", year);
       if (admissionType) params.set("admission_type", admissionType);
 
@@ -354,17 +355,21 @@ export default function AdmissionsDbList() {
         ) : (
           <div className="space-y-3">
             {records.map((record) => {
-              const nick = record.user_handle?.trim() || "익명";
-              const schoolList = record.schools ?? [];
-              const registered = schoolList.find((s) => s.is_regist);
-              const likes = record.likes_count ?? 0;
+              const nick = record.userHandle?.trim() || "익명";
+              const lines = schoolDisplayLines(record);
+              const likes = record.likesCount ?? 0;
+              const comments = dcCommentTotal(record);
+              const primaryType =
+                record.admissionSchools.find((s) => s.isRegist)?.admissionType ||
+                record.admissionSchools[0]?.admissionType ||
+                "";
 
               return (
                 <div
                   key={record.id}
                   className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
                 >
-                  {record.is_featured ? (
+                  {record.isFeatured ? (
                     <div className="mb-3">
                       <span className="inline-block rounded-full bg-amber-100 px-3 py-0.5 text-xs font-semibold text-amber-900">
                         ⭐ 오늘의 DB
@@ -377,30 +382,34 @@ export default function AdmissionsDbList() {
                       <p className="text-sm font-semibold text-gray-900">
                         {record.year}년
                       </p>
-                      <p className="mt-1 text-xs text-gray-600">
-                        {record.primary_admission_type || "—"}
-                      </p>
+                      {primaryType ? (
+                        <p className="mt-1 text-xs text-gray-600">{primaryType}</p>
+                      ) : null}
                       <p className="mt-2 text-xs text-gray-500">{nick}</p>
                     </div>
 
                     {/* 중앙 */}
                     <div className="min-w-0 flex-1 border-sage-100 sm:border-l sm:pl-4">
-                      <div className="flex flex-wrap items-baseline gap-2">
-                        {schools.map((u) => (
-                          <span
-                            key={u}
-                            className="font-semibold text-gray-900"
-                          >
-                            {u}
-                          </span>
+                      <p className="text-sm font-medium text-gray-800 line-clamp-2">
+                        {record.title}
+                      </p>
+                      <div className="mt-2 space-y-1">
+                        {lines.map((line, i) => (
+                          <div key={i} className="flex flex-wrap items-center gap-2">
+                            <span
+                              className={`rounded-full border px-2 py-0.5 text-xs font-medium ${statusBadgeClasses(line.badge)}`}
+                            >
+                              {line.badge}
+                            </span>
+                            <span className="font-semibold text-gray-900">
+                              {line.univ}
+                            </span>
+                            <span className="text-sm text-gray-600">
+                              {line.dept}
+                            </span>
+                          </div>
                         ))}
                       </div>
-                      <p className="mt-1 text-sm text-gray-700">{record.major}</p>
-                      <span
-                        className={`mt-2 inline-block rounded-full border px-2.5 py-0.5 text-xs font-medium ${statusBadgeClasses(record.status)}`}
-                      >
-                        {record.status}
-                      </span>
                     </div>
 
                     {/* 오른쪽 */}
@@ -410,7 +419,7 @@ export default function AdmissionsDbList() {
                           admissionId={record.id}
                           initialCount={likes}
                         />
-                        <span className="text-sm text-gray-600">👁 {record.view_count}</span>
+                        <span className="text-sm text-gray-600">💬 {comments}</span>
                       </div>
                       <Link
                         href={`/admissions/${record.id}`}

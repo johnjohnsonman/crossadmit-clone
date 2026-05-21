@@ -1,17 +1,12 @@
 import { NextResponse } from "next/server";
-import { getRecentRegistrations } from "@/lib/supabase/admissions-service";
+import { getRecentRegisteredSchools } from "@/lib/supabase/admissions-service";
 
 export async function GET() {
   try {
-    const schools = await getRecentRegistrations(15);
-    const items = schools.map((s) => ({
-      admission_id: s.admission_id,
-      univ_name: s.univ_name,
-      dept_name: s.dept_name,
-    }));
+    const items = await getRecentRegisteredSchools(16);
     return NextResponse.json({ items });
-  } catch (error) {
-    console.error("[ticker]", error);
+  } catch (e) {
+    console.error("[ticker]", e);
     return NextResponse.json({ items: [] });
   }
 }

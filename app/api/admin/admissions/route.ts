@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     }
 
     const ids = (rows ?? []).map((r) => r.id).filter(Boolean);
-    const counts: Record<string, number> = {};
+    const counts: Record<number, number> = {};
 
     if (ids.length > 0) {
       const { data: crows } = await admin
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
 
       for (const row of crows ?? []) {
         if (row.is_deleted) continue;
-        const aid = String(row.admission_id);
+        const aid = row.admission_id as number;
         counts[aid] = (counts[aid] ?? 0) + 1;
       }
     }

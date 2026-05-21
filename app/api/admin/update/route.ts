@@ -17,12 +17,14 @@ export async function PATCH(request: NextRequest) {
   }
 
   const idRaw = body.id;
-  const admissionId =
-    typeof idRaw === "number" ? idRaw : parseInt(String(idRaw ?? "").trim(), 10);
+  const id =
+    typeof idRaw === "number"
+      ? idRaw
+      : parseInt(String(idRaw ?? "").trim(), 10);
   const field = String(body.field ?? "").trim();
   const value = body.value;
 
-  if (Number.isNaN(admissionId) || !field) {
+  if (Number.isNaN(id) || !field) {
     return NextResponse.json({ error: "id, field 필수" }, { status: 400 });
   }
 
@@ -44,10 +46,7 @@ export async function PATCH(request: NextRequest) {
 
   try {
     const admin = createAdminClient();
-    const { error } = await admin
-      .from("admissions")
-      .update(patch)
-      .eq("id", admissionId);
+    const { error } = await admin.from("admissions").update(patch).eq("id", id);
     if (error) {
       console.error("[admin update]", error);
       return NextResponse.json({ error: "업데이트 실패" }, { status: 500 });

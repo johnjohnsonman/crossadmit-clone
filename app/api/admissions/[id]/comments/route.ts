@@ -12,6 +12,11 @@ export type CommentRowPublic = {
   created_at: string;
 };
 
+function parseId(raw: string): number | null {
+  const n = parseInt(raw, 10);
+  return Number.isNaN(n) ? null : n;
+}
+
 function clientIp(request: NextRequest): string {
   const xf = request.headers.get("x-forwarded-for");
   if (xf) return xf.split(",")[0]?.trim() || "unknown";
@@ -24,9 +29,9 @@ export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id: idStr } = await params;
-  const admissionId = parseInt(idStr, 10);
-  if (Number.isNaN(admissionId)) {
+  const { id: idRaw } = await params;
+  const admissionId = parseId(idRaw);
+  if (admissionId === null) {
     return NextResponse.json([], { status: 400 });
   }
 
@@ -50,9 +55,9 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id: idStr } = await params;
-  const admission_id = parseInt(idStr, 10);
-  if (Number.isNaN(admission_id)) {
+  const { id: idRaw } = await params;
+  const admission_id = parseId(idRaw);
+  if (admission_id === null) {
     return NextResponse.json(
       { error: "유효하지 않은 게시글입니다." },
       { status: 400 }
@@ -96,22 +101,19 @@ export async function POST(
     return NextResponse.json({ error: "게시글을 찾을 수 없습니다." }, { status: 404 });
   }
 
-  const ip = clientIp(request);
-  const ip_hash = sha256Utf8(ip);
+  const ip_hash = sha256Utf8(clientIp(request));
   const password_hash = sha256Utf8(password);
-
-  const insertRow = {
-    admission_id,
-    nickname,
-    password_hash,
-    content,
-    ip_hash,
-    is_deleted: false,
-  };
 
   const { data, error } = await supabase
     .from("comments")
-    .insert(insertRow)
+    .insert({
+      admission_id,
+      nickname,
+      password_hash,
+      content,
+      ip_hash,
+      is_deleted: false,
+    })
     .select("id, admission_id, nickname, content, created_at")
     .single();
 

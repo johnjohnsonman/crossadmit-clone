@@ -1,96 +1,109 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { buildCrossComparisonsFromSchools } from "@/lib/supabase/admissions-service";
+import type {
+  AdmissionSchoolInsert,
+  AdmissionsInsert,
+  CrossComparisonInsert,
+} from "@/lib/supabase/types";
 
 export const runtime = "nodejs";
 
-type SchoolPayload = {
-  univ_id: number
-  dept_id: number
-  univ_name: string
-  dept_name: string
-  is_apply: boolean
-  is_accept: boolean
-  is_regist: boolean
-  admission_type: string
-  review?: string
+export type SchoolSubmitPayload = {
+  univ_id?: number;
+  dept_id?: number;
+  univ_name: string;
+  dept_name: string;
+  status: "합격" | "등록" | "불합격";
+  admission_type?: string;
+};
+
+function statusToFlags(status: SchoolSubmitPayload["status"]) {
+  if (status === "등록") {
+    return { is_apply: true, is_accept: true, is_regist: true };
+  }
+  if (status === "합격") {
+    return { is_apply: true, is_accept: true, is_regist: false };
+  }
+  return { is_apply: true, is_accept: false, is_regist: false };
 }
 
-function parseSchool(x: unknown): SchoolPayload | null {
-  if (!x || typeof x !== "object") return null;
+function isSchool(x: unknown): x is SchoolSubmitPayload {
+  if (!x || typeof x !== "object") return false;
   const o = x as Record<string, unknown>;
-  const univ_id = Number(o.univ_id);
-  const dept_id = Number(o.dept_id ?? 0);
-  const univ_name = String(o.univ_name ?? "").trim();
-  const dept_name = String(o.dept_name ?? "").trim();
-  if (!univ_name || !dept_name) return null;
-  return {
-    univ_id: Number.isNaN(univ_id) ? 0 : univ_id,
-    dept_id: Number.isNaN(dept_id) ? 0 : dept_id,
-    univ_name,
-    dept_name,
-    is_apply: Boolean(o.is_apply),
-    is_accept: Boolean(o.is_accept),
-    is_regist: Boolean(o.is_regist),
-    admission_type: String(o.admission_type ?? "").trim(),
-    review: String(o.review ?? "").trim(),
-  };
+  const st = String(o.status ?? "");
+  return (
+    typeof o.univ_name === "string" &&
+    typeof o.dept_name === "string" &&
+    o.univ_name.trim().length > 0 &&
+    o.dept_name.trim().length > 0 &&
+    ["합격", "등록", "불합격"].includes(st)
+  );
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const body = (await request.json()) as Record<string, unknown>;
-    const schoolsRaw = body.schools;
-    const schools: SchoolPayload[] = Array.isArray(schoolsRaw)
-      ? schoolsRaw.map(parseSchool).filter((s): s is SchoolPayload => s !== null)
+    let body: Record<string, unknown>;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json(
+        { success: false, error: "잘못된 요청 형식입니다." },
+        { status: 400 }
+      );
+    }
+
+    const rawSchools = body.schools ?? body.schools_applied;
+    const schools: SchoolSubmitPayload[] = Array.isArray(rawSchools)
+      ? rawSchools.filter(isSchool).map((s) => ({
+          univ_id: typeof s.univ_id === "number" ? s.univ_id : 0,
+          dept_id: typeof s.dept_id === "number" ? s.dept_id : 0,
+          univ_name: String(s.univ_name).trim(),
+          dept_name: String(s.dept_name).trim(),
+          status: s.status,
+          admission_type: String(s.admission_type ?? body.admission_type ?? "").trim(),
+        }))
       : [];
 
-    const year = parseInt(String(body.year ?? ""), 10);
-    const user_handle = String(body.user_handle ?? body.nickname ?? "").trim() || "익명";
+    const yearRaw = body.year;
+    const admission_type = String(body.admission_type ?? "").trim();
+    const nickname = String(body.nickname ?? body.user_handle ?? "").trim();
+    const review = String(body.review ?? "").trim();
     const title = String(body.title ?? "").trim();
-    const input_score = String(body.input_score ?? "").trim();
-    const input_gpa = String(body.input_gpa ?? "").trim();
-    const input_specialty = String(body.input_specialty ?? body.review ?? "").trim();
+    const input_score = String(body.input_score ?? body.csat_total ?? "").trim();
+    const input_gpa = String(body.input_gpa ?? body.gpa_grade ?? "").trim();
+    const input_specialty = String(body.input_specialty ?? "").trim();
 
-    if (schools.length === 0) {
+    const year =
+      typeof yearRaw === "number"
+        ? yearRaw
+        : parseInt(String(yearRaw ?? ""), 10);
+
+    const errors: string[] = [];
+    if (schools.length === 0) errors.push("지원 학교를 1개 이상 입력해주세요.");
+    if (Number.isNaN(year) || year < 1990 || year > 2030) {
+      errors.push("입학 연도가 올바르지 않습니다.");
+    }
+    if (!admission_type) errors.push("전형 종류를 선택해주세요.");
+
+    if (errors.length > 0) {
       return NextResponse.json(
-        { success: false, error: "지원 학교를 1개 이상 입력해주세요." },
+        { success: false, error: errors[0] },
         { status: 400 }
       );
     }
-    if (Number.isNaN(year) || year < 1990 || year > 2035) {
-      return NextResponse.json(
-        { success: false, error: "입학 연도를 확인해주세요." },
-        { status: 400 }
-      );
-    }
 
-    const hasRegist = schools.some((s) => s.is_regist);
-    if (!hasRegist) {
-      return NextResponse.json(
-        { success: false, error: "등록한 학교를 1개 선택해주세요." },
-        { status: 400 }
-      );
-    }
+    const registered = schools.filter((s) => s.status === "등록");
+    const primary = registered[0] ?? schools[0];
+    const autoTitle =
+      title ||
+      `${primary.univ_name} ${primary.dept_name} · ${year}년 합격 후기`;
 
-    const admin = createAdminClient();
-
-    const { data: maxRow } = await admin
-      .from("admissions")
-      .select("id")
-      .order("id", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    const nextId = (maxRow?.id ?? 0) + 1;
-
-    const { error: admErr } = await admin.from("admissions").insert({
-      id: nextId,
+    const admissionRow: AdmissionsInsert = {
       original_user_id: 0,
-      user_handle,
+      user_handle: nickname || "익명",
       year,
       year_end: year,
-      title: title || `${year}년 합격 정보`,
+      title: autoTitle,
       input_score,
       input_gpa,
       input_specialty,
@@ -98,87 +111,98 @@ export async function POST(request: NextRequest) {
       likes_count: 0,
       is_verified: false,
       is_featured: false,
-      published: true,
+      published: false,
       source: "user_submission",
       created_at: new Date().toISOString(),
-    });
+    };
 
-    if (admErr) {
-      console.error("[submit] admission", admErr);
+    const admin = createAdminClient();
+    const { data: inserted, error: insErr } = await admin
+      .from("admissions")
+      .insert(admissionRow)
+      .select("id")
+      .single();
+
+    if (insErr || !inserted) {
+      console.error("[admissions/submit]", insErr);
       return NextResponse.json(
         { success: false, error: "저장에 실패했습니다." },
         { status: 500 }
       );
     }
 
-    let schoolId = 1;
-    const { data: maxSchool } = await admin
-      .from("admission_schools")
-      .select("id")
-      .order("id", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (maxSchool?.id) schoolId = maxSchool.id + 1;
+    const admissionId = inserted.id as number;
 
-    const schoolRows = schools.map((s, i) => ({
-      id: schoolId + i,
-      admission_id: nextId,
-      univ_id: s.univ_id,
-      dept_id: s.dept_id,
-      univ_name: s.univ_name,
-      dept_name: s.dept_name,
-      is_apply: s.is_apply,
-      is_accept: s.is_accept,
-      is_regist: s.is_regist,
-      is_grad: false,
-      admission_type: s.admission_type,
-      review: s.review ?? "",
-      thumbnail: "",
-      is_active: true,
-      created_at: new Date().toISOString(),
-    }));
+    const schoolRows: AdmissionSchoolInsert[] = schools.map((s) => {
+      const flags = statusToFlags(s.status);
+      return {
+        admission_id: admissionId,
+        univ_id: s.univ_id ?? 0,
+        dept_id: s.dept_id ?? 0,
+        univ_name: s.univ_name,
+        dept_name: s.dept_name,
+        is_apply: flags.is_apply,
+        is_accept: flags.is_accept,
+        is_regist: flags.is_regist,
+        is_grad: false,
+        admission_type: s.admission_type || admission_type,
+        review: review || "",
+        thumbnail: "",
+      };
+    });
 
     const { error: schoolErr } = await admin
       .from("admission_schools")
       .insert(schoolRows);
 
     if (schoolErr) {
-      console.error("[submit] schools", schoolErr);
+      console.error("[admission_schools]", schoolErr);
+      await admin.from("admissions").delete().eq("id", admissionId);
       return NextResponse.json(
         { success: false, error: "학교 정보 저장에 실패했습니다." },
         { status: 500 }
       );
     }
 
-    const crossRows = buildCrossComparisonsFromSchools(nextId, schools);
-    if (crossRows.length > 0) {
-      let crossId = 1;
-      const { data: maxCross } = await admin
-        .from("cross_comparisons")
-        .select("id")
-        .order("id", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (maxCross?.id) crossId = maxCross.id + 1;
+    const registSchools = schools.filter((s) => s.status === "등록");
+    const acceptedNotRegist = schools.filter(
+      (s) => s.status === "합격"
+    );
 
-      const { error: crossErr } = await admin.from("cross_comparisons").insert(
-        crossRows.map((r, i) => ({
-          id: crossId + i,
-          ...r,
-          is_active: true,
-          created_at: new Date().toISOString(),
-        }))
-      );
-      if (crossErr) console.error("[submit] cross", crossErr);
+    const crossRows: CrossComparisonInsert[] = [];
+    for (const win of registSchools) {
+      for (const lose of acceptedNotRegist) {
+        if (win.univ_id && lose.univ_id && win.univ_id === lose.univ_id) {
+          continue;
+        }
+        crossRows.push({
+          admission_id: admissionId,
+          univ_id_win: win.univ_id ?? 0,
+          univ_id_lose: lose.univ_id ?? 0,
+          univ_name_win: win.univ_name,
+          univ_name_lose: lose.univ_name,
+          dept_name_win: win.dept_name,
+          dept_name_lose: lose.dept_name,
+        });
+      }
+    }
+
+    if (crossRows.length > 0) {
+      const { error: crossErr } = await admin
+        .from("cross_comparisons")
+        .insert(crossRows);
+      if (crossErr) {
+        console.error("[cross_comparisons]", crossErr);
+      }
     }
 
     return NextResponse.json({
       success: true,
       message: "등록되었습니다.",
-      admission_id: nextId,
+      id: admissionId,
     });
   } catch (e) {
-    console.error("[submit]", e);
+    console.error("[admissions/submit]", e);
     return NextResponse.json(
       { success: false, error: "오류가 발생했습니다." },
       { status: 500 }

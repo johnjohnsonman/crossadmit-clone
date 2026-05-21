@@ -1,10 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
-import type {
-  CrossComparison,
-  CrossComparisonStat,
-  University,
-  UniversityDepartment,
-} from "@/lib/supabase/types";
+import type { CrossComparison, University, UniversityDepartment } from "@/lib/supabase/types";
+
+function escapeIlike(raw: string): string {
+  return raw.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
+}
 
 export async function getUniversities(params?: {
   country?: string;
@@ -12,64 +11,72 @@ export async function getUniversities(params?: {
   limit?: number;
 }): Promise<University[]> {
   const supabase = await createClient();
-  let q = supabase
+  let query = supabase
     .from("universities")
-    .select("id, country, name_kr, name_en, logo, is_active")
+    .select("*")
     .eq("is_active", true)
-    .order("sort_order", { ascending: true })
     .order("name_kr", { ascending: true });
 
   if (params?.country?.trim()) {
-    q = q.eq("country", params.country.trim());
-  }
-  if (params?.search?.trim()) {
-    const s = params.search.trim().replace(/%/g, "\\%");
-    q = q.or(`name_kr.ilike.%${s}%,name_en.ilike.%${s}%`);
-  }
-  if (params?.limit && params.limit > 0) {
-    q = q.limit(params.limit);
-  } else {
-    q = q.limit(50);
+    query = query.eq("country", params.country.trim());
   }
 
-  const { data, error } = await q;
-  if (error) throw new Error(error.message);
+  if (params?.search?.trim()) {
+    const safe = escapeIlike(params.search.trim());
+    query = query.or(
+      `name_kr.ilike.%${safe}%,name_en.ilike.%${safe}%`
+    );
+  }
+
+  const lim = params?.limit ?? 50;
+  query = query.limit(lim);
+
+  const { data, error } = await query;
+  if (error) {
+    console.error("getUniversities:", error);
+    throw new Error(error.message);
+  }
   return (data ?? []) as University[];
 }
 
-export async function getUniversityById(
-  id: number
-): Promise<University | null> {
+export async function getUniversityById(id: number): Promise<University | null> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("universities")
     .select("*")
     .eq("id", id)
-    .eq("is_active", true)
     .maybeSingle();
-  if (error) throw new Error(error.message);
+
+  if (error) {
+    console.error("getUniversityById:", error);
+    throw new Error(error.message);
+  }
   return data as University | null;
 }
 
-export async function getDepartmentsByUniv(
+export async function getUniversityDepartments(
   univId: number,
   search?: string
 ): Promise<UniversityDepartment[]> {
   const supabase = await createClient();
-  let q = supabase
+  let query = supabase
     .from("university_departments")
     .select("*")
     .eq("univ_id", univId)
-    .eq("is_active", true)
     .order("dept_name", { ascending: true });
 
   if (search?.trim()) {
-    const s = search.trim().replace(/%/g, "\\%");
-    q = q.ilike("dept_name", `%${s}%`);
+    const safe = escapeIlike(search.trim());
+    query = query.or(
+      `dept_name.ilike.%${safe}%,dept_name_en.ilike.%${safe}%`
+    );
   }
 
-  const { data, error } = await q.limit(80);
-  if (error) throw new Error(error.message);
+  const { data, error } = await query.limit(80);
+  if (error) {
+    console.error("getUniversityDepartments:", error);
+    throw new Error(error.message);
+  }
   return (data ?? []) as UniversityDepartment[];
 }
 
@@ -78,75 +85,94 @@ export async function getCrossComparisons(params?: {
   limit?: number;
 }): Promise<CrossComparison[]> {
   const supabase = await createClient();
-  let q = supabase
-    .from("cross_comparisons")
-    .select("*")
-    .eq("is_active", true);
+  let query = supabase.from("cross_comparisons").select("*");
 
-  if (params?.univ_id) {
-    q = q.or(
-      `univ_id_win.eq.${params.univ_id},univ_id_lose.eq.${params.univ_id}`
-    );
+  if (params?.univ_id !== undefined) {
+    const uid = params.univ_id;
+    query = query.or(`univ_id_win.eq.${uid},univ_id_lose.eq.${uid}`);
   }
 
-  q = q.limit(params?.limit ?? 200);
-  const { data, error } = await q;
-  if (error) throw new Error(error.message);
+  query = query.limit(params?.limit ?? 200);
+
+  const { data, error } = await query;
+  if (error) {
+    console.error("getCrossComparisons:", error);
+    throw new Error(error.message);
+  }
   return (data ?? []) as CrossComparison[];
 }
 
-/** univ_id_win / univ_id_lose 쌍별 집계 + 선택 비율 */
-export async function getCrossComparisonStats(params?: {
-  limit?: number;
-}): Promise<CrossComparisonStat[]> {
+export type CrossComparisonStat = {
+  univ_id_win: number;
+  univ_id_lose: number;
+  univ_name_win: string;
+  univ_name_lose: string;
+  dept_name_win: string;
+  dept_name_lose: string;
+  count: number;
+  percentage_win: number;
+  percentage_lose: number;
+  id: string;
+};
+
+/** 대학 쌍별 집계 (win 방향 건수 + 역방향 건수 → 비율) */
+export async function getCrossComparisonStats(): Promise<CrossComparisonStat[]> {
   const rows = await getCrossComparisons({ limit: 5000 });
-  const map = new Map<
-    string,
-    CrossComparisonStat & { _win: number }
-  >();
+
+  type PairAgg = {
+    lowId: number;
+    highId: number;
+    nameLow: string;
+    nameHigh: string;
+    forward: number;
+    reverse: number;
+  };
+
+  const map = new Map<string, PairAgg>();
 
   for (const r of rows) {
-    const dw = r.dept_id_win ?? 0;
-    const dl = r.dept_id_lose ?? 0;
-    const key = `${r.univ_id_win}:${r.univ_id_lose}:${dw}:${dl}`;
-    const existing = map.get(key);
-    if (existing) {
-      existing.count += 1;
-      existing._win += 1;
+    const a = r.univ_id_win;
+    const b = r.univ_id_lose;
+    const low = Math.min(a, b);
+    const high = Math.max(a, b);
+    const key = `${low}:${high}`;
+    let agg = map.get(key);
+    if (!agg) {
+      agg = {
+        lowId: low,
+        highId: high,
+        nameLow: a < b ? r.univ_name_win : r.univ_name_lose,
+        nameHigh: a < b ? r.univ_name_lose : r.univ_name_win,
+        forward: 0,
+        reverse: 0,
+      };
+      map.set(key, agg);
+    }
+    if (r.univ_id_win === low) {
+      agg.forward += 1;
     } else {
-      map.set(key, {
-        univ_id_win: r.univ_id_win,
-        univ_id_lose: r.univ_id_lose,
-        univ_name_win: r.univ_name_win,
-        univ_name_lose: r.univ_name_lose,
-        dept_name_win: r.dept_name_win,
-        dept_name_lose: r.dept_name_lose,
-        dept_id_win: dw,
-        dept_id_lose: dl,
-        count: 1,
-        percentage_win: 0,
-        _win: 1,
-      });
+      agg.reverse += 1;
     }
   }
 
   const stats: CrossComparisonStat[] = [];
-  for (const v of map.values()) {
-    const pct = Math.round((v._win / v.count) * 100);
+  for (const agg of map.values()) {
+    const total = agg.forward + agg.reverse;
+    if (total === 0) continue;
+    const pctWin = Math.round((agg.forward / total) * 100);
     stats.push({
-      univ_id_win: v.univ_id_win,
-      univ_id_lose: v.univ_id_lose,
-      univ_name_win: v.univ_name_win,
-      univ_name_lose: v.univ_name_lose,
-      dept_name_win: v.dept_name_win,
-      dept_name_lose: v.dept_name_lose,
-      dept_id_win: v.dept_id_win,
-      dept_id_lose: v.dept_id_lose,
-      count: v.count,
-      percentage_win: pct,
+      id: `cross-${agg.lowId}-vs-${agg.highId}`,
+      univ_id_win: agg.lowId,
+      univ_id_lose: agg.highId,
+      univ_name_win: agg.nameLow,
+      univ_name_lose: agg.nameHigh,
+      dept_name_win: "",
+      dept_name_lose: "",
+      count: total,
+      percentage_win: pctWin,
+      percentage_lose: 100 - pctWin,
     });
   }
 
-  stats.sort((a, b) => b.count - a.count);
-  return stats.slice(0, params?.limit ?? 50);
+  return stats.sort((a, b) => b.count - a.count);
 }
