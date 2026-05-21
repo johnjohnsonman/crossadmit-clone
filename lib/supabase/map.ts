@@ -1,55 +1,26 @@
-import type { AdmissionRecord, Comment } from "@/lib/types";
-import type { AdmissionsRow } from "./types";
+import type { Admission } from "@/lib/supabase/types";
+import type { AdmissionRecord } from "@/lib/types";
 
-export function rowToAdmissionRecord(row: AdmissionsRow): AdmissionRecord {
-  const commentsRaw = row.comments as Comment[] | null | undefined;
-
+/** 레거시 UI 타입 호환 (점진 제거 예정) */
+export function admissionToLegacyRecord(a: Admission): AdmissionRecord {
+  const reg = a.admission_schools?.find((s) => s.is_regist);
+  const primary = reg ?? a.admission_schools?.[0];
   return {
-    id: row.id,
-    university: row.university,
-    universityEn: row.university_en,
-    major: row.major,
-    year: row.year,
-    admissionType: row.admission_type,
-    status: row.status,
-    createdAt: new Date(row.created_at),
-    source: row.source,
-    username: row.username ?? undefined,
-    testScores: (row.test_scores as AdmissionRecord["testScores"]) ?? undefined,
-    gpa: (row.gpa as AdmissionRecord["gpa"]) ?? undefined,
-    specialSkills:
-      (row.special_skills as string[] | null)?.filter(Boolean) ?? undefined,
-    review: row.review ?? undefined,
-    summary: row.summary ?? undefined,
-    rawContent: row.raw_content ?? undefined,
-    pros: row.pros ?? undefined,
-    cons: row.cons ?? undefined,
-    tips: row.tips ?? undefined,
-    visaType: row.visa_type ?? undefined,
-    languageProficiency: row.language_proficiency ?? undefined,
-    topikLevel:
-      row.topik_grade != null
-        ? `${row.topik_grade}급`
-        : (row.topik_level ?? undefined),
-    topikGrade: row.topik_grade ?? undefined,
-    studentHandle: row.student_handle ?? undefined,
-    verified: row.verified,
-    published: row.published,
-    nationality: row.nationality ?? undefined,
-    schoolsApplied: Array.isArray(row.schools_applied)
-      ? (row.schools_applied as NonNullable<AdmissionRecord["schoolsApplied"]>)
-      : undefined,
-    likes:
-      typeof row.likes_count === "number"
-        ? row.likes_count
-        : (row.likes ?? undefined),
-    isFeatured: row.is_featured ?? undefined,
-    comments: commentsRaw?.map((c) => ({
-      ...c,
-      createdAt:
-        c.createdAt instanceof Date
-          ? c.createdAt
-          : new Date(c.createdAt as unknown as string),
-    })),
+    id: String(a.id),
+    university: primary?.univ_name ?? "",
+    universityEn: primary?.univ_name ?? "",
+    major: primary?.dept_name ?? "",
+    year: a.year,
+    admissionType: primary?.admission_type ?? "",
+    status: reg ? "등록" : primary?.is_accept ? "합격" : "불합격",
+    createdAt: new Date(a.created_at),
+    source: a.source as AdmissionRecord["source"],
+    username: a.user_handle,
+    studentHandle: a.user_handle,
+    review: primary?.review ?? a.input_specialty,
+    likes: a.likes_count,
+    isFeatured: a.is_featured,
+    published: a.published,
+    verified: a.is_verified,
   };
 }

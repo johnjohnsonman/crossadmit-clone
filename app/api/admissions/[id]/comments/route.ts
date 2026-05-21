@@ -6,7 +6,7 @@ export const runtime = "nodejs";
 
 export type CommentRowPublic = {
   id: string;
-  admission_id: string;
+  admission_id: number;
   nickname: string;
   content: string;
   created_at: string;
@@ -24,8 +24,9 @@ export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = await params;
-  if (!id) {
+  const { id: idStr } = await params;
+  const admissionId = parseInt(idStr, 10);
+  if (Number.isNaN(admissionId)) {
     return NextResponse.json([], { status: 400 });
   }
 
@@ -33,7 +34,7 @@ export async function GET(
   const { data, error } = await supabase
     .from("comments")
     .select("id, admission_id, nickname, content, created_at")
-    .eq("admission_id", id)
+    .eq("admission_id", admissionId)
     .eq("is_deleted", false)
     .order("created_at", { ascending: true });
 
@@ -49,8 +50,9 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id: admission_id } = await params;
-  if (!admission_id) {
+  const { id: idStr } = await params;
+  const admission_id = parseInt(idStr, 10);
+  if (Number.isNaN(admission_id)) {
     return NextResponse.json(
       { error: "유효하지 않은 게시글입니다." },
       { status: 400 }

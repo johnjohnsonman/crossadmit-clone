@@ -2,7 +2,15 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { AdmissionRecord } from "@/lib/types";
+import type { AdmissionApiRecord } from "@/lib/supabase/api-map";
+
+const SCHOOL_SEARCH: Record<string, string> = {
+  snu: "서울대",
+  yonsei: "연세",
+  korea: "고려",
+  kaist: "KAIST",
+  skku: "성균관",
+};
 
 const PAGE_SIZE = 20;
 const YEARS = [2025, 2024, 2023, 2022, 2021, 2020, 2019];
@@ -14,13 +22,6 @@ const selectClass =
 
 const toggleBtn =
   "rounded-lg border px-4 py-2 text-sm font-medium transition-colors ";
-
-function dcCommentTotal(record: AdmissionRecord): number {
-  if (typeof record.dcCommentCount === "number") return record.dcCommentCount;
-  const c = record.comments;
-  if (!Array.isArray(c)) return 0;
-  return c.length;
-}
 
 const LIKED_LS = "adliked:";
 
@@ -156,7 +157,7 @@ function PageNumbers({
 }
 
 export default function AdmissionsDbList() {
-  const [records, setRecords] = useState<AdmissionRecord[]>([]);
+  const [records, setRecords] = useState<AdmissionApiRecord[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -177,7 +178,7 @@ export default function AdmissionsDbList() {
         offset: String(offset),
         sort,
       });
-      if (school) params.set("university", school);
+      if (school) params.set("search", SCHOOL_SEARCH[school] ?? school);
       if (year) params.set("year", year);
       if (admissionType) params.set("admission_type", admissionType);
 
@@ -353,20 +354,17 @@ export default function AdmissionsDbList() {
         ) : (
           <div className="space-y-3">
             {records.map((record) => {
-              const nick =
-                record.studentHandle?.trim() ||
-                record.username?.trim() ||
-                "익명";
-              const schools = splitUniversities(record.university);
-              const likes = record.likes ?? 0;
-              const comments = dcCommentTotal(record);
+              const nick = record.user_handle?.trim() || "익명";
+              const schoolList = record.schools ?? [];
+              const registered = schoolList.find((s) => s.is_regist);
+              const likes = record.likes_count ?? 0;
 
               return (
                 <div
                   key={record.id}
                   className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
                 >
-                  {record.isFeatured ? (
+                  {record.is_featured ? (
                     <div className="mb-3">
                       <span className="inline-block rounded-full bg-amber-100 px-3 py-0.5 text-xs font-semibold text-amber-900">
                         ⭐ 오늘의 DB
@@ -380,7 +378,7 @@ export default function AdmissionsDbList() {
                         {record.year}년
                       </p>
                       <p className="mt-1 text-xs text-gray-600">
-                        {record.admissionType}
+                        {record.primary_admission_type || "—"}
                       </p>
                       <p className="mt-2 text-xs text-gray-500">{nick}</p>
                     </div>
@@ -412,7 +410,7 @@ export default function AdmissionsDbList() {
                           admissionId={record.id}
                           initialCount={likes}
                         />
-                        <span className="text-sm text-gray-600">💬 {comments}</span>
+                        <span className="text-sm text-gray-600">👁 {record.view_count}</span>
                       </div>
                       <Link
                         href={`/admissions/${record.id}`}

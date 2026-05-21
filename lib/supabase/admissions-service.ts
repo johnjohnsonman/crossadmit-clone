@@ -1,175 +1,113 @@
 import { createClient } from "@/lib/supabase/server";
-import type { AdmissionsRow } from "@/lib/supabase/types";
+import { createAdminClient } from "@/lib/supabase/admin";
+import type {
+  Admission,
+  AdmissionSchool,
+  CrossComparison,
+} from "@/lib/supabase/types";
 
-export type AdmissionsSort = "latest" | "likes";
+export type AdmissionsSort = "latest" | "popular" | "likes";
 
 export interface GetAdmissionsParams {
-  university?: string;
   year?: number;
   admission_type?: string;
-  status?: string;
+  search?: string;
+  sort?: AdmissionsSort;
   limit?: number;
   offset?: number;
-  sort?: AdmissionsSort;
-  search?: string;
-  /** 기존 API 호환 */
-  source?: string;
-  nationality?: string;
 }
 
-const KNOWN_SCHOOL_CODES = new Set([
-  "snu",
-  "yonsei",
-  "korea",
-  "kaist",
-  "skku",
-  "other",
-]);
-
-function escapeIlikePattern(raw: string): string {
+function escapeIlike(raw: string): string {
   return raw.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
 }
 
-function isSchoolCode(u: string): boolean {
-  return KNOWN_SCHOOL_CODES.has(u.toLowerCase());
-}
+async function attachSchools(
+  admissions: Admission[]
+): Promise<Admission[]> {
+  if (admissions.length === 0) return [];
+  const ids = admissions.map((a) => a.id);
+  const supabase = await createClient();
+  const { data: schools, error } = await supabase
+    .from("admission_schools")
+    .select("*")
+    .in("admission_id", ids)
+    .eq("is_active", true)
+    .order("is_regist", { ascending: false });
 
-/**
- * university:
- * - snu | yonsei | korea | kaist | skku | other → 드롭다운 필터
- * - 그 외 → 기존처럼 `university` 컬럼만 ilike (부분 검색)
- */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function applyUniversityFilter(query: any, raw: string): any {
-  const u = raw.trim();
-  if (!u) return query;
-
-  if (isSchoolCode(u)) {
-    const code = u.toLowerCase();
-    switch (code) {
-      case "snu":
-        return query.or(
-          "university.ilike.%서울대%,university_en.ilike.%Seoul National%"
-        );
-      case "yonsei":
-        return query.or(
-          "university.ilike.%연세%,university_en.ilike.%Yonsei%"
-        );
-      case "korea":
-        return query.or(
-          "university.ilike.%고려%,university_en.ilike.%Korea University%"
-        );
-      case "kaist":
-        return query.or(
-          "university.ilike.%KAIST%,university.ilike.%카이스트%,university_en.ilike.%KAIST%"
-        );
-      case "skku":
-        return query.or(
-          "university.ilike.%성균관%,university_en.ilike.%Sungkyunkwan%"
-        );
-      case "other":
-        return query
-          .not("university", "ilike", "%서울대%")
-          .not("university", "ilike", "%연세%")
-          .not("university", "ilike", "%고려%")
-          .not("university", "ilike", "%성균관%")
-          .not("university", "ilike", "%KAIST%")
-          .not("university", "ilike", "%카이스트%");
-      default:
-        return query;
-    }
+  if (error) {
+    console.error("attachSchools:", error);
+    return admissions;
   }
 
-  const safe = escapeIlikePattern(u);
-  return query.ilike("university", `%${safe}%`);
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function applyAdmissionTypeFilter(query: any, admissionType: string): any {
-  const t = admissionType.trim();
-  if (!t) return query;
-  const safe = escapeIlikePattern(t);
-  return query.ilike("admission_type", `%${safe}%`);
-}
-
-type FilterParams = Omit<GetAdmissionsParams, "limit" | "offset" | "sort">;
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function applyCommonFilters(query: any, params: FilterParams): any {
-  let q = query.eq("published", true);
-
-  if (params.search?.trim()) {
-    const safe = escapeIlikePattern(params.search.trim());
-    q = q.or(`university.ilike.%${safe}%,university_en.ilike.%${safe}%`);
+  const byAdmission = new Map<number, AdmissionSchool[]>();
+  for (const s of (schools ?? []) as AdmissionSchool[]) {
+    const list = byAdmission.get(s.admission_id) ?? [];
+    list.push(s);
+    byAdmission.set(s.admission_id, list);
   }
 
-  if (params.university?.trim()) {
-    q = applyUniversityFilter(q, params.university.trim());
-  }
-
-  if (params.year !== undefined && !Number.isNaN(params.year)) {
-    q = q.eq("year", params.year);
-  }
-
-  if (params.admission_type?.trim()) {
-    q = applyAdmissionTypeFilter(q, params.admission_type.trim());
-  }
-
-  if (params.status?.trim()) {
-    q = q.eq("status", params.status.trim());
-  }
-
-  if (params.source?.trim()) {
-    q = q.eq("source", params.source.trim());
-  }
-
-  if (params.nationality?.trim()) {
-    q = q.eq("nationality", params.nationality.trim());
-  }
-
-  return q;
+  return admissions.map((a) => ({
+    ...a,
+    admission_schools: byAdmission.get(a.id) ?? [],
+  }));
 }
 
 export async function getAdmissions(
   params: GetAdmissionsParams
-): Promise<{ data: AdmissionsRow[]; total: number }> {
+): Promise<{ data: Admission[]; total: number }> {
   const supabase = await createClient();
-
   let query = supabase.from("admissions").select("*", { count: "exact" });
-  query = applyCommonFilters(query, params);
+  query = query.eq("published", true);
+
+  if (params.year !== undefined && !Number.isNaN(params.year)) {
+    query = query.eq("year", params.year);
+  }
+
+  if (params.search?.trim()) {
+    const safe = escapeIlike(params.search.trim());
+    query = query.or(
+      `title.ilike.%${safe}%,user_handle.ilike.%${safe}%,input_specialty.ilike.%${safe}%`
+    );
+  }
 
   query = query.order("is_featured", { ascending: false });
-  const sortMode = params.sort ?? "latest";
-  if (sortMode === "likes") {
+  const sort = params.sort ?? "latest";
+  if (sort === "likes" || sort === "popular") {
     query = query.order("likes_count", { ascending: false });
-    query = query.order("created_at", { ascending: false });
-  } else {
-    query = query.order("created_at", { ascending: false });
   }
+  query = query.order("created_at", { ascending: false });
 
   const from = params.offset ?? 0;
   const lim = params.limit;
-
-  if (lim !== undefined && !Number.isNaN(lim) && lim > 0) {
+  if (lim !== undefined && lim > 0) {
     query = query.range(from, from + lim - 1);
   }
 
   const { data, error, count } = await query;
+  if (error) throw new Error(error.message);
 
-  if (error) {
-    console.error("getAdmissions:", error);
-    throw new Error(error.message);
+  let rows = (data ?? []) as Admission[];
+
+  if (params.admission_type?.trim()) {
+    const typeNeedle = params.admission_type.trim();
+    const withSchools = await attachSchools(rows);
+    rows = withSchools.filter((a) =>
+      (a.admission_schools ?? []).some(
+        (s) =>
+          s.admission_type.includes(typeNeedle) ||
+          s.admission_type === typeNeedle
+      )
+    );
+  } else {
+    rows = await attachSchools(rows);
   }
 
-  return {
-    data: (data ?? []) as AdmissionsRow[],
-    total: count ?? 0,
-  };
+  return { data: rows, total: count ?? rows.length };
 }
 
 export async function getAdmissionById(
-  id: string
-): Promise<AdmissionsRow | null> {
+  id: number
+): Promise<Admission | null> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("admissions")
@@ -178,30 +116,107 @@ export async function getAdmissionById(
     .eq("published", true)
     .maybeSingle();
 
-  if (error) {
-    console.error("getAdmissionById:", error);
-    throw new Error(error.message);
-  }
+  if (error) throw new Error(error.message);
+  if (!data) return null;
 
-  return data as AdmissionsRow | null;
+  const admission = data as Admission;
+
+  const { data: schools } = await supabase
+    .from("admission_schools")
+    .select("*")
+    .eq("admission_id", id)
+    .eq("is_active", true);
+
+  const { data: crosses } = await supabase
+    .from("cross_comparisons")
+    .select("*")
+    .eq("admission_id", id)
+    .eq("is_active", true);
+
+  return {
+    ...admission,
+    admission_schools: (schools ?? []) as AdmissionSchool[],
+    cross_comparisons: (crosses ?? []) as CrossComparison[],
+  };
 }
 
 export async function getAdmissionsCount(
-  params: FilterParams
+  params: Omit<GetAdmissionsParams, "limit" | "offset" | "sort">
 ): Promise<number> {
+  const { total } = await getAdmissions({ ...params, limit: 1, offset: 0 });
+  return total;
+}
+
+export async function getRecentRegistrations(
+  limit = 20
+): Promise<AdmissionSchool[]> {
   const supabase = await createClient();
-  let query = supabase
-    .from("admissions")
-    .select("*", { count: "exact", head: true });
-
-  query = applyCommonFilters(query, params);
-
-  const { count, error } = await query;
+  const { data, error } = await supabase
+    .from("admission_schools")
+    .select("*")
+    .eq("is_regist", true)
+    .eq("is_active", true)
+    .order("created_at", { ascending: false, nullsFirst: false })
+    .limit(limit);
 
   if (error) {
-    console.error("getAdmissionsCount:", error);
-    throw new Error(error.message);
+    console.error("getRecentRegistrations:", error);
+    return [];
   }
+  return (data ?? []) as AdmissionSchool[];
+}
 
-  return count ?? 0;
+export async function incrementAdmissionLike(
+  id: number
+): Promise<number | null> {
+  const admin = createAdminClient();
+  const { data: row } = await admin
+    .from("admissions")
+    .select("likes_count")
+    .eq("id", id)
+    .eq("published", true)
+    .maybeSingle();
+
+  if (!row) return null;
+  const next = (row.likes_count ?? 0) + 1;
+  const { error } = await admin
+    .from("admissions")
+    .update({ likes_count: next })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+  return next;
+}
+
+export function buildCrossComparisonsFromSchools(
+  admissionId: number,
+  schools: Array<{
+    univ_id: number
+    dept_id: number
+    univ_name: string
+    dept_name: string
+    is_accept: boolean
+    is_regist: boolean
+  }>
+): Omit<CrossComparison, "id" | "count">[] {
+  const registered = schools.filter((s) => s.is_regist);
+  const acceptedNotReg = schools.filter((s) => s.is_accept && !s.is_regist);
+  const rows: Omit<CrossComparison, "id" | "count">[] = [];
+
+  for (const win of registered) {
+    for (const lose of acceptedNotReg) {
+      if (win.univ_id === lose.univ_id && win.dept_id === lose.dept_id) continue;
+      rows.push({
+        admission_id: admissionId,
+        univ_id_win: win.univ_id,
+        univ_id_lose: lose.univ_id,
+        univ_name_win: win.univ_name,
+        univ_name_lose: lose.univ_name,
+        dept_name_win: win.dept_name,
+        dept_name_lose: lose.dept_name,
+        dept_id_win: win.dept_id,
+        dept_id_lose: lose.dept_id,
+      });
+    }
+  }
+  return rows;
 }

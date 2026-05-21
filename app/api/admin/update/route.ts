@@ -16,11 +16,13 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const id = String(body.id ?? "").trim();
+  const idRaw = body.id;
+  const admissionId =
+    typeof idRaw === "number" ? idRaw : parseInt(String(idRaw ?? "").trim(), 10);
   const field = String(body.field ?? "").trim();
   const value = body.value;
 
-  if (!id || !field) {
+  if (Number.isNaN(admissionId) || !field) {
     return NextResponse.json({ error: "id, field 필수" }, { status: 400 });
   }
 
@@ -32,7 +34,6 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "likes_count 오류" }, { status: 400 });
     }
     patch.likes_count = n;
-    patch.likes = n;
   } else if (field === "is_featured") {
     patch.is_featured = Boolean(value);
   } else if (field === "published") {
@@ -43,7 +44,10 @@ export async function PATCH(request: NextRequest) {
 
   try {
     const admin = createAdminClient();
-    const { error } = await admin.from("admissions").update(patch).eq("id", id);
+    const { error } = await admin
+      .from("admissions")
+      .update(patch)
+      .eq("id", admissionId);
     if (error) {
       console.error("[admin update]", error);
       return NextResponse.json({ error: "업데이트 실패" }, { status: 500 });

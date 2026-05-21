@@ -60,30 +60,16 @@ export default function FloatingAdmissions() {
   const isEnglish = pathname?.startsWith("/en");
 
   useEffect(() => {
-    fetch("/api/crossadmit")
+    fetch("/api/cross-comparisons?stats=1")
       .then((res) => res.json())
       .then((data) => {
-        if (data.comparisons && data.comparisons.length > 0) {
-          setComparisons(data.comparisons.slice(0, 8)); // 최근 8개만 표시
+        if (data.success && data.comparisons?.length > 0) {
+          setComparisons(data.comparisons.slice(0, 8));
         } else {
-          // 샘플 데이터
-          setComparisons([
-            { id: "seoul-vs-korea", university1: "서울대학교", university2: "고려대학교(서울캠)", percentage1: 60, percentage2: 40 },
-            { id: "yonsei-vs-korea", university1: "연세대학교(서울캠)", university2: "고려대학교(서울캠)", percentage1: 55, percentage2: 45 },
-            { id: "seoul-vs-yonsei", university1: "서울대학교", university2: "연세대학교(서울캠)", percentage1: 65, percentage2: 35 },
-            { id: "snu-vs-skk", university1: "서울대학교", university2: "성균관대학교", percentage1: 70, percentage2: 30 },
-            { id: "yonsei-vs-hanyang", university1: "연세대학교(서울캠)", university2: "한양대학교", percentage1: 58, percentage2: 42 },
-          ]);
+          setComparisons([]);
         }
       })
-      .catch(() => {
-        // 에러 시 샘플 데이터
-        setComparisons([
-          { id: "seoul-vs-korea", university1: "서울대학교", university2: "고려대학교(서울캠)", percentage1: 60, percentage2: 40 },
-          { id: "yonsei-vs-korea", university1: "연세대학교(서울캠)", university2: "고려대학교(서울캠)", percentage1: 55, percentage2: 45 },
-          { id: "seoul-vs-yonsei", university1: "서울대학교", university2: "연세대학교(서울캠)", percentage1: 65, percentage2: 35 },
-        ]);
-      });
+      .catch(() => setComparisons([]));
   }, []);
 
   if (comparisons.length === 0) return null;

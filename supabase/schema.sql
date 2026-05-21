@@ -63,7 +63,7 @@ create table if not exists public.universities (
 alter table public.admissions enable row level security;
 create policy "admissions read" on public.admissions for select using (true);
 
-/* 합격DB 공감·피처드·DC 댓글: 실제 DDL은 migrations/007_likes_and_comments.sql 참고 */
+/* 합격DB 공감·피처드·DC 댓글: 프로덕션/Supabase에서는 admissions.id 타입 확인 후 migrations/007 사용 권장 (uuid/text 자동 선택) */
 
 alter table public.admissions add column if not exists likes_count integer not null default 0;
 alter table public.admissions add column if not exists is_featured boolean not null default false;

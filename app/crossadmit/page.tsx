@@ -76,15 +76,9 @@ export default function CrossAdmitPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch("/api/crossadmit");
+        const response = await fetch("/api/cross-comparisons?stats=1");
         const data = await response.json();
-        
-        console.log("[CrossAdmit Page] API Response:", {
-          success: data.success,
-          comparisonsCount: data.comparisons?.length || 0,
-          totalSubmissions: data.totalSubmissions || 0,
-        });
-        
+
         if (data.success) {
           if (data.comparisons && data.comparisons.length > 0) {
             // API 데이터를 CrossAdmitRecord 형식으로 변환
@@ -101,7 +95,6 @@ export default function CrossAdmitPage() {
               confidenceInterval2: c.confidenceInterval2,
             }));
             
-            console.log("[CrossAdmit Page] Setting comparisons:", apiComparisons.length);
             setComparisons(apiComparisons);
             
             // 인기 비교 목록
@@ -114,49 +107,17 @@ export default function CrossAdmitPage() {
             }));
             setPopularComparisons(popular);
           } else {
-            // 데이터가 없을 때만 샘플 데이터 사용
-            console.log("[CrossAdmit Page] No comparisons found, using sample data");
-            const sampleData = generateSampleData();
-            setComparisons(sampleData);
-            
-            const popular = sampleData.slice(0, 5).map((c) => ({
-              id: c.id,
-              university1: c.university1,
-              university2: c.university2,
-              percentage1: c.percentage1,
-              percentage2: c.percentage2,
-            }));
-            setPopularComparisons(popular);
+            setComparisons([]);
+            setPopularComparisons([]);
           }
         } else {
-          console.error("[CrossAdmit Page] API returned success: false", data.error);
-          // API 실패 시 샘플 데이터 사용
-          const sampleData = generateSampleData();
-          setComparisons(sampleData);
-          
-          const popular = sampleData.slice(0, 5).map((c) => ({
-            id: c.id,
-            university1: c.university1,
-            university2: c.university2,
-            percentage1: c.percentage1,
-            percentage2: c.percentage2,
-          }));
-          setPopularComparisons(popular);
+          setComparisons([]);
+          setPopularComparisons([]);
         }
       } catch (error) {
         console.error("[CrossAdmit Page] Error fetching crossadmit data:", error);
-        // 에러 발생 시 샘플 데이터 사용
-        const sampleData = generateSampleData();
-        setComparisons(sampleData);
-        
-        const popular = sampleData.slice(0, 5).map((c) => ({
-          id: c.id,
-          university1: c.university1,
-          university2: c.university2,
-          percentage1: c.percentage1,
-          percentage2: c.percentage2,
-        }));
-        setPopularComparisons(popular);
+        setComparisons([]);
+        setPopularComparisons([]);
       }
     };
 
@@ -354,8 +315,10 @@ export default function CrossAdmitPage() {
                   </Link>
                 ))
               ) : (
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center text-gray-500">
-                  검색 결과가 없습니다.
+                <div className="rounded-lg border border-gray-200 bg-white p-8 text-center text-gray-500 shadow-sm">
+                  {comparisons.length === 0
+                    ? "데이터 준비 중입니다. MySQL 덤프 마이그레이션 후 비교 통계가 표시됩니다."
+                    : "검색 결과가 없습니다."}
                 </div>
               )}
             </div>

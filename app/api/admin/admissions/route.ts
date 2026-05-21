@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
 
       for (const row of crows ?? []) {
         if (row.is_deleted) continue;
-        const aid = row.admission_id as string;
+        const aid = String(row.admission_id);
         counts[aid] = (counts[aid] ?? 0) + 1;
       }
     }
