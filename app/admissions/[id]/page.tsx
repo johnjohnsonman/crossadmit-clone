@@ -1,12 +1,19 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
-import { getAdmissionById } from "@/lib/supabase/admissions-service";
+import {
+  getAdmissionById,
+  getAdmissions,
+} from "@/lib/supabase/admissions-service";
 import { admissionToRecord } from "@/lib/supabase/map";
 import type { AdmissionSchoolRecord } from "@/lib/types";
 import StructuredData from "@/components/StructuredData";
 import CommentSection from "@/components/CommentSection";
 import { formatText, formatTextWithLineBreaks } from "@/lib/utils/format-text";
+import StatusBadge, { statusFromFlags } from "@/components/ui/StatusBadge";
+import AdmissionDetailSidebar from "@/components/admissions/AdmissionDetailSidebar";
+import AdmissionLikeButton from "@/components/admissions/AdmissionLikeButton";
+import AdmissionShareButton from "@/components/admissions/AdmissionShareButton";
 
 type PageProps = { params: Promise<{ id: string }> };
 
@@ -15,26 +22,64 @@ function parseId(raw: string): number | null {
   return Number.isNaN(n) ? null : n;
 }
 
-function schoolBadge(s: AdmissionSchoolRecord): {
-  label: string;
-  className: string;
-} {
-  if (s.isRegist) {
-    return {
-      label: "등록",
-      className: "border-emerald-200 bg-emerald-50 text-emerald-800",
-    };
-  }
-  if (s.isAccept) {
-    return {
-      label: "합격",
-      className: "border-blue-200 bg-blue-50 text-blue-800",
-    };
-  }
-  return {
-    label: "불합격",
-    className: "border-gray-200 bg-gray-100 text-gray-600",
-  };
+function SpecBlock({
+  title,
+  content,
+}: {
+  title: string;
+  content: string | undefined;
+}) {
+  const has =
+    content?.trim() && formatText(content) !== "-";
+  return (
+    <div className="rounded-lg bg-[#F9F9F7] p-4 sm:p-5">
+      <h3 className="text-xs font-medium text-[#6B7280] tracking-wide">
+        {title}
+      </h3>
+      <div className="mt-3 text-sm leading-relaxed text-[#1A1A1A]">
+        {has ? (
+          formatTextWithLineBreaks(content)
+        ) : (
+          <span className="text-[#9CA3AF]">정보 없음</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ResultRow({ school }: { school: AdmissionSchoolRecord }) {
+  const status = statusFromFlags(school.isRegist, school.isAccept);
+  const symbol =
+    status === "enroll" ? "●" : status === "accept" ? "○" : "✕";
+  return (
+    <li className="flex flex-wrap items-baseline gap-x-3 gap-y-1 py-2.5 border-b border-[#E5E5E0]/80 last:border-0">
+      <span className="w-16 shrink-0 flex items-center gap-1.5">
+        <span
+          className={
+            status === "enroll"
+              ? "text-[#2D5A27]"
+              : status === "accept"
+                ? "text-blue-600"
+                : "text-[#9CA3AF]"
+          }
+          aria-hidden
+        >
+          {symbol}
+        </span>
+        <StatusBadge status={status} variant="pill" />
+      </span>
+      <span
+        className={`font-semibold ${status === "reject" ? "text-[#9CA3AF] line-through" : "text-[#1A1A1A]"}`}
+      >
+        {school.univName}
+      </span>
+      <span
+        className={`text-sm ${status === "reject" ? "text-[#9CA3AF] line-through" : "text-[#6B7280]"}`}
+      >
+        {school.deptName}
+      </span>
+    </li>
+  );
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -87,6 +132,21 @@ export default async function AdmissionDetailPage({ params }: PageProps) {
     record.admissionSchools[0]?.admissionType ||
     "";
 
+  const registSchool = record.admissionSchools.find((s) => s.isRegist);
+  let related = typeof registSchool?.univName === "string"
+    ? (
+        await getAdmissions({
+          search: registSchool.univName,
+          limit: 8,
+          offset: 0,
+          sort: "latest",
+        })
+      ).data
+        .filter((r) => r.id !== id)
+        .slice(0, 5)
+        .map(admissionToRecord)
+    : [];
+
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "Article",
@@ -97,109 +157,102 @@ export default async function AdmissionDetailPage({ params }: PageProps) {
     datePublished: record.createdAt.toISOString(),
   };
 
+  const reviews = record.admissionSchools.filter((s) => s.review?.trim());
+
   return (
-    <main className="min-h-screen bg-[#f5f4f0]">
+    <main className="min-h-screen bg-[#FAFAF8]">
       <StructuredData data={structuredData} />
 
-      <div className="container mx-auto max-w-5xl px-4 py-8">
+      <div className="container mx-auto max-w-6xl px-4 py-6 sm:py-8">
         <Link
           href="/admissions"
-          className="inline-flex items-center gap-1 text-sm font-medium text-tea-700 hover:text-tea-900"
+          className="inline-flex items-center gap-1 text-sm font-medium text-[#6B7280] hover:text-[#2D5A27] transition-colors"
         >
-          ← 합격DB 목록
+          ← 목록으로
         </Link>
 
-        <div className="mt-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-          <div className="flex flex-wrap gap-2 text-sm text-gray-600">
-            <span className="rounded-full bg-gray-100 px-2.5 py-0.5">
-              {record.year}년
-            </span>
-            {primaryType ? (
-              <span className="rounded-full bg-gray-100 px-2.5 py-0.5">
-                {primaryType}
-              </span>
-            ) : null}
-            {record.isFeatured ? (
-              <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-900">
-                ⭐ 오늘의 DB
-              </span>
-            ) : null}
+        <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 space-y-6">
+            <header className="rounded-xl border border-[#E5E5E0] bg-white p-5 sm:p-6 shadow-sm">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className="text-lg sm:text-xl font-semibold tracking-tight text-[#1A1A1A]">
+                    {record.year}년 {primaryType}
+                  </p>
+                  <p className="mt-1 text-sm text-[#6B7280]">
+                    {record.userHandle?.trim() || "익명"}
+                  </p>
+                  {record.isFeatured && (
+                    <span className="mt-2 inline-block text-xs font-medium text-[#2D5A27] bg-[#EBF5EB] px-2 py-0.5 rounded">
+                      추천 후기
+                    </span>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <AdmissionLikeButton
+                    admissionId={id}
+                    initialCount={record.likesCount ?? 0}
+                    variant="detail"
+                  />
+                  <AdmissionShareButton title={record.title} />
+                </div>
+              </div>
+            </header>
+
+            <section className="rounded-xl border border-[#E5E5E0] bg-white p-5 sm:p-6 shadow-sm">
+              <h2 className="text-sm font-semibold tracking-tight text-[#1A1A1A]">
+                지원 결과
+              </h2>
+              <ul className="mt-3">
+                {record.admissionSchools.map((s) => (
+                  <ResultRow key={s.id} school={s} />
+                ))}
+              </ul>
+            </section>
+
+            <section>
+              <h2 className="text-sm font-semibold tracking-tight text-[#1A1A1A] mb-3">
+                스펙
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <SpecBlock title="수능/시험 점수" content={record.inputScore} />
+                <SpecBlock title="내신 / GPA" content={record.inputGpa} />
+                <SpecBlock
+                  title="비교과/특기"
+                  content={record.inputSpecialty}
+                />
+              </div>
+            </section>
+
+            {reviews.length > 0 && (
+              <section className="rounded-xl border border-[#E5E5E0] bg-white p-5 sm:p-6 shadow-sm">
+                <h2 className="text-sm font-semibold tracking-tight text-[#1A1A1A]">
+                  후기
+                </h2>
+                <div className="mt-4 space-y-5">
+                  {reviews.map((s) => (
+                    <div key={s.id}>
+                      <h3 className="text-xs font-medium text-[#6B7280]">
+                        {s.univName} · {s.deptName}
+                      </h3>
+                      <div className="mt-2 text-sm leading-relaxed text-[#1A1A1A]">
+                        {formatTextWithLineBreaks(s.review)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            <section className="rounded-xl border border-[#E5E5E0] bg-white p-5 sm:p-6 shadow-sm">
+              <CommentSection admissionId={id} />
+            </section>
           </div>
 
-          <h1 className="mt-4 text-xl font-bold text-gray-900 sm:text-2xl">
-            {formatText(record.title)}
-          </h1>
-          <p className="mt-3 text-sm text-gray-500">{record.userHandle}</p>
+          <div className="lg:col-span-1">
+            <AdmissionDetailSidebar record={record} related={related} />
+          </div>
         </div>
-
-        <section className="mt-6 rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-          <h2 className="text-sm font-semibold text-sage-800">지원 · 합격 학교</h2>
-          <ul className="mt-4 space-y-3">
-            {record.admissionSchools.map((s) => {
-              const badge = schoolBadge(s);
-              return (
-                <li
-                  key={s.id}
-                  className="flex flex-wrap items-center gap-2 border-b border-gray-100 pb-3 last:border-0"
-                >
-                  <span
-                    className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${badge.className}`}
-                  >
-                    {badge.label}
-                  </span>
-                  <span className="font-semibold text-gray-900">{s.univName}</span>
-                  <span className="text-sm text-gray-700">{s.deptName}</span>
-                  {s.admissionType ? (
-                    <span className="text-xs text-gray-500">({s.admissionType})</span>
-                  ) : null}
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-
-        <div className="mt-6 grid gap-6 md:grid-cols-3">
-          <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-            <h2 className="text-xs font-medium text-gray-500">수능/표준 점수</h2>
-            <div className="mt-2 text-sm leading-relaxed text-gray-900">
-              {formatTextWithLineBreaks(record.inputScore)}
-            </div>
-          </section>
-          <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-            <h2 className="text-xs font-medium text-gray-500">내신 / GPA</h2>
-            <div className="mt-2 text-sm leading-relaxed text-gray-900">
-              {formatTextWithLineBreaks(record.inputGpa)}
-            </div>
-          </section>
-          <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-            <h2 className="text-xs font-medium text-gray-500">특기 · 비교과</h2>
-            <div className="mt-2 text-sm leading-relaxed text-gray-900">
-              {formatTextWithLineBreaks(record.inputSpecialty)}
-            </div>
-          </section>
-        </div>
-
-        {record.admissionSchools.some((s) => s.review?.trim()) ? (
-          <section className="mt-6 rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-            <h2 className="text-lg font-semibold text-gray-900">후기</h2>
-            {record.admissionSchools
-              .filter((s) => s.review?.trim())
-              .map((s) => (
-                <div key={s.id} className="mt-4">
-                  <h3 className="text-sm font-medium text-tea-800">
-                    {s.univName} {s.deptName}
-                  </h3>
-                  <div className="mt-2 text-sm leading-relaxed text-gray-800">
-                    {formatTextWithLineBreaks(s.review)}
-                  </div>
-                </div>
-              ))}
-          </section>
-        ) : null}
-
-        <section className="mt-6">
-          <CommentSection admissionId={id} />
-        </section>
       </div>
     </main>
   );

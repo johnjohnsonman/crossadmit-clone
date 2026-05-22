@@ -148,10 +148,12 @@ export default function CommentSection({ admissionId: admissionIdProp }: Props) 
   }
 
   return (
-    <section className="mt-10 border-t border-gray-200 pt-6">
-      <h2 className="text-lg font-semibold text-gray-900">댓글</h2>
+    <section>
+      <h2 className="text-sm font-semibold tracking-tight text-[#1A1A1A]">
+        댓글
+      </h2>
 
-      <div className="mt-3 rounded-lg border border-gray-200 bg-[#f9f9f9] p-4">
+      <div className="mt-3 rounded-lg border border-[#E5E5E0] bg-[#FAFAF8] p-4">
         {loading ? (
           <p className="text-sm text-gray-500">불러오는 중…</p>
         ) : loadErr ? (
@@ -230,7 +232,7 @@ export default function CommentSection({ admissionId: admissionIdProp }: Props) 
 
       <form
         onSubmit={submit}
-        className="mt-4 space-y-2 rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
+        className="mt-4 space-y-2 rounded-lg border border-[#E5E5E0] bg-white p-4"
       >
         {postErr ? (
           <p className="text-sm text-red-600">{postErr}</p>
@@ -262,7 +264,7 @@ export default function CommentSection({ admissionId: admissionIdProp }: Props) 
           <button
             type="submit"
             disabled={posting}
-            className="shrink-0 rounded bg-tea-600 px-4 py-2 text-sm font-medium text-white hover:bg-tea-700 disabled:opacity-50"
+            className="shrink-0 rounded-lg bg-[#2D5A27] px-4 py-2 text-sm font-medium text-white hover:bg-[#244a20] disabled:opacity-50"
           >
             {posting ? "등록 중…" : "등록"}
           </button>

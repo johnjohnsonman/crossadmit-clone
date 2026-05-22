@@ -5,10 +5,11 @@ import { useCallback, useEffect, useState } from "react";
 import UniversityAutocomplete, {
   type UniversityPick,
 } from "@/components/crossadmit/UniversityAutocomplete";
+import SourceBadge from "@/components/ui/SourceBadge";
+import { ForumListSkeleton } from "@/components/ui/Skeleton";
+import ForumPopularSidebar from "@/components/forum/ForumPopularSidebar";
 import {
   FORUM_TABS,
-  SOURCE_BADGE_CLASS,
-  SOURCE_LABELS,
   SUBCATEGORY_LABELS,
 } from "@/lib/forum/constants";
 
@@ -23,6 +24,8 @@ export interface ForumPost {
   upvotes: number;
   source_created_at: string | null;
   created_at: string;
+  ai_summary?: string;
+  ai_summary_kr?: string;
   university_name_kr?: string;
   university_name_en?: string;
   university_logo?: string;
@@ -57,7 +60,6 @@ export default function StudyForumBoard({
   const [page, setPage] = useState(0);
   const [posts, setPosts] = useState<ForumPost[]>([]);
   const [total, setTotal] = useState(0);
-  const [stats, setStats] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
 
   const fetchPosts = useCallback(async () => {
@@ -81,7 +83,6 @@ export default function StudyForumBoard({
     if (res.ok) {
       setPosts(json.posts ?? []);
       setTotal(json.total ?? 0);
-      if (json.statsBySource) setStats(json.statsBySource);
     }
     setLoading(false);
   }, [tab, selectedUniv, fixedUniversity, page]);
@@ -99,242 +100,273 @@ export default function StudyForumBoard({
     setSearchInput("");
   };
 
-  const filterLabel =
-    selectedUniv != null
-      ? locale === "ko"
-        ? selectedUniv.name_kr
-        : selectedUniv.name_en || selectedUniv.name_kr
-      : locale === "ko"
-        ? "전체 대학"
-        : "All universities";
+  const selectPopularUniv = (u: UniversityPick) => {
+    setSelectedUniv(u);
+    setSearchInput(locale === "ko" ? u.name_kr : u.name_en || u.name_kr);
+  };
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  const naverBlogN = stats.naver_blog ?? 0;
-  const naverNewsN = stats.naver_news ?? 0;
-  const redditN = stats.reddit ?? 0;
-  const quoraN = stats.quora ?? 0;
 
   const formatDate = (iso: string | null) => {
     if (!iso) return "";
-    return new Date(iso).toLocaleDateString(locale === "ko" ? "ko-KR" : "en-US");
+    const d = new Date(iso);
+    return locale === "ko"
+      ? `${d.getFullYear()}. ${d.getMonth() + 1}. ${d.getDate()}`
+      : d.toLocaleDateString("en-US");
   };
 
-  const postUnivLabel = (p: ForumPost) => {
-    if (p.university_name_kr) {
-      return locale === "ko"
-        ? p.university_name_kr
-        : p.university_name_en || p.university_name_kr;
-    }
-    return p.university || null;
+  const postSummary = (p: ForumPost) => {
+    const kr = p.ai_summary_kr?.trim();
+    const en = p.ai_summary?.trim();
+    if (locale === "ko" && kr) return kr;
+    return en || kr || "";
   };
+
+  const showMainHeader = !universityInfo;
 
   return (
-    <div className="min-h-screen bg-sage-50">
-      <div className="container mx-auto px-4 py-8 max-w-5xl">
-        <header className="mb-6">
-          {universityInfo && (
-            <div className="bg-white rounded-xl border border-sage-200 p-4 mb-4">
-              <h1 className="text-2xl font-bold text-gray-900">
-                {locale === "ko"
-                  ? universityInfo.name_kr
-                  : universityInfo.name_en || universityInfo.name_kr}
-              </h1>
-              {universityInfo.name_en && locale === "ko" && (
-                <p className="text-gray-600 text-sm">{universityInfo.name_en}</p>
-              )}
-              {admissionsHref && (
-                <Link
-                  href={admissionsHref}
-                  className="inline-block mt-3 text-sm font-medium text-tea-600 hover:underline"
-                >
-                  {locale === "ko" ? "→ 합격DB 보기" : "→ Admissions DB"}
-                </Link>
-              )}
-            </div>
-          )}
-          {!universityInfo && (
-            <>
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-                {locale === "ko" ? "유학 포럼" : "Study Forum"}
-              </h1>
-              <p className="text-gray-600 text-sm mt-1">
-                {locale === "ko"
-                  ? "네이버 · Reddit · Quora · 공식 입시/장학 정보"
-                  : "Naver, Reddit, Quora & official study-in-Korea sources"}
-              </p>
-            </>
-          )}
-        </header>
-
-        <div className="flex flex-wrap gap-2 mb-4">
-          {FORUM_TABS.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => setTab(t.id)}
-              className={`px-3 py-1.5 rounded-full text-sm font-medium ${
-                tab === t.id
-                  ? "bg-tea-600 text-white"
-                  : "bg-white text-gray-800 border border-sage-200"
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
-
-        {showUniversityFilter && !fixedUniversity && (
-          <div className="mb-4">
-            <p className="text-xs text-gray-600 mb-1.5">
-              {locale === "ko" ? "필터" : "Filter"}:{" "}
-              <span className="font-medium text-gray-900">{filterLabel}</span>
+    <div className="min-h-screen bg-[#FAFAF8]">
+      {showMainHeader && (
+        <div className="border-b border-[#E5E5E0] bg-white">
+          <div className="container mx-auto max-w-6xl px-4 py-8 sm:py-10">
+            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-[#1A1A1A]">
+              {locale === "ko" ? "유학 포럼" : "Study Forum"}
+            </h1>
+            <p className="mt-2 text-sm text-[#6B7280] leading-relaxed max-w-2xl">
+              {locale === "ko"
+                ? "외국인 유학생들의 한국 유학 경험과 정보를 공유합니다"
+                : "Experiences and tips for studying in Korea"}
             </p>
-            <div className="flex gap-2 items-stretch">
-              <span className="flex items-center pl-3 text-gray-500 bg-white border border-sage-200 border-r-0 rounded-l-lg">
-                🔍
-              </span>
-              <UniversityAutocomplete
-                value={searchInput}
-                univId={selectedUniv?.id ?? null}
-                onChange={setSearchInput}
-                onSelect={(u) => {
-                  setSelectedUniv(u);
-                  setSearchInput(
-                    locale === "ko" ? u.name_kr : u.name_en || u.name_kr
-                  );
-                }}
-                onClearId={() => setSelectedUniv(null)}
-                placeholder={
-                  locale === "ko" ? "대학명 검색..." : "Search university..."
-                }
-                locale={locale}
-                className="flex-1 px-3 py-2 text-sm border border-sage-200 rounded-r-lg rounded-l-none focus:outline-none focus:ring-2 focus:ring-tea-500/40 text-gray-900 placeholder:text-gray-400 bg-white"
-              />
-              {selectedUniv && (
-                <button
-                  type="button"
-                  onClick={clearUniversity}
-                  className="px-3 py-2 rounded-lg border border-sage-200 bg-white text-gray-700 hover:bg-sage-50 text-sm font-medium shrink-0"
-                  title={locale === "ko" ? "초기화" : "Clear"}
-                  aria-label={locale === "ko" ? "필터 초기화" : "Clear filter"}
-                >
-                  ✕
-                </button>
-              )}
+          </div>
+        </div>
+      )}
+
+      <div className="container mx-auto max-w-6xl px-4 py-6 sm:py-8">
+        {universityInfo && (
+          <div className="rounded-xl border border-[#E5E5E0] bg-white p-5 mb-6 shadow-sm">
+            <div className="flex items-center gap-3">
+              {universityInfo.logo ? (
+                <img
+                  src={universityInfo.logo}
+                  alt=""
+                  className="h-12 w-12 object-contain"
+                />
+              ) : null}
+              <div>
+                <h1 className="text-xl font-semibold tracking-tight text-[#1A1A1A]">
+                  {locale === "ko"
+                    ? universityInfo.name_kr
+                    : universityInfo.name_en || universityInfo.name_kr}
+                </h1>
+                {universityInfo.name_en && locale === "ko" && (
+                  <p className="text-sm text-[#6B7280]">
+                    {universityInfo.name_en}
+                  </p>
+                )}
+              </div>
             </div>
+            {admissionsHref && (
+              <Link
+                href={admissionsHref}
+                className="inline-block mt-3 text-sm font-medium text-[#2D5A27] hover:underline"
+              >
+                {locale === "ko" ? "→ 합격DB 보기" : "→ Admissions DB"}
+              </Link>
+            )}
           </div>
         )}
 
-        <div className="text-xs text-gray-600 mb-4 bg-white border border-sage-200 rounded-lg px-3 py-2">
-          {locale === "ko" ? "총" : "Total"}{" "}
-          <strong className="text-gray-900">{total}</strong>
-          {locale === "ko" ? "개 게시글" : " posts"} |{" "}
-          {locale === "ko" ? "네이버" : "Naver"} {naverBlogN}
-          {naverNewsN > 0 && ` · 뉴스 ${naverNewsN}`} | Reddit {redditN} | Quora{" "}
-          {quoraN}
-        </div>
-
-        {loading && (
-          <p className="text-gray-600 text-center py-12">
-            {locale === "ko" ? "불러오는 중…" : "Loading…"}
-          </p>
-        )}
-
-        {!loading && posts.length === 0 && (
-          <p className="text-gray-600 text-center py-12">
-            {locale === "ko" ? "게시글이 없습니다." : "No posts yet."}
-          </p>
-        )}
-
-        <ul className="space-y-2">
-          {posts.map((p) => {
-            const sub = p.subcategory || p.category || "general";
-            const srcClass =
-              SOURCE_BADGE_CLASS[p.source] ?? "bg-gray-100 text-gray-800";
-            const srcLabel = SOURCE_LABELS[p.source] ?? p.source;
-            const uni = postUnivLabel(p);
-
-            return (
-              <li
-                key={p.id}
-                className="bg-white border border-sage-200 rounded-lg px-4 py-3 hover:border-tea-400 transition-colors"
-              >
-                <div className="flex flex-wrap items-center gap-2 mb-1">
-                  <span
-                    className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${srcClass}`}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          <div className="lg:col-span-3 min-w-0">
+            <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 mb-4">
+              <div className="flex gap-1 min-w-max border-b border-[#E5E5E0]">
+                {FORUM_TABS.map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => setTab(t.id)}
+                    className={`px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors border-b-2 -mb-px ${
+                      tab === t.id
+                        ? "border-[#2D5A27] text-[#2D5A27] font-semibold"
+                        : "border-transparent text-[#6B7280] hover:text-[#1A1A1A]"
+                    }`}
                   >
-                    [{srcLabel}]
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {showUniversityFilter && !fixedUniversity && (
+              <div className="mb-5">
+                <div className="flex gap-2 items-stretch">
+                  <span className="flex items-center pl-3 text-[#9CA3AF] bg-white border border-[#E5E5E0] border-r-0 rounded-l-lg">
+                    🔍
                   </span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-tea-50 text-tea-800">
-                    {SUBCATEGORY_LABELS[sub] ?? sub}
-                  </span>
-                  {uni && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-sage-100 text-gray-800">
-                      {p.university_matched_id ? (
-                        <Link
-                          href={`/forum/${p.university || "other"}`}
-                          className="hover:text-tea-600"
-                        >
-                          {uni}
-                        </Link>
-                      ) : (
-                        uni
-                      )}
-                    </span>
+                  <UniversityAutocomplete
+                    value={searchInput}
+                    univId={selectedUniv?.id ?? null}
+                    onChange={setSearchInput}
+                    onSelect={(u) => {
+                      setSelectedUniv(u);
+                      setSearchInput(
+                        locale === "ko" ? u.name_kr : u.name_en || u.name_kr
+                      );
+                    }}
+                    onClearId={() => setSelectedUniv(null)}
+                    placeholder={
+                      locale === "ko"
+                        ? "대학명으로 필터..."
+                        : "Filter by university..."
+                    }
+                    locale={locale}
+                    className="flex-1 px-3 py-2.5 text-sm border border-[#E5E5E0] rounded-r-lg rounded-l-none bg-white text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-1 focus:ring-[#2D5A27]/25"
+                  />
+                  {selectedUniv && (
+                    <button
+                      type="button"
+                      onClick={clearUniversity}
+                      className="px-3 rounded-lg border border-[#E5E5E0] bg-white text-[#6B7280] hover:bg-[#FAFAF8] text-sm shrink-0"
+                      aria-label={locale === "ko" ? "필터 초기화" : "Clear"}
+                    >
+                      ✕
+                    </button>
                   )}
                 </div>
-                <div className="flex items-start justify-between gap-2">
-                  <a
-                    href={p.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-medium text-gray-900 hover:text-tea-600 text-sm leading-snug flex-1"
-                  >
-                    {p.title}
-                  </a>
-                  <a
-                    href={p.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-tea-600 shrink-0 text-lg"
-                    title="원문"
-                    aria-label="원문 링크"
-                  >
-                    ↗
-                  </a>
-                </div>
-                <div className="flex gap-3 mt-1 text-xs text-gray-500">
-                  <span>{formatDate(p.source_created_at ?? p.created_at)}</span>
-                  {p.upvotes > 0 && <span>👍 {p.upvotes}</span>}
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+              </div>
+            )}
 
-        {totalPages > 1 && (
-          <div className="flex justify-center gap-2 mt-6">
-            <button
-              type="button"
-              disabled={page <= 0}
-              onClick={() => setPage((p) => Math.max(0, p - 1))}
-              className="px-4 py-2 text-sm rounded border bg-white text-gray-900 disabled:opacity-40"
-            >
-              {locale === "ko" ? "이전" : "Prev"}
-            </button>
-            <span className="px-3 py-2 text-sm text-gray-600">
-              {page + 1} / {totalPages}
-            </span>
-            <button
-              type="button"
-              disabled={page >= totalPages - 1}
-              onClick={() => setPage((p) => p + 1)}
-              className="px-4 py-2 text-sm rounded border bg-white text-gray-900 disabled:opacity-40"
-            >
-              {locale === "ko" ? "다음" : "Next"}
-            </button>
+            <p className="text-xs text-[#6B7280] mb-4">
+              {locale === "ko" ? "총" : ""}{" "}
+              <span className="font-medium text-[#1A1A1A] tabular-nums">
+                {total}
+              </span>
+              {locale === "ko" ? "개 게시글" : " posts"}
+            </p>
+
+            {loading ? (
+              <ForumListSkeleton count={5} />
+            ) : posts.length === 0 ? (
+              <div className="rounded-xl border border-[#E5E5E0] bg-white py-16 text-center text-sm text-[#6B7280]">
+                {locale === "ko" ? "게시글이 없습니다." : "No posts yet."}
+              </div>
+            ) : (
+              <ul className="space-y-3">
+                {posts.map((p) => {
+                  const sub = p.subcategory || p.category || "general";
+                  const summary = postSummary(p);
+                  const uni =
+                    locale === "ko"
+                      ? p.university_name_kr
+                      : p.university_name_en || p.university_name_kr;
+
+                  return (
+                    <li
+                      key={p.id}
+                      className="rounded-xl border border-[#E5E5E0] bg-white p-4 sm:p-5 shadow-sm hover:border-[#2D5A27]/25 transition-colors"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <SourceBadge source={p.source} />
+                          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-[#F5F5F4] text-[#6B7280]">
+                            {SUBCATEGORY_LABELS[sub] ?? sub}
+                          </span>
+                        </div>
+                        <time className="text-xs text-[#9CA3AF] tabular-nums">
+                          {formatDate(p.source_created_at ?? p.created_at)}
+                        </time>
+                      </div>
+
+                      <a
+                        href={p.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block group"
+                      >
+                        <h2 className="font-semibold text-[#1A1A1A] text-base leading-snug group-hover:text-[#2D5A27] transition-colors">
+                          {p.title}
+                        </h2>
+                        {summary && (
+                          <p className="mt-2 text-sm text-[#6B7280] leading-relaxed line-clamp-2">
+                            <span className="text-[#9CA3AF]">AI 요약: </span>
+                            {summary}
+                          </p>
+                        )}
+                      </a>
+
+                      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs">
+                        {uni && (
+                          <span className="text-[#6B7280]">
+                            {p.university_matched_id ? (
+                              <Link
+                                href={`/forum/${p.university || "other"}`}
+                                className="hover:text-[#2D5A27] font-medium"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                {uni}
+                              </Link>
+                            ) : (
+                              uni
+                            )}
+                          </span>
+                        )}
+                        <div className="flex items-center gap-3 ml-auto">
+                          <span className="text-[#6B7280] tabular-nums">
+                            👍 {p.upvotes}
+                          </span>
+                          <a
+                            href={p.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-medium text-[#2D5A27] hover:underline"
+                          >
+                            {locale === "ko" ? "외부 링크 →" : "Open →"}
+                          </a>
+                        </div>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+
+            {totalPages > 1 && !loading && (
+              <div className="flex justify-center gap-2 mt-8">
+                <button
+                  type="button"
+                  disabled={page <= 0}
+                  onClick={() => setPage((p) => Math.max(0, p - 1))}
+                  className="px-4 py-2 text-sm rounded-lg border border-[#E5E5E0] bg-white text-[#1A1A1A] disabled:opacity-40 hover:bg-[#FAFAF8]"
+                >
+                  {locale === "ko" ? "이전" : "Prev"}
+                </button>
+                <span className="px-3 py-2 text-sm text-[#6B7280] tabular-nums">
+                  {page + 1} / {totalPages}
+                </span>
+                <button
+                  type="button"
+                  disabled={page >= totalPages - 1}
+                  onClick={() => setPage((p) => p + 1)}
+                  className="px-4 py-2 text-sm rounded-lg border border-[#E5E5E0] bg-white text-[#1A1A1A] disabled:opacity-40 hover:bg-[#FAFAF8]"
+                >
+                  {locale === "ko" ? "다음" : "Next"}
+                </button>
+              </div>
+            )}
           </div>
-        )}
+
+          {showUniversityFilter && !fixedUniversity && (
+            <div className="lg:col-span-1">
+              <div className="lg:sticky lg:top-6">
+                <ForumPopularSidebar
+                  locale={locale}
+                  onSelect={selectPopularUniv}
+                  activeId={selectedUniv?.id ?? null}
+                />
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
