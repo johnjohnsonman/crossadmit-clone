@@ -2,17 +2,39 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   getCrossComparisons,
   getCrossComparisonStats,
+  type CrossComparisonSort,
 } from "@/lib/supabase/universities-service";
+
+function parseSort(raw: string | null): CrossComparisonSort {
+  if (raw === "popular" || raw === "random" || raw === "latest") {
+    return raw;
+  }
+  return "latest";
+}
+
+function parseId(raw: string | null): number | undefined {
+  if (!raw) return undefined;
+  const n = parseInt(raw, 10);
+  return Number.isNaN(n) ? undefined : n;
+}
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
   const univIdParam = searchParams.get("univ_id");
   const statsOnly = searchParams.get("stats") === "1";
+  const sort = parseSort(searchParams.get("sort"));
+  const univA = parseId(searchParams.get("univ_a"));
+  const univB = parseId(searchParams.get("univ_b"));
 
   try {
     if (statsOnly || !univIdParam) {
-      const stats = await getCrossComparisonStats();
-      if (univIdParam) {
+      const stats = await getCrossComparisonStats({
+        sort,
+        univ_a: univA,
+        univ_b: univB,
+      });
+
+      if (univIdParam && univA === undefined && univB === undefined) {
         const uid = parseInt(univIdParam, 10);
         if (!Number.isNaN(uid)) {
           const filtered = stats.filter(
@@ -30,7 +52,7 @@ export async function GET(request: NextRequest) {
     }
 
     const rows = await getCrossComparisons({ univ_id: univId, limit: 500 });
-    const stats = await getCrossComparisonStats();
+    const stats = await getCrossComparisonStats({ sort: "popular" });
     const related = stats.filter(
       (s) => s.univ_id_win === univId || s.univ_id_lose === univId
     );

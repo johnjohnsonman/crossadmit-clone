@@ -82,12 +82,20 @@ export async function getUniversityDepartments(
 
 export async function getCrossComparisons(params?: {
   univ_id?: number;
+  univ_a?: number;
+  univ_b?: number;
   limit?: number;
 }): Promise<CrossComparison[]> {
   const supabase = await createClient();
   let query = supabase.from("cross_comparisons").select("*");
 
-  if (params?.univ_id !== undefined) {
+  if (params?.univ_a !== undefined && params?.univ_b !== undefined) {
+    const a = params.univ_a;
+    const b = params.univ_b;
+    query = query.or(
+      `and(univ_id_win.eq.${a},univ_id_lose.eq.${b}),and(univ_id_win.eq.${b},univ_id_lose.eq.${a})`
+    );
+  } else if (params?.univ_id !== undefined) {
     const uid = params.univ_id;
     query = query.or(`univ_id_win.eq.${uid},univ_id_lose.eq.${uid}`);
   }
@@ -113,11 +121,31 @@ export type CrossComparisonStat = {
   percentage_win: number;
   percentage_lose: number;
   id: string;
+  latest_id: number;
 };
 
+export type CrossComparisonSort = "latest" | "popular" | "random";
+
+function shuffleStats<T>(arr: T[]): T[] {
+  const out = [...arr];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
 /** 대학 쌍별 집계 (win 방향 건수 + 역방향 건수 → 비율) */
-export async function getCrossComparisonStats(): Promise<CrossComparisonStat[]> {
-  const rows = await getCrossComparisons({ limit: 5000 });
+export async function getCrossComparisonStats(params?: {
+  univ_a?: number;
+  univ_b?: number;
+  sort?: CrossComparisonSort;
+}): Promise<CrossComparisonStat[]> {
+  const rows = await getCrossComparisons({
+    univ_a: params?.univ_a,
+    univ_b: params?.univ_b,
+    limit: 5000,
+  });
 
   type PairAgg = {
     lowId: number;
@@ -126,6 +154,7 @@ export async function getCrossComparisonStats(): Promise<CrossComparisonStat[]> 
     nameHigh: string;
     forward: number;
     reverse: number;
+    latestId: number;
   };
 
   const map = new Map<string, PairAgg>();
@@ -145,9 +174,11 @@ export async function getCrossComparisonStats(): Promise<CrossComparisonStat[]> 
         nameHigh: a < b ? r.univ_name_lose : r.univ_name_win,
         forward: 0,
         reverse: 0,
+        latestId: r.id,
       };
       map.set(key, agg);
     }
+    agg.latestId = Math.max(agg.latestId, r.id);
     if (r.univ_id_win === low) {
       agg.forward += 1;
     } else {
@@ -171,8 +202,16 @@ export async function getCrossComparisonStats(): Promise<CrossComparisonStat[]> 
       count: total,
       percentage_win: pctWin,
       percentage_lose: 100 - pctWin,
+      latest_id: agg.latestId,
     });
   }
 
-  return stats.sort((a, b) => b.count - a.count);
+  const sort = params?.sort ?? "latest";
+  if (sort === "popular") {
+    return stats.sort((a, b) => b.count - a.count);
+  }
+  if (sort === "random") {
+    return shuffleStats(stats);
+  }
+  return stats.sort((a, b) => b.latest_id - a.latest_id);
 }
