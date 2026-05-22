@@ -8,22 +8,42 @@ export const BROWSER_HEADERS: HeadersInit = {
   "Accept-Language": "en-US,en;q=0.9,ko;q=0.8",
 };
 
-export async function fetchHtml(url: string): Promise<string> {
-  const res = await fetch(url, {
-    headers: BROWSER_HEADERS,
-    cache: "no-store",
-  });
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status} for ${url}`);
+const DEFAULT_TIMEOUT_MS = 10_000;
+
+export async function fetchHtml(
+  url: string,
+  timeoutMs = DEFAULT_TIMEOUT_MS
+): Promise<string> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, {
+      headers: BROWSER_HEADERS,
+      cache: "no-store",
+      signal: controller.signal,
+    });
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status} for ${url}`);
+    }
+    return res.text();
+  } catch (e) {
+    if (e instanceof Error && e.name === "AbortError") {
+      throw new Error(`Timeout ${timeoutMs}ms for ${url}`);
+    }
+    throw e;
+  } finally {
+    clearTimeout(timer);
   }
-  return res.text();
 }
 
 export function loadHtml(html: string) {
   return cheerio.load(html);
 }
 
-export function extractVisibleText($: cheerio.CheerioAPI, selector: string): string {
+export function extractVisibleText(
+  $: cheerio.CheerioAPI,
+  selector: string
+): string {
   const parts: string[] = [];
   $(selector).each((_, el) => {
     const t = $(el).text().replace(/\s+/g, " ").trim();

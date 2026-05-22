@@ -109,7 +109,8 @@ export default function StudyForumBoard({
         : "All universities";
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  const naverN = stats.naver_blog ?? 0;
+  const naverBlogN = stats.naver_blog ?? 0;
+  const naverNewsN = stats.naver_news ?? 0;
   const redditN = stats.reddit ?? 0;
   const quoraN = stats.quora ?? 0;
 
@@ -228,7 +229,8 @@ export default function StudyForumBoard({
           {locale === "ko" ? "총" : "Total"}{" "}
           <strong className="text-gray-900">{total}</strong>
           {locale === "ko" ? "개 게시글" : " posts"} |{" "}
-          {locale === "ko" ? "네이버" : "Naver"} {naverN} | Reddit {redditN} | Quora{" "}
+          {locale === "ko" ? "네이버" : "Naver"} {naverBlogN}
+          {naverNewsN > 0 && ` · 뉴스 ${naverNewsN}`} | Reddit {redditN} | Quora{" "}
           {quoraN}
         </div>
 

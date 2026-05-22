@@ -1,17 +1,8 @@
 import { processAndSaveItems, type RawStudyKoreaItem } from "./process-items";
 import { slugId } from "./fetch-html";
+import { isNaverConfigured, naverHeaders, stripNaverHtml } from "./naver-api";
 
 const NAVER_QUERY = "한국유학+외국인";
-
-function naverHeaders(): HeadersInit | null {
-  const id = process.env.NAVER_CLIENT_ID?.trim();
-  const secret = process.env.NAVER_CLIENT_SECRET?.trim();
-  if (!id || !secret) return null;
-  return {
-    "X-Naver-Client-Id": id,
-    "X-Naver-Client-Secret": secret,
-  };
-}
 
 interface NaverBlogItem {
   title: string;
@@ -46,12 +37,13 @@ export async function scrapeNaverStudyKorea() {
   const raw = json.items ?? [];
 
   const items: RawStudyKoreaItem[] = raw.map((item) => {
-    const title = item.title.replace(/<[^>]+>/g, "");
-    const description = item.description.replace(/<[^>]+>/g, "");
+    const title = stripNaverHtml(item.title);
+    const description = stripNaverHtml(item.description);
     const postdate = item.postdate;
-    const iso = postdate?.length === 8
-      ? `${postdate.slice(0, 4)}-${postdate.slice(4, 6)}-${postdate.slice(6, 8)}T00:00:00Z`
-      : null;
+    const iso =
+      postdate?.length === 8
+        ? `${postdate.slice(0, 4)}-${postdate.slice(4, 6)}-${postdate.slice(6, 8)}T00:00:00Z`
+        : null;
 
     return {
       source_id: slugId(item.link),
@@ -68,9 +60,4 @@ export async function scrapeNaverStudyKorea() {
   return processAndSaveItems("naver_blog", "naver_blog", items, NAVER_QUERY);
 }
 
-export function isNaverConfigured(): boolean {
-  return Boolean(
-    process.env.NAVER_CLIENT_ID?.trim() &&
-      process.env.NAVER_CLIENT_SECRET?.trim()
-  );
-}
+export { isNaverConfigured } from "./naver-api";

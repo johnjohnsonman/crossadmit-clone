@@ -3,7 +3,11 @@
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { CATEGORY_LABELS_KR } from "@/lib/study-korea/constants";
-import { STUDY_KOREA_SOURCE_META } from "@/lib/pipeline/study-korea/sources-registry";
+import {
+  STUDY_KOREA_SOURCE_META,
+  getSourceCardBorder,
+  type SourceStatus,
+} from "@/lib/pipeline/study-korea/sources-registry";
 
 type PipelineRun = {
   id: string;
@@ -90,6 +94,22 @@ function AdminStudyKoreaInner() {
   useEffect(() => {
     if (keyFromUrl.trim()) void loadAll();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const statusBadge = (status: SourceStatus, label?: string) => {
+    if (status === "active") return null;
+    const text =
+      label ??
+      (status === "config_required" ? "설정 필요" : "지원 불가");
+    const cls =
+      status === "config_required"
+        ? "bg-amber-100 text-amber-900"
+        : "bg-slate-200 text-slate-600";
+    return (
+      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded ${cls}`}>
+        {text}
+      </span>
+    );
+  };
 
   const runCron = async (path: string, label: string) => {
     if (!key.trim()) return;
@@ -201,36 +221,53 @@ function AdminStudyKoreaInner() {
                 Run for specific source
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {STUDY_KOREA_SOURCE_META.map((src) => (
-                  <div
-                    key={src.id}
-                    className="border border-slate-200 rounded-lg p-3 flex flex-col gap-2"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span
-                        className={`text-xs font-semibold px-2 py-0.5 rounded-full ${src.color}`}
-                      >
-                        {src.label}
-                      </span>
+                {STUDY_KOREA_SOURCE_META.map((src) => {
+                  const showRun = src.status === "active" && src.cronPath;
+
+                  return (
+                    <div
+                      key={src.id}
+                      className={`rounded-lg p-3 flex flex-col gap-2 ${getSourceCardBorder(src.status)}`}
+                    >
+                      <div className="flex items-center justify-between gap-1 flex-wrap">
+                        <span
+                          className={`text-xs font-semibold px-2 py-0.5 rounded-full ${src.color}`}
+                        >
+                          {src.label}
+                        </span>
+                        {statusBadge(src.status, src.statusLabel)}
+                      </div>
                       <span className="text-xs text-gray-600">
                         {statsBySource[src.id] ?? 0} posts
                       </span>
+                      {src.note && (
+                        <p className="text-[10px] text-gray-500">{src.note}</p>
+                      )}
+                      {src.requiresEnv && src.status === "active" && (
+                        <p className="text-[10px] text-amber-700">
+                          Env: {src.requiresEnv.join(", ")}
+                        </p>
+                      )}
+                      {src.statusLabel && src.status !== "active" && (
+                        <p className="text-[10px] text-gray-600 leading-snug">
+                          {src.statusLabel}
+                        </p>
+                      )}
+                      {showRun ? (
+                        <button
+                          type="button"
+                          disabled={runningSource !== null}
+                          onClick={() =>
+                            void runCron(src.cronPath!, src.label)
+                          }
+                          className="w-full py-2 rounded-md bg-slate-100 hover:bg-slate-200 text-gray-900 text-sm font-medium disabled:opacity-50"
+                        >
+                          {runningSource === src.label ? "Running…" : "Run"}
+                        </button>
+                      ) : null}
                     </div>
-                    {"requiresEnv" in src && src.requiresEnv && (
-                      <p className="text-[10px] text-amber-700">
-                        Needs {src.requiresEnv.join(", ")}
-                      </p>
-                    )}
-                    <button
-                      type="button"
-                      disabled={runningSource !== null}
-                      onClick={() => void runCron(src.cronPath, src.label)}
-                      className="w-full py-2 rounded-md bg-slate-100 hover:bg-slate-200 text-gray-900 text-sm font-medium disabled:opacity-50"
-                    >
-                      {runningSource === src.label ? "Running…" : "Run"}
-                    </button>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </section>
 

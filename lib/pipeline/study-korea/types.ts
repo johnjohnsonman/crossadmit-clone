@@ -14,7 +14,8 @@ export type StudyKoreaSource =
   | "quora"
   | "studyinkorea"
   | "university_official"
-  | "naver_blog";
+  | "naver_blog"
+  | "naver_news";
 
 export type StudyKoreaSubcategory =
   | "admission"

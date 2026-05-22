@@ -22,6 +22,7 @@ export const FORUM_UNIVERSITY_OPTIONS = [
 
 export const SOURCE_LABELS: Record<string, string> = {
   naver_blog: "네이버",
+  naver_news: "네이버뉴스",
   reddit: "Reddit",
   quora: "Quora",
   studyinkorea: "공식",
@@ -30,6 +31,7 @@ export const SOURCE_LABELS: Record<string, string> = {
 
 export const SOURCE_BADGE_CLASS: Record<string, string> = {
   naver_blog: "bg-green-100 text-green-800",
+  naver_news: "bg-emerald-100 text-emerald-800",
   reddit: "bg-orange-100 text-orange-800",
   quora: "bg-blue-100 text-blue-800",
   studyinkorea: "bg-teal-100 text-teal-800",
@@ -54,4 +56,8 @@ export const SLUG_NAME_HINTS: Record<string, string[]> = {
   kaist: ["KAIST", "카이스트"],
   skku: ["성균관", "Sungkyunkwan", "SKKU"],
   hanyang: ["한양", "Hanyang"],
+  sogang: ["서강", "Sogang"],
+  ewha: ["이화", "Ewha"],
+  unist: ["UNIST", "울산과학기술원"],
+  dgist: ["DGIST", "대구경북과학기술원"],
 };
