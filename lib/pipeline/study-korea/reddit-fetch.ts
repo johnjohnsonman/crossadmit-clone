@@ -114,9 +114,10 @@ export async function fetchRedditFeed<T = RedditPostData>(
 ): Promise<RedditListingChild<T>[]> {
   const result = await fetchRedditListing<T>(url);
   if (!result.ok) {
-    console.warn(`[reddit] skip ${label}: ${result.error}`);
+    console.warn(`[reddit-fetch] skip ${label}: ${result.error}`);
     return [];
   }
+  console.log(`[reddit-fetch] ${label}: ${result.children.length} posts`);
   await sleep(BETWEEN_FEEDS_MS);
   return result.children;
 }

@@ -13,7 +13,17 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    console.log("[Reddit] cron scrape-reddit-study-korea started");
     const result = await scrapeRedditStudyKorea();
+    console.log(
+      "[Reddit] cron done",
+      JSON.stringify({
+        collected: result.collected,
+        saved: result.saved,
+        skipped: result.skipped,
+        failed: result.failed,
+      })
+    );
     return NextResponse.json({
       success: true,
       source: "reddit",

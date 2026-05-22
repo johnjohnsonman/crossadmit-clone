@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { StudyKoreaAnalysis, StudyKoreaCategory } from "./types";
 import { normalizeUniversitySlug } from "./university-map";
+import { isStudyInKoreaSubreddit } from "./relevance";
 
 const MODEL = "claude-haiku-4-5-20251001";
 
@@ -12,9 +13,12 @@ Analyze the post and return JSON only:
   "ai_summary": "2-3 sentence English summary focusing on key info for prospective students",
   "ai_summary_kr": "2-3문장 한국어 요약",
   "ai_tags": ["tag1", "tag2", "tag3"],
-  "is_relevant": true/false
+  "is_relevant": true
 }
-is_relevant=false if content is not about studying in Korea or is low quality (under 10 words of substance).
+Rules:
+- Default is_relevant to true. Only set is_relevant=false for obvious spam or posts with under 10 characters of substance.
+- Posts from r/studyinkorea MUST have is_relevant=true (that subreddit is Korea study abroad only).
+- If only a title is provided (no body), still summarize from the title and set is_relevant=true.
 No markdown fences.`;
 
 const VALID_CATEGORIES = new Set<StudyKoreaCategory>([
@@ -46,7 +50,8 @@ function parseJson(text: string): Record<string, unknown> {
 
 function toAnalysis(
   parsed: Record<string, unknown>,
-  bodyText: string
+  bodyText: string,
+  subreddit?: string
 ): StudyKoreaAnalysis {
   const cat = String(parsed.category ?? "general");
   const category = VALID_CATEGORIES.has(cat as StudyKoreaCategory)
@@ -62,30 +67,44 @@ function toAnalysis(
     ? parsed.ai_tags.map((t) => String(t)).filter(Boolean).slice(0, 8)
     : [];
 
+  const claudeRelevant = parsed.is_relevant !== false;
+  const is_relevant = isStudyInKoreaSubreddit(subreddit)
+    ? true
+    : claudeRelevant;
+
   return {
     category,
     university: university || uniRaw.slice(0, 80),
     ai_summary: String(parsed.ai_summary ?? "").trim(),
     ai_summary_kr: String(parsed.ai_summary_kr ?? "").trim(),
     ai_tags: tags,
-    is_relevant: parsed.is_relevant !== false,
+    is_relevant,
   };
 }
 
 export async function analyzeStudyKoreaContent(
   title: string,
   content: string,
-  meta?: { source?: string; url?: string; author?: string }
+  meta?: {
+    source?: string;
+    url?: string;
+    author?: string;
+    subreddit?: string;
+  }
 ): Promise<StudyKoreaAnalysis> {
   const client = getClient();
   const body = [title, content].filter(Boolean).join("\n\n").slice(0, 12000);
 
   const user = [
+    meta?.subreddit ? `Subreddit: r/${meta.subreddit}` : "",
     meta?.source ? `Source: ${meta.source}` : "",
     meta?.url ? `URL: ${meta.url}` : "",
     meta?.author ? `Author: ${meta.author}` : "",
+    meta?.subreddit?.toLowerCase() === "studyinkorea"
+      ? "Note: r/studyinkorea post — set is_relevant=true."
+      : "",
     "---",
-    body,
+    body || title,
   ]
     .filter(Boolean)
     .join("\n");
@@ -102,5 +121,15 @@ export async function analyzeStudyKoreaContent(
     throw new Error("Claude returned no text");
   }
 
-  return toAnalysis(parseJson(textBlock.text), body);
+  const analysis = toAnalysis(
+    parseJson(textBlock.text),
+    body || title,
+    meta?.subreddit
+  );
+
+  console.log(
+    `[Reddit] Claude ${meta?.subreddit ?? "?"} / "${title.slice(0, 40)}…" → relevant=${analysis.is_relevant} cat=${analysis.category}`
+  );
+
+  return analysis;
 }
