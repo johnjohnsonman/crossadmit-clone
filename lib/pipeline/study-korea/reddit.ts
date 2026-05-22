@@ -1,62 +1,59 @@
 import { analyzeStudyKoreaContent } from "./claude";
+import { fetchRedditFeed, type RedditPostData } from "./reddit-fetch";
 import { finishPipelineRun, startPipelineRun } from "./runs";
 import { upsertStudyKoreaPost } from "./save";
 import type { ScrapeRunResult } from "./types";
 import { normalizeUniversitySlug } from "./university-map";
 
-const USER_AGENT = "CrossAdmit/1.0";
+const CONTENT_FOR_AI_MAX = 500;
 
-const REDDIT_FEEDS = [
-  "https://www.reddit.com/r/studyinkorea/hot.json?limit=25",
-  "https://www.reddit.com/r/studyinkorea/new.json?limit=25",
-  "https://www.reddit.com/r/korea/search.json?q=study+university&sort=new&limit=25",
+/** Furniblog-style feeds + study-korea subreddits */
+const REDDIT_FEEDS: { url: string; label: string; filter?: (p: RedditPostData) => boolean }[] = [
+  {
+    url: "https://www.reddit.com/r/studyinkorea/hot.json?limit=25&t=week",
+    label: "r/studyinkorea hot",
+  },
+  {
+    url: "https://www.reddit.com/r/studyinkorea/new.json?limit=25",
+    label: "r/studyinkorea new",
+  },
+  {
+    url: "https://www.reddit.com/r/korea/search.json?q=university+study&sort=new&limit=25&t=month",
+    label: "r/korea search",
+  },
+  {
+    url: "https://www.reddit.com/r/Korean/hot.json?limit=25",
+    label: "r/Korean hot",
+    filter: isKoreanLanguagePost,
+  },
+  {
+    url: "https://www.reddit.com/r/Korean/new.json?limit=25",
+    label: "r/Korean new",
+    filter: isKoreanLanguagePost,
+  },
 ];
 
-interface RedditChild {
-  data: {
-    id: string;
-    title: string;
-    selftext: string;
-    url: string;
-    author: string;
-    score: number;
-    num_comments: number;
-    created_utc: number;
-    permalink: string;
-  };
+const KOREA_STUDY_KEYWORDS =
+  /study|university|college|admission|scholarship|visa|dorm|exchange|international|tuition|campus/i;
+
+const KOREAN_LANG_KEYWORDS =
+  /topik|korean|hangul|language|grammar|vocab|study|learn|class|lesson|exam/i;
+
+function isKoreanLanguagePost(p: RedditPostData): boolean {
+  const text = `${p.title} ${p.selftext}`;
+  return KOREAN_LANG_KEYWORDS.test(text);
 }
 
-async function fetchRedditJson(url: string): Promise<RedditChild[]> {
-  const doFetch = async () => {
-    const res = await fetch(url, {
-      headers: { "User-Agent": USER_AGENT },
-      cache: "no-store",
-    });
-    if (res.status === 403) {
-      const err = new Error("Reddit 403") as Error & { status?: number };
-      err.status = 403;
-      throw err;
-    }
-    if (!res.ok) throw new Error(`Reddit ${res.status}: ${url}`);
-    const json = (await res.json()) as { data?: { children?: RedditChild[] } };
-    return json.data?.children ?? [];
-  };
-
-  try {
-    return await doFetch();
-  } catch (e) {
-    const err = e as Error & { status?: number };
-    if (err.status === 403) {
-      console.warn("[reddit] 403, retrying in 30s...");
-      await new Promise((r) => setTimeout(r, 30000));
-      return await doFetch();
-    }
-    throw e;
-  }
+function isKoreaStudyPost(p: RedditPostData): boolean {
+  const text = `${p.title} ${p.selftext}`;
+  return KOREA_STUDY_KEYWORDS.test(text);
 }
 
 export async function scrapeRedditStudyKorea(): Promise<ScrapeRunResult> {
-  const runId = await startPipelineRun("reddit", REDDIT_FEEDS.join(","));
+  const runId = await startPipelineRun(
+    "reddit",
+    REDDIT_FEEDS.map((f) => f.label).join(", ")
+  );
   const result: ScrapeRunResult = {
     collected: 0,
     processed: 0,
@@ -67,30 +64,44 @@ export async function scrapeRedditStudyKorea(): Promise<ScrapeRunResult> {
   };
 
   const seen = new Set<string>();
-  const posts: RedditChild["data"][] = [];
+  const posts: RedditPostData[] = [];
 
   try {
     for (const feed of REDDIT_FEEDS) {
-      const children = await fetchRedditJson(feed);
-      for (const c of children) {
-        const d = c.data;
-        if (!d?.id || seen.has(d.id)) continue;
-        seen.add(d.id);
-        posts.push(d);
+      try {
+        const children = await fetchRedditFeed<RedditPostData>(feed.url, feed.label);
+        for (const c of children) {
+          const d = c.data;
+          if (!d?.id || seen.has(d.id)) continue;
+          if (feed.filter && !feed.filter(d)) continue;
+          if (
+            (d.subreddit?.toLowerCase() === "korea" || feed.label.includes("korea search")) &&
+            !isKoreaStudyPost(d)
+          ) {
+            continue;
+          }
+          seen.add(d.id);
+          posts.push(d);
+        }
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        result.errors.push(`${feed.label}: ${msg}`);
       }
     }
+
     result.collected = posts.length;
 
     for (const d of posts) {
       result.processed++;
-      const content = d.selftext || "";
+      const fullContent = d.selftext || "";
+      const contentForAi = fullContent.slice(0, CONTENT_FOR_AI_MAX);
       const url = d.permalink
-        ? `https://reddit.com${d.permalink}`
+        ? `https://www.reddit.com${d.permalink}`
         : d.url || "";
       const title = d.title || "";
 
       try {
-        const analysis = await analyzeStudyKoreaContent(title, content, {
+        const analysis = await analyzeStudyKoreaContent(title, contentForAi, {
           source: "reddit",
           url,
           author: d.author,
@@ -102,14 +113,16 @@ export async function scrapeRedditStudyKorea(): Promise<ScrapeRunResult> {
         }
 
         const university =
-          normalizeUniversitySlug(analysis.university, `${title} ${content}`) ||
-          analysis.university;
+          normalizeUniversitySlug(
+            analysis.university,
+            `${title} ${fullContent.slice(0, 500)}`
+          ) || analysis.university;
 
         const status = await upsertStudyKoreaPost({
           source: "reddit",
           source_id: d.id,
           title,
-          content: content.slice(0, 8000),
+          content: fullContent.slice(0, 8000),
           url,
           author: d.author || "",
           upvotes: d.score ?? 0,
@@ -134,7 +147,7 @@ export async function scrapeRedditStudyKorea(): Promise<ScrapeRunResult> {
           source: "reddit",
           source_id: d.id,
           title,
-          content: content.slice(0, 8000),
+          content: fullContent.slice(0, 8000),
           url,
           author: d.author || "",
           upvotes: d.score ?? 0,
@@ -152,7 +165,12 @@ export async function scrapeRedditStudyKorea(): Promise<ScrapeRunResult> {
       processed: result.processed,
       saved: result.saved,
       failed: result.failed,
-      status: result.failed > 0 ? "partial" : "success",
+      status:
+        result.errors.length > 0 && result.saved === 0
+          ? "failed"
+          : result.failed > 0 || result.errors.length > 0
+            ? "partial"
+            : "success",
       error_message: result.errors.slice(0, 5).join("; "),
     });
   } catch (e) {

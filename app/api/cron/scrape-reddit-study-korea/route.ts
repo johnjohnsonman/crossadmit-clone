@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyCronOrAdmin } from "@/lib/pipeline/study-korea/auth";
 import { scrapeRedditStudyKorea } from "@/lib/pipeline/study-korea/reddit";
 
+/** Reddit fetch: Mozilla UA + Accept headers, UA rotation, old.reddit fallback (lib/pipeline/study-korea/reddit-fetch.ts) */
+
 export const maxDuration = 300;
 export const dynamic = "force-dynamic";
 
