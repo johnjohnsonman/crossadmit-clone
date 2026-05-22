@@ -140,7 +140,7 @@ function AdminStudyKoreaInner() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8 max-w-6xl mx-auto">
+    <div className="min-h-screen bg-gray-50 text-gray-900 p-4 md:p-8 max-w-6xl mx-auto">
       <h1 className="text-2xl font-bold text-gray-900 mb-2">
         Study Korea 파이프라인
       </h1>
@@ -154,13 +154,13 @@ function AdminStudyKoreaInner() {
           placeholder="Admin secret"
           value={key}
           onChange={(e) => setKey(e.target.value)}
-          className="border rounded px-3 py-2 text-sm flex-1 min-w-[200px]"
+          className="border border-gray-300 rounded px-3 py-2 text-sm flex-1 min-w-[200px] bg-white text-gray-900 placeholder:text-gray-500"
         />
         <button
           type="button"
           onClick={() => void loadAll()}
           disabled={loading}
-          className="px-4 py-2 bg-gray-800 text-white rounded text-sm"
+          className="px-4 py-2 bg-gray-800 text-white rounded text-sm font-medium"
         >
           {loading ? "로딩…" : "불러오기"}
         </button>
@@ -168,55 +168,64 @@ function AdminStudyKoreaInner() {
           type="button"
           onClick={() => void runPipeline()}
           disabled={running || !authorized}
-          className="px-4 py-2 bg-tea-600 text-white rounded text-sm disabled:opacity-50"
+          className="px-4 py-2 bg-tea-600 text-white rounded text-sm font-medium disabled:opacity-50"
         >
           {running ? "수집 중…" : "수동 실행"}
         </button>
       </div>
 
-      {loadErr && <p className="text-red-600 text-sm mb-4">{loadErr}</p>}
-      {runMsg && <p className="text-tea-700 text-sm mb-4">{runMsg}</p>}
+      {loadErr && (
+        <p className="text-red-600 text-sm mb-4 font-medium">{loadErr}</p>
+      )}
+      {runMsg && (
+        <p className="text-gray-900 text-sm mb-4 font-medium">{runMsg}</p>
+      )}
 
       {authorized && (
         <>
-          <section className="mb-8 bg-white rounded-lg border p-4">
-            <h2 className="font-semibold mb-3">최근 파이프라인 실행 (10건)</h2>
+          <section className="mb-8 bg-white rounded-lg border border-gray-200 p-4 text-gray-900">
+            <h2 className="font-semibold text-gray-900 mb-3">
+              최근 파이프라인 실행 (10건)
+            </h2>
             <div className="overflow-x-auto">
-              <table className="w-full text-xs md:text-sm">
+              <table className="w-full text-xs md:text-sm text-gray-900">
                 <thead>
-                  <tr className="text-left border-b">
-                    <th className="py-2 pr-2">시각</th>
-                    <th className="py-2 pr-2">소스</th>
-                    <th className="py-2 pr-2">수집</th>
-                    <th className="py-2 pr-2">저장</th>
-                    <th className="py-2 pr-2">실패</th>
-                    <th className="py-2">상태</th>
+                  <tr className="text-left border-b border-gray-200 text-gray-900">
+                    <th className="py-2 pr-2 text-gray-900">시각</th>
+                    <th className="py-2 pr-2 text-gray-900">소스</th>
+                    <th className="py-2 pr-2 text-gray-900">수집</th>
+                    <th className="py-2 pr-2 text-gray-900">저장</th>
+                    <th className="py-2 pr-2 text-gray-900">실패</th>
+                    <th className="py-2 text-gray-900">상태</th>
                   </tr>
                 </thead>
                 <tbody>
                   {runs.map((r) => (
-                    <tr key={r.id} className="border-b border-gray-100">
-                      <td className="py-2 pr-2 whitespace-nowrap">
+                    <tr
+                      key={r.id}
+                      className="border-b border-gray-100 text-gray-900"
+                    >
+                      <td className="py-2 pr-2 whitespace-nowrap text-gray-900">
                         {new Date(r.created_at).toLocaleString("ko-KR")}
                       </td>
-                      <td className="py-2 pr-2">{r.source}</td>
-                      <td className="py-2 pr-2">{r.collected}</td>
-                      <td className="py-2 pr-2">{r.saved}</td>
-                      <td className="py-2 pr-2">{r.failed}</td>
-                      <td className="py-2">
+                      <td className="py-2 pr-2 text-gray-900">{r.source}</td>
+                      <td className="py-2 pr-2 text-gray-900">{r.collected}</td>
+                      <td className="py-2 pr-2 text-gray-900">{r.saved}</td>
+                      <td className="py-2 pr-2 text-gray-900">{r.failed}</td>
+                      <td className="py-2 text-gray-900">
                         <span
                           className={
                             r.status === "success"
-                              ? "text-green-700"
+                              ? "text-green-700 font-medium"
                               : r.status === "failed"
-                                ? "text-red-600"
-                                : "text-amber-700"
+                                ? "text-red-600 font-medium"
+                                : "text-amber-700 font-medium"
                           }
                         >
                           {r.status}
                         </span>
                         {r.error_message && (
-                          <span className="block text-gray-500 truncate max-w-[200px]">
+                          <span className="block text-gray-600 truncate max-w-[200px]">
                             {r.error_message}
                           </span>
                         )}
@@ -225,7 +234,7 @@ function AdminStudyKoreaInner() {
                   ))}
                   {runs.length === 0 && (
                     <tr>
-                      <td colSpan={6} className="py-4 text-gray-500">
+                      <td colSpan={6} className="py-4 text-gray-600">
                         실행 기록 없음
                       </td>
                     </tr>
@@ -235,43 +244,48 @@ function AdminStudyKoreaInner() {
             </div>
           </section>
 
-          <section className="mb-8 bg-white rounded-lg border p-4">
-            <h2 className="font-semibold mb-3">카테고리별 통계</h2>
+          <section className="mb-8 bg-white rounded-lg border border-gray-200 p-4 text-gray-900">
+            <h2 className="font-semibold text-gray-900 mb-3">카테고리별 통계</h2>
             <div className="flex flex-wrap gap-2">
               {statEntries.map(([cat, n]) => (
                 <span
                   key={cat}
-                  className="px-3 py-1 rounded-full bg-sage-100 text-sm"
+                  className="px-3 py-1 rounded-full bg-gray-100 text-sm text-gray-900"
                 >
                   {CATEGORY_LABELS_KR[cat] ?? cat}: {n}
                 </span>
               ))}
               {statEntries.length === 0 && (
-                <span className="text-gray-500 text-sm">데이터 없음</span>
+                <span className="text-gray-600 text-sm">데이터 없음</span>
               )}
             </div>
           </section>
 
-          <section className="bg-white rounded-lg border p-4">
-            <h2 className="font-semibold mb-3">게시물 ({posts.length})</h2>
+          <section className="bg-white rounded-lg border border-gray-200 p-4 text-gray-900">
+            <h2 className="font-semibold text-gray-900 mb-3">
+              게시물 ({posts.length})
+            </h2>
             <div className="overflow-x-auto max-h-[480px] overflow-y-auto">
-              <table className="w-full text-xs">
+              <table className="w-full text-xs text-gray-900">
                 <thead className="sticky top-0 bg-white">
-                  <tr className="text-left border-b">
-                    <th className="py-2 pr-2">제목</th>
-                    <th className="py-2 pr-2">카테고리</th>
-                    <th className="py-2 pr-2">공개</th>
-                    <th className="py-2">추천</th>
+                  <tr className="text-left border-b border-gray-200 text-gray-900">
+                    <th className="py-2 pr-2 text-gray-900">제목</th>
+                    <th className="py-2 pr-2 text-gray-900">카테고리</th>
+                    <th className="py-2 pr-2 text-gray-900">공개</th>
+                    <th className="py-2 text-gray-900">추천</th>
                   </tr>
                 </thead>
                 <tbody>
                   {posts.map((p) => (
-                    <tr key={p.id} className="border-b border-gray-50">
-                      <td className="py-2 pr-2 max-w-[240px] truncate">
-                        <span className="text-gray-400 mr-1">[{p.source}]</span>
+                    <tr
+                      key={p.id}
+                      className="border-b border-gray-50 text-gray-900"
+                    >
+                      <td className="py-2 pr-2 max-w-[240px] truncate text-gray-900">
+                        <span className="text-gray-600 mr-1">[{p.source}]</span>
                         {p.title}
                       </td>
-                      <td className="py-2 pr-2">
+                      <td className="py-2 pr-2 text-gray-900">
                         {CATEGORY_LABELS_KR[p.category] ?? p.category}
                       </td>
                       <td className="py-2 pr-2">
@@ -281,10 +295,10 @@ function AdminStudyKoreaInner() {
                           onClick={() =>
                             void patchPost(p.id, "is_published", !p.is_published)
                           }
-                          className={`px-2 py-0.5 rounded text-xs ${
+                          className={`px-2 py-0.5 rounded text-xs font-medium ${
                             p.is_published
                               ? "bg-green-100 text-green-800"
-                              : "bg-gray-100"
+                              : "bg-gray-200 text-gray-900"
                           }`}
                         >
                           {p.is_published ? "ON" : "OFF"}
@@ -297,10 +311,10 @@ function AdminStudyKoreaInner() {
                           onClick={() =>
                             void patchPost(p.id, "is_featured", !p.is_featured)
                           }
-                          className={`px-2 py-0.5 rounded text-xs ${
+                          className={`px-2 py-0.5 rounded text-xs font-medium ${
                             p.is_featured
                               ? "bg-amber-100 text-amber-800"
-                              : "bg-gray-100"
+                              : "bg-gray-200 text-gray-900"
                           }`}
                         >
                           {p.is_featured ? "★" : "—"}
@@ -320,7 +334,11 @@ function AdminStudyKoreaInner() {
 
 export default function AdminStudyKoreaPage() {
   return (
-    <Suspense fallback={<div className="p-8">로딩…</div>}>
+    <Suspense
+      fallback={
+        <div className="p-8 bg-gray-50 text-gray-900">로딩…</div>
+      }
+    >
       <AdminStudyKoreaInner />
     </Suspense>
   );
