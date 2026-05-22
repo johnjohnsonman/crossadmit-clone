@@ -1,13 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import type { AdmissionRecord } from "@/lib/types";
 import { schoolDisplayLines, type SchoolDisplayLine } from "@/lib/supabase/map";
 import { formatText } from "@/lib/utils/format-text";
 import StatusBadge from "@/components/ui/StatusBadge";
 import { AdmissionsListSkeleton } from "@/components/ui/Skeleton";
 import AdmissionLikeButton from "@/components/admissions/AdmissionLikeButton";
+import PopularAdmissionsSection, {
+  AdmissionsListDivider,
+} from "@/components/admissions/PopularAdmissionsSection";
 
 const PAGE_SIZE = 20;
 
@@ -157,8 +161,12 @@ export default function AdmissionsBulletinBoard({
 }) {
   const t = TEXT[locale];
   const basePath = locale === "en" ? "/en/admissions" : "/admissions";
+  const searchParams = useSearchParams();
+  const listSectionRef = useRef<HTMLDivElement>(null);
 
   const [records, setRecords] = useState<AdmissionRecord[]>([]);
+  const [popular, setPopular] = useState<AdmissionRecord[]>([]);
+  const [popularLoading, setPopularLoading] = useState(true);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -169,8 +177,19 @@ export default function AdmissionsBulletinBoard({
   const [appliedType, setAppliedType] = useState("");
   const [appliedStatus, setAppliedStatus] = useState("");
   const [appliedSort, setAppliedSort] = useState<"latest" | "likes" | "views">(
-    "latest"
+    () => {
+      const s = searchParams.get("sort");
+      return s === "likes" || s === "popular" ? "likes" : "latest";
+    }
   );
+
+  useEffect(() => {
+    const s = searchParams.get("sort");
+    if (s === "likes" || s === "popular") {
+      setAppliedSort("likes");
+      setDraftSort("likes");
+    }
+  }, [searchParams]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const offset = (page - 1) * PAGE_SIZE;
@@ -217,6 +236,44 @@ export default function AdmissionsBulletinBoard({
   useEffect(() => {
     void fetchList();
   }, [fetchList]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadPopular() {
+      setPopularLoading(true);
+      try {
+        const res = await fetch(
+          "/api/admissions?limit=3&offset=0&sort=likes",
+          { cache: "no-store" }
+        );
+        if (!res.ok) {
+          if (!cancelled) setPopular([]);
+          return;
+        }
+        const json = await res.json();
+        if (!cancelled) setPopular(json.data ?? []);
+      } catch {
+        if (!cancelled) setPopular([]);
+      } finally {
+        if (!cancelled) setPopularLoading(false);
+      }
+    }
+    void loadPopular();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const scrollToList = () => {
+    listSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const viewAllPopular = () => {
+    setAppliedSort("likes");
+    setDraftSort("likes");
+    setPage(1);
+    scrollToList();
+  };
 
   const applySearch = () => {
     setAppliedSearch(draftSearch.trim());
@@ -327,6 +384,16 @@ export default function AdmissionsBulletinBoard({
         </div>
       </div>
 
+      <div className="container mx-auto max-w-4xl px-4 pt-6">
+        <PopularAdmissionsSection
+          records={popular}
+          loading={popularLoading}
+          locale={locale}
+          basePath={basePath}
+          onViewAll={viewAllPopular}
+        />
+      </div>
+
       <div className="sticky top-0 z-20 border-b border-[#E5E5E0] bg-white shadow-sm">
         <div className="container mx-auto max-w-4xl px-4 py-3">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:flex-wrap">
@@ -421,7 +488,9 @@ export default function AdmissionsBulletinBoard({
         </div>
       </div>
 
-      <div className="container mx-auto max-w-4xl px-4 py-6">
+      <div ref={listSectionRef} className="container mx-auto max-w-4xl px-4 py-6 scroll-mt-24">
+        <AdmissionsListDivider total={total} locale={locale} />
+
         {loading ? (
           <AdmissionsListSkeleton count={5} />
         ) : empty ? (
