@@ -2,9 +2,10 @@
 export const STUDY_KOREA_SOURCE_META = [
   {
     id: "youtube",
-    label: "YouTube",
+    label: "YouTube (videos only)",
     cronPath: "/api/cron/scrape-youtube-study-korea",
     color: "bg-red-100 text-red-800",
+    note: "university_videos 테이블만",
   },
   {
     id: "reddit",

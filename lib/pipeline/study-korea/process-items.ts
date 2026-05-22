@@ -107,6 +107,7 @@ export async function processAndSaveItems(
           comment_count: item.comment_count ?? 0,
           source_created_at: item.source_created_at ?? null,
           category,
+          subcategory: (item.category ?? category) as typeof category,
           university,
           language: item.language ?? (source === "naver_blog" ? "ko" : "en"),
           ai_summary,

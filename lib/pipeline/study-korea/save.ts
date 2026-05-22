@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
-import type { StudyKoreaPostInput } from "./types";
+import type { StudyKoreaPostInput, StudyKoreaSubcategory } from "./types";
+import { resolveUniversityId } from "./university-id";
 
 function admin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -8,10 +9,34 @@ function admin() {
   return createClient(url, key);
 }
 
+function toSubcategory(
+  row: StudyKoreaPostInput
+): StudyKoreaSubcategory {
+  const sub = row.subcategory ?? row.category ?? "general";
+  const allowed: StudyKoreaSubcategory[] = [
+    "admission",
+    "scholarship",
+    "visa",
+    "dormitory",
+    "life",
+    "language",
+    "general",
+  ];
+  return allowed.includes(sub as StudyKoreaSubcategory)
+    ? (sub as StudyKoreaSubcategory)
+    : "general";
+}
+
 export async function upsertStudyKoreaPost(
   row: StudyKoreaPostInput
 ): Promise<"saved" | "failed"> {
   const supabase = admin();
+  const subcategory = toSubcategory(row);
+  const universitySlug = row.university ?? "";
+  const university_id =
+    row.university_id !== undefined
+      ? row.university_id
+      : await resolveUniversityId(universitySlug);
 
   const payload = {
     source: row.source,
@@ -20,9 +45,11 @@ export async function upsertStudyKoreaPost(
     content: row.content ?? "",
     url: row.url,
     author: row.author,
-    category: row.category ?? "general",
-    university: row.university ?? "",
-    language: row.language ?? "en",
+    category: row.category ?? subcategory,
+    subcategory,
+    university: universitySlug,
+    university_id,
+    language: row.language ?? "ko",
     upvotes: row.upvotes,
     comment_count: row.comment_count,
     ai_summary: row.ai_summary ?? "",
@@ -33,7 +60,7 @@ export async function upsertStudyKoreaPost(
   };
 
   console.log(
-    `[study-korea] upsert ${row.source}/${row.source_id} published=${payload.is_published} title="${(row.title ?? "").slice(0, 50)}"`
+    `[study-korea] upsert ${row.source}/${row.source_id} sub=${subcategory} univ_id=${university_id ?? "—"}`
   );
 
   const { data, error } = await supabase
@@ -45,9 +72,7 @@ export async function upsertStudyKoreaPost(
   if (error) {
     console.error(
       `[study-korea] upsert FAILED ${row.source}/${row.source_id}:`,
-      error.message,
-      error.details,
-      error.hint
+      error.message
     );
     return "failed";
   }

@@ -8,13 +8,22 @@ export type StudyKoreaCategory =
   | "cost"
   | "general";
 
+/** 텍스트 콘텐츠 소스 (YouTube는 university_videos 전용) */
 export type StudyKoreaSource =
   | "reddit"
-  | "youtube"
   | "quora"
   | "studyinkorea"
   | "university_official"
   | "naver_blog";
+
+export type StudyKoreaSubcategory =
+  | "admission"
+  | "scholarship"
+  | "visa"
+  | "dormitory"
+  | "life"
+  | "language"
+  | "general";
 
 export interface StudyKoreaAnalysis {
   category: StudyKoreaCategory;
@@ -37,7 +46,9 @@ export interface StudyKoreaPostInput {
   source_created_at: string | null;
   language?: string;
   category?: StudyKoreaCategory;
+  subcategory?: StudyKoreaSubcategory;
   university?: string;
+  university_id?: number | null;
   ai_summary?: string;
   ai_summary_kr?: string;
   ai_tags?: string[];
