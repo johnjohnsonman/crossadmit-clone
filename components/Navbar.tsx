@@ -27,6 +27,9 @@ export default function Navbar() {
               <Link href="/admissions" className="text-sm text-sage-700 hover:text-tea-600 transition-colors">
                 합격DB
               </Link>
+              <Link href="/study-korea" className="text-sm text-sage-700 hover:text-tea-600 transition-colors">
+                유학가이드
+              </Link>
               <Link href="/videos" className="text-sm text-sage-700 hover:text-tea-600 transition-colors">
                 유학영상
               </Link>
@@ -63,6 +66,7 @@ export default function Navbar() {
               <Link href="/crossadmit" className="block px-4 py-2 text-sm text-sage-700 hover:bg-sage-50 font-semibold" onClick={() => setIsMenuOpen(false)}>크로스어드밋</Link>
               <Link href="/forum" className="block px-4 py-2 text-sm text-sage-700 hover:bg-sage-50" onClick={() => setIsMenuOpen(false)}>포럼</Link>
               <Link href="/admissions" className="block px-4 py-2 text-sm text-sage-700 hover:bg-sage-50" onClick={() => setIsMenuOpen(false)}>합격DB</Link>
+              <Link href="/study-korea" className="block px-4 py-2 text-sm text-sage-700 hover:bg-sage-50" onClick={() => setIsMenuOpen(false)}>유학가이드</Link>
               <Link href="/videos" className="block px-4 py-2 text-sm text-sage-700 hover:bg-sage-50" onClick={() => setIsMenuOpen(false)}>유학영상</Link>
               <div className="px-4 py-2 border-t border-sage-200 pt-3">
                 <LanguageSwitcher />

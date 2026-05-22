@@ -34,12 +34,16 @@ export default function LanguageSwitcher() {
         newPath = newPath.replace("/forum", "/en/forum");
       } else if (newPath.startsWith("/admissions") && !newPath.includes("/en")) {
         newPath = newPath.replace("/admissions", "/en/admissions");
+      } else if (newPath.startsWith("/study-korea") && !newPath.includes("/en")) {
+        newPath = newPath.replace("/study-korea", "/en/study-korea");
       } else if (!newPath.startsWith("/en") && newPath !== "/") {
         newPath = `/en${newPath}`;
       }
     } else {
       // 영어 경로를 한국어 경로로 변환
-      if (newPath.startsWith("/en")) {
+      if (newPath.startsWith("/en/study-korea")) {
+        newPath = "/study-korea";
+      } else if (newPath.startsWith("/en")) {
         newPath = newPath.replace("/en", "");
         if (newPath === "") newPath = "/crossadmit";
         if (newPath.startsWith("/crossadmit") && newPath !== "/crossadmit") {

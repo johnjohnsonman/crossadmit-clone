@@ -27,6 +27,9 @@ export default function NavbarEN() {
               <Link href="/en/admissions" className="text-sm text-sage-700 hover:text-tea-600 transition-colors">
                 Admissions DB
               </Link>
+              <Link href="/en/study-korea" className="text-sm text-sage-700 hover:text-tea-600 transition-colors">
+                Study Guide
+              </Link>
               <Link href="/videos" className="text-sm text-sage-700 hover:text-tea-600 transition-colors">
                 Videos
               </Link>
@@ -63,6 +66,7 @@ export default function NavbarEN() {
             <Link href="/en/crossadmit" className="block px-4 py-2 text-sm text-sage-700 hover:bg-sage-50 font-semibold" onClick={() => setIsMenuOpen(false)}>CrossAdmit</Link>
             <Link href="/en/forum" className="block px-4 py-2 text-sm text-sage-700 hover:bg-sage-50" onClick={() => setIsMenuOpen(false)}>Forum</Link>
             <Link href="/en/admissions" className="block px-4 py-2 text-sm text-sage-700 hover:bg-sage-50" onClick={() => setIsMenuOpen(false)}>Admissions DB</Link>
+            <Link href="/en/study-korea" className="block px-4 py-2 text-sm text-sage-700 hover:bg-sage-50" onClick={() => setIsMenuOpen(false)}>Study Guide</Link>
             <Link href="/videos" className="block px-4 py-2 text-sm text-sage-700 hover:bg-sage-50" onClick={() => setIsMenuOpen(false)}>Videos</Link>
             <div className="px-4 py-2 border-t border-sage-200 pt-3">
               <LanguageSwitcher />
