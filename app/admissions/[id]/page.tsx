@@ -6,6 +6,7 @@ import { admissionToRecord } from "@/lib/supabase/map";
 import type { AdmissionSchoolRecord } from "@/lib/types";
 import StructuredData from "@/components/StructuredData";
 import CommentSection from "@/components/CommentSection";
+import { formatText, formatTextWithLineBreaks } from "@/lib/utils/format-text";
 
 type PageProps = { params: Promise<{ id: string }> };
 
@@ -34,11 +35,6 @@ function schoolBadge(s: AdmissionSchoolRecord): {
     label: "불합격",
     className: "border-gray-200 bg-gray-100 text-gray-600",
   };
-}
-
-function dash(v: string | null | undefined): string {
-  if (v === null || v === undefined || String(v).trim() === "") return "-";
-  return String(v);
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -131,7 +127,7 @@ export default async function AdmissionDetailPage({ params }: PageProps) {
           </div>
 
           <h1 className="mt-4 text-xl font-bold text-gray-900 sm:text-2xl">
-            {record.title}
+            {formatText(record.title)}
           </h1>
           <p className="mt-3 text-sm text-gray-500">{record.userHandle}</p>
         </div>
@@ -165,15 +161,21 @@ export default async function AdmissionDetailPage({ params }: PageProps) {
         <div className="mt-6 grid gap-6 md:grid-cols-3">
           <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
             <h2 className="text-xs font-medium text-gray-500">수능/표준 점수</h2>
-            <p className="mt-2 text-sm text-gray-900">{dash(record.inputScore)}</p>
+            <div className="mt-2 text-sm leading-relaxed text-gray-900">
+              {formatTextWithLineBreaks(record.inputScore)}
+            </div>
           </section>
           <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
             <h2 className="text-xs font-medium text-gray-500">내신 / GPA</h2>
-            <p className="mt-2 text-sm text-gray-900">{dash(record.inputGpa)}</p>
+            <div className="mt-2 text-sm leading-relaxed text-gray-900">
+              {formatTextWithLineBreaks(record.inputGpa)}
+            </div>
           </section>
           <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
             <h2 className="text-xs font-medium text-gray-500">특기 · 비교과</h2>
-            <p className="mt-2 text-sm text-gray-900">{dash(record.inputSpecialty)}</p>
+            <div className="mt-2 text-sm leading-relaxed text-gray-900">
+              {formatTextWithLineBreaks(record.inputSpecialty)}
+            </div>
           </section>
         </div>
 
@@ -187,9 +189,9 @@ export default async function AdmissionDetailPage({ params }: PageProps) {
                   <h3 className="text-sm font-medium text-tea-800">
                     {s.univName} {s.deptName}
                   </h3>
-                  <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-gray-800">
-                    {s.review}
-                  </p>
+                  <div className="mt-2 text-sm leading-relaxed text-gray-800">
+                    {formatTextWithLineBreaks(s.review)}
+                  </div>
                 </div>
               ))}
           </section>
