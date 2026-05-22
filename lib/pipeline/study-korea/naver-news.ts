@@ -1,5 +1,5 @@
 import { processAndSaveItems, type RawStudyKoreaItem } from "./process-items";
-import { slugId } from "./fetch-html";
+import { naverPostSourceId, normalizeNaverPostUrl } from "./naver-url";
 import { isNaverConfigured, naverHeaders, stripNaverHtml } from "./naver-api";
 
 const NEWS_QUERIES = [
@@ -51,15 +51,15 @@ export async function scrapeNaverNewsStudyKorea() {
       }
       const json = (await res.json()) as { items?: NaverNewsItem[] };
       for (const item of json.items ?? []) {
-        const link = item.link;
-        const id = slugId(link);
-        if (seen.has(id)) continue;
-        seen.add(id);
+        const url = normalizeNaverPostUrl(item.link);
+        const source_id = naverPostSourceId(url, "news");
+        if (!url || seen.has(source_id)) continue;
+        seen.add(source_id);
         items.push({
-          source_id: id,
+          source_id,
           title: stripNaverHtml(item.title),
           content: stripNaverHtml(item.description),
-          url: link,
+          url,
           author: "naver_news",
           language: "ko",
           source_created_at: parsePubDate(item.pubDate),

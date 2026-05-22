@@ -1,6 +1,12 @@
 import { createClient } from "@supabase/supabase-js";
+import {
+  naverPostSourceId,
+  normalizeNaverPostUrl,
+} from "./naver-url";
 import type { StudyKoreaPostInput, StudyKoreaSubcategory } from "./types";
 import { resolveUniversityMatch } from "./university-id";
+
+const NAVER_SOURCES = new Set(["naver_blog", "naver_news"]);
 
 function admin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -32,6 +38,29 @@ export async function upsertStudyKoreaPost(
   const subcategory = toSubcategory(row);
   const slugOrText = row.university ?? "";
 
+  let source_id = row.source_id;
+  let url = row.url ?? "";
+  const onConflict =
+    NAVER_SOURCES.has(row.source) && url
+      ? "source,url"
+      : "source,source_id";
+
+  if (NAVER_SOURCES.has(row.source) && url) {
+    url = normalizeNaverPostUrl(url);
+    source_id = naverPostSourceId(url, row.source === "naver_blog" ? "blog" : "news");
+
+    const { data: existing } = await supabase
+      .from("study_korea_posts")
+      .select("source_id")
+      .eq("source", row.source)
+      .eq("url", url)
+      .maybeSingle();
+
+    if (existing?.source_id) {
+      source_id = existing.source_id as string;
+    }
+  }
+
   let university_id = row.university_id ?? null;
   let university = slugOrText;
 
@@ -49,10 +78,10 @@ export async function upsertStudyKoreaPost(
 
   const payload = {
     source: row.source,
-    source_id: row.source_id,
+    source_id,
     title: row.title,
     content: row.content ?? "",
-    url: row.url,
+    url,
     author: row.author,
     category: row.category ?? subcategory,
     subcategory,
@@ -69,25 +98,25 @@ export async function upsertStudyKoreaPost(
   };
 
   console.log(
-    `[study-korea] upsert ${row.source}/${row.source_id} sub=${subcategory} univ_id=${university_id ?? "—"} univ=${university}`
+    `[study-korea] upsert ${row.source}/${source_id} url=${url.slice(0, 60)} conflict=${onConflict}`
   );
 
   const { data, error } = await supabase
     .from("study_korea_posts")
-    .upsert(payload, { onConflict: "source,source_id" })
+    .upsert(payload, { onConflict })
     .select("id")
     .single();
 
   if (error) {
     console.error(
-      `[study-korea] upsert FAILED ${row.source}/${row.source_id}:`,
+      `[study-korea] upsert FAILED ${row.source}/${source_id}:`,
       error.message
     );
     return "failed";
   }
 
   console.log(
-    `[study-korea] upsert OK ${row.source}/${row.source_id} id=${data?.id ?? "?"}`
+    `[study-korea] upsert OK ${row.source}/${source_id} id=${data?.id ?? "?"}`
   );
   return "saved";
 }

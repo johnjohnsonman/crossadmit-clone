@@ -1,5 +1,5 @@
 import { processAndSaveItems, type RawStudyKoreaItem } from "./process-items";
-import { slugId } from "./fetch-html";
+import { naverPostSourceId, normalizeNaverPostUrl } from "./naver-url";
 import { isNaverConfigured, naverHeaders, stripNaverHtml } from "./naver-api";
 
 const NAVER_QUERY = "한국유학+외국인";
@@ -36,7 +36,15 @@ export async function scrapeNaverStudyKorea() {
   const json = (await res.json()) as { items?: NaverBlogItem[] };
   const raw = json.items ?? [];
 
-  const items: RawStudyKoreaItem[] = raw.map((item) => {
+  const seen = new Set<string>();
+  const items: RawStudyKoreaItem[] = [];
+
+  for (const item of raw) {
+    const url = normalizeNaverPostUrl(item.link);
+    const source_id = naverPostSourceId(url, "blog");
+    if (!url || seen.has(source_id)) continue;
+    seen.add(source_id);
+
     const title = stripNaverHtml(item.title);
     const description = stripNaverHtml(item.description);
     const postdate = item.postdate;
@@ -45,18 +53,18 @@ export async function scrapeNaverStudyKorea() {
         ? `${postdate.slice(0, 4)}-${postdate.slice(4, 6)}-${postdate.slice(6, 8)}T00:00:00Z`
         : null;
 
-    return {
-      source_id: slugId(item.link),
+    items.push({
+      source_id,
       title,
       content: description,
-      url: item.link,
+      url,
       author: item.bloggername,
       language: "ko",
       source_created_at: iso,
-    };
-  });
+    });
+  }
 
-  console.log(`[naver_blog] fetched ${items.length} posts`);
+  console.log(`[naver_blog] fetched ${raw.length} → unique ${items.length} posts`);
   return processAndSaveItems("naver_blog", "naver_blog", items, NAVER_QUERY);
 }
 
