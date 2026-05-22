@@ -1,5 +1,5 @@
-import AdmissionsDbList from "@/components/admissions/AdmissionsDbList";
+import AdmissionsBulletinBoard from "@/components/admissions/AdmissionsBulletinBoard";
 
 export default function AdmissionsPage() {
-  return <AdmissionsDbList />;
+  return <AdmissionsBulletinBoard locale="ko" />;
 }

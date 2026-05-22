@@ -89,7 +89,9 @@ export default function CrossAdmitPage() {
         params.set("univ_a", String(univAId));
         params.set("univ_b", String(univBId));
       }
-      const response = await fetch(`/api/cross-comparisons?${params.toString()}`);
+      const response = await fetch(`/api/cross-comparisons?${params.toString()}`, {
+        cache: "no-store",
+      });
       const data = await response.json();
       const stats = (data.stats ?? []) as ApiStat[];
       setComparisons(mapStatsToRecords(stats));
@@ -108,7 +110,10 @@ export default function CrossAdmitPage() {
   useEffect(() => {
     const fetchPopular = async () => {
       try {
-        const response = await fetch("/api/cross-comparisons?stats=1&sort=popular");
+        const response = await fetch(
+          "/api/cross-comparisons?stats=1&sort=popular",
+          { cache: "no-store" }
+        );
         const data = await response.json();
         const stats = (data.stats ?? []) as ApiStat[];
         const records = mapStatsToRecords(stats);

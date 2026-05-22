@@ -1,11 +1,15 @@
 import { createClient } from "@/lib/supabase/server";
 import type { Admission, CrossComparison } from "@/lib/supabase/types";
 
-export type AdmissionsSort = "latest" | "popular" | "likes";
+export type AdmissionsSort = "latest" | "likes" | "views";
+
+export type AdmissionStatusFilter = "accept" | "regist" | "reject";
 
 export interface GetAdmissionsParams {
   year?: number;
+  year_before?: number;
   admission_type?: string;
+  status?: AdmissionStatusFilter;
   search?: string;
   sort?: AdmissionsSort;
   limit?: number;
@@ -21,13 +25,83 @@ const ADMISSION_SELECT = `
   admission_schools (*)
 `;
 
+function intersectIds(
+  current: number[] | null,
+  next: number[]
+): number[] | null {
+  if (next.length === 0) return [];
+  if (current === null) return [...next];
+  const set = new Set(next);
+  return current.filter((id) => set.has(id));
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function applySort(query: any, sort: AdmissionsSort) {
   let q = query.order("is_featured", { ascending: false });
-  if (sort === "likes" || sort === "popular") {
+  if (sort === "likes") {
     q = q.order("likes_count", { ascending: false });
+  } else if (sort === "views") {
+    q = q.order("view_count", { ascending: false });
+  } else {
+    q = q.order("created_at", { ascending: false });
   }
-  return q.order("created_at", { ascending: false });
+  return q.order("id", { ascending: false });
+}
+
+async function schoolFilterIds(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  params: GetAdmissionsParams
+): Promise<number[] | null> {
+  let ids: number[] | null = null;
+
+  if (params.search?.trim()) {
+    const safe = escapeIlike(params.search.trim());
+    const { data, error } = await supabase
+      .from("admission_schools")
+      .select("admission_id")
+      .or(`univ_name.ilike.%${safe}%,dept_name.ilike.%${safe}%`);
+    if (error) throw new Error(error.message);
+    const found = [
+      ...new Set((data ?? []).map((r: { admission_id: number }) => r.admission_id)),
+    ];
+    ids = intersectIds(ids, found);
+    if (ids?.length === 0) return [];
+  }
+
+  if (params.admission_type?.trim()) {
+    const type = params.admission_type.trim();
+    const { data, error } = await supabase
+      .from("admission_schools")
+      .select("admission_id")
+      .eq("admission_type", type);
+    if (error) throw new Error(error.message);
+    const found = [
+      ...new Set((data ?? []).map((r: { admission_id: number }) => r.admission_id)),
+    ];
+    ids = intersectIds(ids, found);
+    if (ids?.length === 0) return [];
+  }
+
+  if (params.status) {
+    let q = supabase.from("admission_schools").select("admission_id");
+    if (params.status === "regist") {
+      q = q.eq("is_regist", true);
+    } else if (params.status === "accept") {
+      q = q.eq("is_accept", true);
+    } else if (params.status === "reject") {
+      q = q.eq("is_apply", true).eq("is_accept", false).eq("is_regist", false);
+    }
+    const { data, error } = await q;
+    if (error) throw new Error(error.message);
+    const found = [
+      ...new Set((data ?? []).map((r: { admission_id: number }) => r.admission_id)),
+    ];
+    ids = intersectIds(ids, found);
+    if (ids?.length === 0) return [];
+  }
+
+  return ids;
 }
 
 export async function getAdmissions(
@@ -35,23 +109,29 @@ export async function getAdmissions(
 ): Promise<{ data: Admission[]; total: number }> {
   const supabase = await createClient();
 
-  const sortMode =
-    params.sort === "likes" || params.sort === "popular" ? "likes" : "latest";
+  const sortMode: AdmissionsSort =
+    params.sort === "likes" || params.sort === "views"
+      ? params.sort
+      : "latest";
+
+  const schoolIds = await schoolFilterIds(supabase, params);
+  if (schoolIds !== null && schoolIds.length === 0) {
+    return { data: [], total: 0 };
+  }
 
   let query = supabase
     .from("admissions")
     .select(ADMISSION_SELECT, { count: "exact" })
     .eq("published", true);
 
-  if (params.year !== undefined && !Number.isNaN(params.year)) {
+  if (params.year_before !== undefined && !Number.isNaN(params.year_before)) {
+    query = query.lt("year", params.year_before);
+  } else if (params.year !== undefined && !Number.isNaN(params.year)) {
     query = query.eq("year", params.year);
   }
 
-  if (params.search?.trim()) {
-    const safe = escapeIlike(params.search.trim());
-    query = query.or(
-      `title.ilike.%${safe}%,user_handle.ilike.%${safe}%`
-    );
+  if (schoolIds !== null) {
+    query = query.in("id", schoolIds);
   }
 
   query = applySort(query, sortMode);
@@ -69,33 +149,7 @@ export async function getAdmissions(
     throw new Error(error.message);
   }
 
-  let rows = (data ?? []) as Admission[];
-
-  if (params.admission_type?.trim()) {
-    const type = params.admission_type.trim();
-    rows = rows.filter((a) =>
-      (a.admission_schools ?? []).some((s) => s.admission_type === type)
-    );
-  }
-
-  if (params.search?.trim()) {
-    const q = params.search.trim().toLowerCase();
-    rows = rows.filter((a) => {
-      if (
-        a.title?.toLowerCase().includes(q) ||
-        a.user_handle?.toLowerCase().includes(q)
-      ) {
-        return true;
-      }
-      return (a.admission_schools ?? []).some(
-        (s) =>
-          s.univ_name?.toLowerCase().includes(q) ||
-          s.dept_name?.toLowerCase().includes(q)
-      );
-    });
-  }
-
-  return { data: rows, total: count ?? rows.length };
+  return { data: (data ?? []) as Admission[], total: count ?? 0 };
 }
 
 export async function getAdmissionById(

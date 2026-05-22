@@ -98,7 +98,9 @@ export default function CrossAdmitPageEN() {
         params.set("univ_a", String(univAId));
         params.set("univ_b", String(univBId));
       }
-      const response = await fetch(`/api/cross-comparisons?${params.toString()}`);
+      const response = await fetch(`/api/cross-comparisons?${params.toString()}`, {
+        cache: "no-store",
+      });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
       const stats = (data.stats ?? []) as ApiStat[];
@@ -120,7 +122,8 @@ export default function CrossAdmitPageEN() {
       setPopularLoading(true);
       try {
         const response = await fetch(
-          "/api/cross-comparisons?stats=1&sort=popular&locale=en"
+          "/api/cross-comparisons?stats=1&sort=popular&locale=en",
+          { cache: "no-store" }
         );
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const data = await response.json();

@@ -77,16 +77,42 @@ export function registeredSchools(
   return record.admissionSchools.filter((s) => s.isRegist);
 }
 
-/** 목록 카드용 학교 라벨 */
+export type SchoolBadge = "등록" | "합격" | "불합격";
+
+export type SchoolDisplayLine = {
+  univ: string;
+  dept: string;
+  badge: SchoolBadge;
+  badgeLabel: string;
+};
+
+const BADGE_ORDER: Record<SchoolBadge, number> = {
+  등록: 0,
+  합격: 1,
+  불합격: 2,
+};
+
+const BADGE_EN: Record<SchoolBadge, string> = {
+  등록: "Enrolled",
+  합격: "Accept",
+  불합격: "Rejected",
+};
+
+/** 목록 게시판용 학교 라벨 (등록 → 합격 → 불합격 순) */
 export function schoolDisplayLines(
-  record: AdmissionRecord
-): { univ: string; dept: string; badge: "등록" | "합격" | "불합격" }[] {
-  const regist = record.admissionSchools.filter((s) => s.isRegist);
-  const source = regist.length > 0 ? regist : record.admissionSchools;
-  return source.map((s) => {
-    let badge: "등록" | "합격" | "불합격" = "불합격";
+  record: AdmissionRecord,
+  locale: "ko" | "en" = "ko"
+): SchoolDisplayLine[] {
+  const lines = record.admissionSchools.map((s) => {
+    let badge: SchoolBadge = "불합격";
     if (s.isRegist) badge = "등록";
     else if (s.isAccept) badge = "합격";
-    return { univ: s.univName, dept: s.deptName, badge };
+    return {
+      univ: s.univName,
+      dept: s.deptName,
+      badge,
+      badgeLabel: locale === "en" ? BADGE_EN[badge] : badge,
+    };
   });
+  return lines.sort((a, b) => BADGE_ORDER[a.badge] - BADGE_ORDER[b.badge]);
 }

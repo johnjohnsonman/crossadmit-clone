@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 import {
   getCrossComparisons,
   getCrossComparisonStats,
@@ -47,7 +50,10 @@ export async function GET(request: NextRequest) {
           return NextResponse.json({ success: true, stats: filtered });
         }
       }
-      return NextResponse.json({ success: true, stats });
+      return NextResponse.json(
+        { success: true, stats },
+        { headers: { "Cache-Control": "no-store, max-age=0" } }
+      );
     }
 
     const univId = parseInt(univIdParam, 10);

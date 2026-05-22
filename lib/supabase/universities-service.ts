@@ -135,6 +135,7 @@ export async function getCrossComparisons(params?: {
     query = query.or(`univ_id_win.eq.${uid},univ_id_lose.eq.${uid}`);
   }
 
+  query = query.order("id", { ascending: false });
   query = query.limit(params?.limit ?? 200);
 
   const { data, error } = await query;
