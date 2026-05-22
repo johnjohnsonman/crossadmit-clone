@@ -33,7 +33,7 @@ export async function upsertStudyKoreaPost(
   };
 
   console.log(
-    `[Reddit] upsert attempt ${row.source}/${row.source_id} published=${payload.is_published} title="${(row.title ?? "").slice(0, 50)}"`
+    `[study-korea] upsert ${row.source}/${row.source_id} published=${payload.is_published} title="${(row.title ?? "").slice(0, 50)}"`
   );
 
   const { data, error } = await supabase
@@ -44,7 +44,7 @@ export async function upsertStudyKoreaPost(
 
   if (error) {
     console.error(
-      `[Reddit] upsert FAILED ${row.source}/${row.source_id}:`,
+      `[study-korea] upsert FAILED ${row.source}/${row.source_id}:`,
       error.message,
       error.details,
       error.hint
@@ -53,7 +53,7 @@ export async function upsertStudyKoreaPost(
   }
 
   console.log(
-    `[Reddit] upsert OK ${row.source}/${row.source_id} id=${data?.id ?? "?"}`
+    `[study-korea] upsert OK ${row.source}/${row.source_id} id=${data?.id ?? "?"}`
   );
   return "saved";
 }

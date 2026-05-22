@@ -8,7 +8,13 @@ export type StudyKoreaCategory =
   | "cost"
   | "general";
 
-export type StudyKoreaSource = "reddit" | "youtube";
+export type StudyKoreaSource =
+  | "reddit"
+  | "youtube"
+  | "quora"
+  | "studyinkorea"
+  | "university_official"
+  | "naver_blog";
 
 export interface StudyKoreaAnalysis {
   category: StudyKoreaCategory;

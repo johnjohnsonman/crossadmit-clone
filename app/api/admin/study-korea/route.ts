@@ -35,15 +35,19 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: postsErr.message }, { status: 500 });
     }
 
-    const stats: Record<string, number> = {};
+    const statsByCategory: Record<string, number> = {};
+    const statsBySource: Record<string, number> = {};
     for (const p of posts ?? []) {
       const cat = (p.category as string) || "general";
-      stats[cat] = (stats[cat] ?? 0) + 1;
+      statsByCategory[cat] = (statsByCategory[cat] ?? 0) + 1;
+      const src = (p.source as string) || "unknown";
+      statsBySource[src] = (statsBySource[src] ?? 0) + 1;
     }
 
     return NextResponse.json({
       runs: runs ?? [],
-      stats,
+      stats: statsByCategory,
+      statsBySource,
       posts: posts ?? [],
       totalPosts: (posts ?? []).length,
     });
