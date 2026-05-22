@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { enrichStudyKoreaPosts } from "@/lib/forum/enrich-posts";
 import { SLUG_NAME_HINTS } from "@/lib/forum/constants";
 import { resolveUniversityId } from "@/lib/pipeline/study-korea/university-id";
 
 export const dynamic = "force-dynamic";
 
 const KNOWN_SLUGS = Object.keys(SLUG_NAME_HINTS);
+
+function escapeIlike(raw: string): string {
+  return raw.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
+}
 
 async function countBySource(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -23,6 +28,8 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const category = searchParams.get("category");
   const university = searchParams.get("university");
+  const universityIdParam = searchParams.get("university_id");
+  const universityText = searchParams.get("university_text");
   const source = searchParams.get("source");
   const sort = searchParams.get("sort") === "popular" ? "popular" : "latest";
   const limit = Math.min(parseInt(searchParams.get("limit") || "20", 10), 50);
@@ -47,14 +54,33 @@ export async function GET(request: NextRequest) {
       q = q.eq("source", source);
     }
 
-    if (university === "other") {
+    const univId = universityIdParam
+      ? parseInt(universityIdParam, 10)
+      : NaN;
+
+    if (!Number.isNaN(univId) && univId > 0) {
+      const { data: univRow } = await supabase
+        .from("universities")
+        .select("name_kr, name_en")
+        .eq("id", univId)
+        .maybeSingle();
+      const parts = [`university_id.eq.${univId}`];
+      if (univRow?.name_kr) {
+        const safeKr = escapeIlike(String(univRow.name_kr).slice(0, 20));
+        parts.push(`university.ilike.%${safeKr}%`);
+      }
+      q = q.or(parts.join(","));
+    } else if (universityText?.trim()) {
+      const safe = escapeIlike(universityText.trim());
+      q = q.or(`university.ilike.%${safe}%`);
+    } else if (university === "other") {
       q = q.or(
         `university.is.null,university.eq.,university.not.in.(${KNOWN_SLUGS.join(",")})`
       );
     } else if (university) {
-      const univId = await resolveUniversityId(university);
-      if (univId) {
-        q = q.or(`university.eq.${university},university_id.eq.${univId}`);
+      const resolvedId = await resolveUniversityId(university);
+      if (resolvedId) {
+        q = q.or(`university.eq.${university},university_id.eq.${resolvedId}`);
       } else {
         q = q.eq("university", university);
       }
@@ -71,6 +97,8 @@ export async function GET(request: NextRequest) {
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+
+    const enriched = await enrichStudyKoreaPosts(data ?? []);
 
     let statsBySource: Record<string, number> | undefined;
     if (withStats || offset === 0) {
@@ -89,7 +117,7 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({
-      posts: data ?? [],
+      posts: enriched,
       total: count ?? 0,
       statsBySource,
       limit,

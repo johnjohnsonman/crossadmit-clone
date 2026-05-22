@@ -2,14 +2,15 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import UniversityAutocomplete, {
+  type UniversityPick,
+} from "@/components/crossadmit/UniversityAutocomplete";
 import {
   FORUM_TABS,
-  FORUM_UNIVERSITY_OPTIONS,
   SOURCE_BADGE_CLASS,
   SOURCE_LABELS,
   SUBCATEGORY_LABELS,
 } from "@/lib/forum/constants";
-import { UNIVERSITY_LABELS } from "@/lib/study-korea/constants";
 
 export interface ForumPost {
   id: string;
@@ -22,6 +23,10 @@ export interface ForumPost {
   upvotes: number;
   source_created_at: string | null;
   created_at: string;
+  university_name_kr?: string;
+  university_name_en?: string;
+  university_logo?: string;
+  university_matched_id?: number | null;
 }
 
 type Props = {
@@ -47,7 +52,8 @@ export default function StudyForumBoard({
   admissionsHref,
 }: Props) {
   const [tab, setTab] = useState("all");
-  const [university, setUniversity] = useState(fixedUniversity ?? "");
+  const [searchInput, setSearchInput] = useState("");
+  const [selectedUniv, setSelectedUniv] = useState<UniversityPick | null>(null);
   const [page, setPage] = useState(0);
   const [posts, setPosts] = useState<ForumPost[]>([]);
   const [total, setTotal] = useState(0);
@@ -63,8 +69,12 @@ export default function StudyForumBoard({
       stats: "1",
     });
     if (tab !== "all") params.set("category", tab);
-    const univ = fixedUniversity ?? university;
-    if (univ) params.set("university", univ);
+
+    if (fixedUniversity) {
+      params.set("university", fixedUniversity);
+    } else if (selectedUniv) {
+      params.set("university_id", String(selectedUniv.id));
+    }
 
     const res = await fetch(`/api/forum?${params}`);
     const json = await res.json();
@@ -74,7 +84,7 @@ export default function StudyForumBoard({
       if (json.statsBySource) setStats(json.statsBySource);
     }
     setLoading(false);
-  }, [tab, university, fixedUniversity, page]);
+  }, [tab, selectedUniv, fixedUniversity, page]);
 
   useEffect(() => {
     void fetchPosts();
@@ -82,7 +92,21 @@ export default function StudyForumBoard({
 
   useEffect(() => {
     setPage(0);
-  }, [tab, university, fixedUniversity]);
+  }, [tab, selectedUniv, fixedUniversity]);
+
+  const clearUniversity = () => {
+    setSelectedUniv(null);
+    setSearchInput("");
+  };
+
+  const filterLabel =
+    selectedUniv != null
+      ? locale === "ko"
+        ? selectedUniv.name_kr
+        : selectedUniv.name_en || selectedUniv.name_kr
+      : locale === "ko"
+        ? "전체 대학"
+        : "All universities";
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const naverN = stats.naver_blog ?? 0;
@@ -94,10 +118,13 @@ export default function StudyForumBoard({
     return new Date(iso).toLocaleDateString(locale === "ko" ? "ko-KR" : "en-US");
   };
 
-  const univLabel = (slug: string) => {
-    if (!slug) return null;
-    const u = UNIVERSITY_LABELS[slug];
-    return u ? (locale === "ko" ? u.kr : u.en) : slug;
+  const postUnivLabel = (p: ForumPost) => {
+    if (p.university_name_kr) {
+      return locale === "ko"
+        ? p.university_name_kr
+        : p.university_name_en || p.university_name_kr;
+    }
+    return p.university || null;
   };
 
   return (
@@ -156,30 +183,45 @@ export default function StudyForumBoard({
         </div>
 
         {showUniversityFilter && !fixedUniversity && (
-          <>
-            <select
-              className="mb-2 w-full sm:w-56 rounded-lg border border-sage-200 px-3 py-2 text-sm bg-white text-gray-900"
-              value={university}
-              onChange={(e) => setUniversity(e.target.value)}
-            >
-              {FORUM_UNIVERSITY_OPTIONS.map((o) => (
-                <option key={o.slug || "all"} value={o.slug}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-            <div className="flex flex-wrap gap-2 mb-4">
-              {FORUM_UNIVERSITY_OPTIONS.filter((o) => o.slug).map((o) => (
-                <Link
-                  key={o.slug}
-                  href={`/forum/${o.slug}`}
-                  className="text-xs px-2 py-1 rounded-full bg-white border border-sage-200 text-gray-800 hover:border-tea-500"
+          <div className="mb-4">
+            <p className="text-xs text-gray-600 mb-1.5">
+              {locale === "ko" ? "필터" : "Filter"}:{" "}
+              <span className="font-medium text-gray-900">{filterLabel}</span>
+            </p>
+            <div className="flex gap-2 items-stretch">
+              <span className="flex items-center pl-3 text-gray-500 bg-white border border-sage-200 border-r-0 rounded-l-lg">
+                🔍
+              </span>
+              <UniversityAutocomplete
+                value={searchInput}
+                univId={selectedUniv?.id ?? null}
+                onChange={setSearchInput}
+                onSelect={(u) => {
+                  setSelectedUniv(u);
+                  setSearchInput(
+                    locale === "ko" ? u.name_kr : u.name_en || u.name_kr
+                  );
+                }}
+                onClearId={() => setSelectedUniv(null)}
+                placeholder={
+                  locale === "ko" ? "대학명 검색..." : "Search university..."
+                }
+                locale={locale}
+                className="flex-1 px-3 py-2 text-sm border border-sage-200 rounded-r-lg rounded-l-none focus:outline-none focus:ring-2 focus:ring-tea-500/40 text-gray-900 placeholder:text-gray-400 bg-white"
+              />
+              {selectedUniv && (
+                <button
+                  type="button"
+                  onClick={clearUniversity}
+                  className="px-3 py-2 rounded-lg border border-sage-200 bg-white text-gray-700 hover:bg-sage-50 text-sm font-medium shrink-0"
+                  title={locale === "ko" ? "초기화" : "Clear"}
+                  aria-label={locale === "ko" ? "필터 초기화" : "Clear filter"}
                 >
-                  {o.label}
-                </Link>
-              ))}
+                  ✕
+                </button>
+              )}
             </div>
-          </>
+          </div>
         )}
 
         <div className="text-xs text-gray-600 mb-4 bg-white border border-sage-200 rounded-lg px-3 py-2">
@@ -208,7 +250,7 @@ export default function StudyForumBoard({
             const srcClass =
               SOURCE_BADGE_CLASS[p.source] ?? "bg-gray-100 text-gray-800";
             const srcLabel = SOURCE_LABELS[p.source] ?? p.source;
-            const uni = univLabel(p.university);
+            const uni = postUnivLabel(p);
 
             return (
               <li
@@ -226,7 +268,16 @@ export default function StudyForumBoard({
                   </span>
                   {uni && (
                     <span className="text-[10px] px-1.5 py-0.5 rounded bg-sage-100 text-gray-800">
-                      {uni}
+                      {p.university_matched_id ? (
+                        <Link
+                          href={`/forum/${p.university || "other"}`}
+                          className="hover:text-tea-600"
+                        >
+                          {uni}
+                        </Link>
+                      ) : (
+                        uni
+                      )}
                     </span>
                   )}
                 </div>

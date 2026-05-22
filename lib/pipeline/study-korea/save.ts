@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import type { StudyKoreaPostInput, StudyKoreaSubcategory } from "./types";
-import { resolveUniversityId } from "./university-id";
+import { resolveUniversityMatch } from "./university-id";
 
 function admin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -9,9 +9,7 @@ function admin() {
   return createClient(url, key);
 }
 
-function toSubcategory(
-  row: StudyKoreaPostInput
-): StudyKoreaSubcategory {
+function toSubcategory(row: StudyKoreaPostInput): StudyKoreaSubcategory {
   const sub = row.subcategory ?? row.category ?? "general";
   const allowed: StudyKoreaSubcategory[] = [
     "admission",
@@ -32,11 +30,22 @@ export async function upsertStudyKoreaPost(
 ): Promise<"saved" | "failed"> {
   const supabase = admin();
   const subcategory = toSubcategory(row);
-  const universitySlug = row.university ?? "";
-  const university_id =
-    row.university_id !== undefined
-      ? row.university_id
-      : await resolveUniversityId(universitySlug);
+  const slugOrText = row.university ?? "";
+
+  let university_id = row.university_id ?? null;
+  let university = slugOrText;
+
+  if (university_id == null && slugOrText) {
+    const match = await resolveUniversityMatch(
+      slugOrText,
+      `${row.title} ${(row.content ?? "").slice(0, 300)}`
+    );
+    university_id = match.id;
+    university = match.slug || slugOrText;
+  } else if (university_id != null && !slugOrText) {
+    const match = await resolveUniversityMatch("", row.title);
+    university = match.slug || university;
+  }
 
   const payload = {
     source: row.source,
@@ -47,7 +56,7 @@ export async function upsertStudyKoreaPost(
     author: row.author,
     category: row.category ?? subcategory,
     subcategory,
-    university: universitySlug,
+    university,
     university_id,
     language: row.language ?? "ko",
     upvotes: row.upvotes,
@@ -60,7 +69,7 @@ export async function upsertStudyKoreaPost(
   };
 
   console.log(
-    `[study-korea] upsert ${row.source}/${row.source_id} sub=${subcategory} univ_id=${university_id ?? "—"}`
+    `[study-korea] upsert ${row.source}/${row.source_id} sub=${subcategory} univ_id=${university_id ?? "—"} univ=${university}`
   );
 
   const { data, error } = await supabase
