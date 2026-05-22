@@ -9,6 +9,9 @@ export async function GET(request: NextRequest) {
   const country = searchParams.get("country");
   const search = searchParams.get("search");
   const univIdParam = searchParams.get("univ_id");
+  const localeParam = searchParams.get("locale");
+  const locale =
+    localeParam === "en" || localeParam === "ko" ? localeParam : undefined;
 
   try {
     if (univIdParam) {
@@ -27,6 +30,7 @@ export async function GET(request: NextRequest) {
       country: country?.trim() || undefined,
       search: search?.trim() || undefined,
       limit: 80,
+      locale,
     });
 
     return NextResponse.json({ universities });

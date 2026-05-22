@@ -16,7 +16,14 @@ type Props = {
   onClearId?: () => void;
   placeholder?: string;
   className?: string;
+  /** en: prefer English name in input and dropdown */
+  locale?: "ko" | "en";
 };
+
+function displayName(u: UniversityPick, locale: "ko" | "en"): string {
+  if (locale === "en" && u.name_en.trim()) return u.name_en;
+  return u.name_kr;
+}
 
 export default function UniversityAutocomplete({
   value,
@@ -26,6 +33,7 @@ export default function UniversityAutocomplete({
   onClearId,
   placeholder,
   className = "",
+  locale = "ko",
 }: Props) {
   const [open, setOpen] = useState(false);
   const [highlight, setHighlight] = useState(0);
@@ -36,6 +44,7 @@ export default function UniversityAutocomplete({
   const loadUniversities = useCallback(async (q: string) => {
     const params = new URLSearchParams();
     if (q.trim()) params.set("search", q.trim());
+    if (locale === "en") params.set("locale", "en");
     const res = await fetch(`/api/universities?${params.toString()}`);
     if (!res.ok) return [];
     const data = (await res.json()) as {
@@ -50,7 +59,7 @@ export default function UniversityAutocomplete({
       name_kr: u.name_kr,
       name_en: u.name_en,
     }));
-  }, []);
+  }, [locale]);
 
   useEffect(() => {
     let cancelled = false;
@@ -77,7 +86,7 @@ export default function UniversityAutocomplete({
   }, [value, open, options.length]);
 
   function pick(u: UniversityPick) {
-    onChange(u.name_kr);
+    onChange(displayName(u, locale));
     onSelect(u);
     setOpen(false);
     inputRef.current?.blur();
@@ -143,8 +152,12 @@ export default function UniversityAutocomplete({
                   pick(u);
                 }}
               >
-                <span className="font-medium text-gray-900">{u.name_kr}</span>
-                {u.name_en ? (
+                <span className="font-medium text-gray-900">
+                  {locale === "en" ? displayName(u, "en") : u.name_kr}
+                </span>
+                {locale === "en" && u.name_kr ? (
+                  <span className="text-xs text-gray-500">{u.name_kr}</span>
+                ) : u.name_en ? (
                   <span className="text-xs text-gray-500">{u.name_en}</span>
                 ) : null}
               </button>

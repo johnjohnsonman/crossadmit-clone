@@ -5,17 +5,52 @@ function escapeIlike(raw: string): string {
   return raw.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
 }
 
+async function loadUniversityNameMap(): Promise<
+  Map<number, { name_kr: string; name_en: string }>
+> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("universities")
+    .select("id, name_kr, name_en");
+  if (error) {
+    console.error("loadUniversityNameMap:", error);
+    return new Map();
+  }
+  const map = new Map<number, { name_kr: string; name_en: string }>();
+  for (const u of data ?? []) {
+    map.set(u.id as number, {
+      name_kr: String(u.name_kr ?? ""),
+      name_en: String(u.name_en ?? ""),
+    });
+  }
+  return map;
+}
+
+function resolveUnivDisplayName(
+  id: number,
+  fallback: string,
+  names: Map<number, { name_kr: string; name_en: string }>,
+  locale?: "ko" | "en"
+): string {
+  const row = names.get(id);
+  if (!row) return fallback;
+  if (locale === "en" && row.name_en.trim()) return row.name_en.trim();
+  return row.name_kr.trim() || fallback;
+}
+
 export async function getUniversities(params?: {
   country?: string;
   search?: string;
   limit?: number;
+  locale?: "ko" | "en";
 }): Promise<University[]> {
   const supabase = await createClient();
+  const orderCol = params?.locale === "en" ? "name_en" : "name_kr";
   let query = supabase
     .from("universities")
     .select("*")
     .eq("is_active", true)
-    .order("name_kr", { ascending: true });
+    .order(orderCol, { ascending: true });
 
   if (params?.country?.trim()) {
     query = query.eq("country", params.country.trim());
@@ -140,12 +175,15 @@ export async function getCrossComparisonStats(params?: {
   univ_a?: number;
   univ_b?: number;
   sort?: CrossComparisonSort;
+  locale?: "ko" | "en";
 }): Promise<CrossComparisonStat[]> {
   const rows = await getCrossComparisons({
     univ_a: params?.univ_a,
     univ_b: params?.univ_b,
     limit: 5000,
   });
+  const nameMap = await loadUniversityNameMap();
+  const locale = params?.locale;
 
   type PairAgg = {
     lowId: number;
@@ -195,8 +233,18 @@ export async function getCrossComparisonStats(params?: {
       id: `cross-${agg.lowId}-vs-${agg.highId}`,
       univ_id_win: agg.lowId,
       univ_id_lose: agg.highId,
-      univ_name_win: agg.nameLow,
-      univ_name_lose: agg.nameHigh,
+      univ_name_win: resolveUnivDisplayName(
+        agg.lowId,
+        agg.nameLow,
+        nameMap,
+        locale
+      ),
+      univ_name_lose: resolveUnivDisplayName(
+        agg.highId,
+        agg.nameHigh,
+        nameMap,
+        locale
+      ),
       dept_name_win: "",
       dept_name_lose: "",
       count: total,

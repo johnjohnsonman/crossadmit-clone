@@ -25,6 +25,9 @@ export async function GET(request: NextRequest) {
   const sort = parseSort(searchParams.get("sort"));
   const univA = parseId(searchParams.get("univ_a"));
   const univB = parseId(searchParams.get("univ_b"));
+  const localeParam = searchParams.get("locale");
+  const locale =
+    localeParam === "en" || localeParam === "ko" ? localeParam : undefined;
 
   try {
     if (statsOnly || !univIdParam) {
@@ -32,6 +35,7 @@ export async function GET(request: NextRequest) {
         sort,
         univ_a: univA,
         univ_b: univB,
+        locale,
       });
 
       if (univIdParam && univA === undefined && univB === undefined) {

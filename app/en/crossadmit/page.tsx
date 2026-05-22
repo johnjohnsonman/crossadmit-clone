@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import UniversityAutocomplete from "@/components/crossadmit/UniversityAutocomplete";
 
 interface CrossAdmitRecord {
   id: string;
@@ -24,118 +25,189 @@ interface PopularComparison {
   percentage2: number;
 }
 
-// Sample data (used when API has no data)
-function generateSampleData(): CrossAdmitRecord[] {
-  const comparisons: CrossAdmitRecord[] = [
-    {
-      id: "ucla-vs-usc",
-      university1: "University of California, Los Angeles",
-      university2: "University of Southern California",
-      totalAdmitted: 1000,
-      choseUniversity1: 590,
-      choseUniversity2: 410,
-      percentage1: 59,
-      percentage2: 41,
-      confidenceInterval1: { min: 55.7, max: 61.7 },
-      confidenceInterval2: { min: 38.3, max: 44.3 },
-    },
-    {
-      id: "seoul-vs-yonsei",
-      university1: "Seoul National University",
-      university2: "Yonsei University",
-      totalAdmitted: 850,
-      choseUniversity1: 510,
-      choseUniversity2: 340,
-      percentage1: 60,
-      percentage2: 40,
-      confidenceInterval1: { min: 56.5, max: 63.2 },
-      confidenceInterval2: { min: 36.8, max: 43.5 },
-    },
-  ];
-  return comparisons;
+interface VideoPreview {
+  id: string;
+  title: string;
+  thumbnail_url: string | null;
+  source_url: string;
 }
 
-type SortOption = "random" | "data-desc";
+type SortOption = "latest" | "random" | "popular";
+
+type ApiStat = {
+  id: string;
+  univ_name_win: string;
+  univ_name_lose: string;
+  count: number;
+  percentage_win: number;
+  percentage_lose: number;
+};
+
+function mapStatsToRecords(stats: ApiStat[]): CrossAdmitRecord[] {
+  return stats.map((s) => ({
+    id: s.id,
+    university1: s.univ_name_win,
+    university2: s.univ_name_lose,
+    totalAdmitted: s.count,
+    choseUniversity1: Math.round((s.count * s.percentage_win) / 100),
+    choseUniversity2: Math.round((s.count * s.percentage_lose) / 100),
+    percentage1: s.percentage_win,
+    percentage2: s.percentage_lose,
+    confidenceInterval1: {
+      min: Math.max(0, s.percentage_win - 5),
+      max: Math.min(100, s.percentage_win + 5),
+    },
+    confidenceInterval2: {
+      min: Math.max(0, s.percentage_lose - 5),
+      max: Math.min(100, s.percentage_lose + 5),
+    },
+  }));
+}
+
+function pickDisplayName(u: { name_kr: string; name_en: string }): string {
+  return u.name_en.trim() || u.name_kr;
+}
 
 export default function CrossAdmitPageEN() {
   const [comparisons, setComparisons] = useState<CrossAdmitRecord[]>([]);
   const [popularComparisons, setPopularComparisons] = useState<PopularComparison[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedComparison, setSelectedComparison] = useState<CrossAdmitRecord | null>(null);
-  const [sortOption, setSortOption] = useState<SortOption>("random");
+  const [latestVideos, setLatestVideos] = useState<VideoPreview[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortOption, setSortOption] = useState<SortOption>("latest");
   const [currentPage, setCurrentPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [popularLoading, setPopularLoading] = useState(true);
+
+  const [univAName, setUnivAName] = useState("");
+  const [univBName, setUnivBName] = useState("");
+  const [univAId, setUnivAId] = useState<number | null>(null);
+  const [univBId, setUnivBId] = useState<number | null>(null);
+  const [vsCompareActive, setVsCompareActive] = useState(false);
+
   const itemsPerPage = 10;
 
-  useEffect(() => {
-    // Fetch data from API
-    fetch("/api/crossadmit")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.comparisons && data.comparisons.length > 0) {
-          setComparisons(data.comparisons);
-          setSelectedComparison(data.comparisons[0]);
-        } else {
-          const sample = generateSampleData();
-          setComparisons(sample);
-          setSelectedComparison(sample[0]);
-        }
-
-        if (data.popularComparisons) {
-          setPopularComparisons(data.popularComparisons);
-        }
-      })
-      .catch((error) => {
-        console.error("Error fetching data:", error);
-        const sample = generateSampleData();
-        setComparisons(sample);
-        setSelectedComparison(sample[0]);
+  const fetchComparisons = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({
+        stats: "1",
+        sort: sortOption,
+        locale: "en",
       });
+      if (vsCompareActive && univAId !== null && univBId !== null) {
+        params.set("univ_a", String(univAId));
+        params.set("univ_b", String(univBId));
+      }
+      const response = await fetch(`/api/cross-comparisons?${params.toString()}`);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const data = await response.json();
+      const stats = (data.stats ?? []) as ApiStat[];
+      setComparisons(mapStatsToRecords(stats));
+    } catch (error) {
+      console.error("[CrossAdmit EN] Error fetching data:", error);
+      setComparisons([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [sortOption, vsCompareActive, univAId, univBId]);
+
+  useEffect(() => {
+    void fetchComparisons();
+  }, [fetchComparisons]);
+
+  useEffect(() => {
+    const fetchPopular = async () => {
+      setPopularLoading(true);
+      try {
+        const response = await fetch(
+          "/api/cross-comparisons?stats=1&sort=popular&locale=en"
+        );
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        const stats = (data.stats ?? []) as ApiStat[];
+        const records = mapStatsToRecords(stats);
+        setPopularComparisons(
+          records.slice(0, 5).map((c) => ({
+            id: c.id,
+            university1: c.university1,
+            university2: c.university2,
+            percentage1: c.percentage1,
+            percentage2: c.percentage2,
+          }))
+        );
+      } catch (error) {
+        console.error("[CrossAdmit EN] Error fetching popular:", error);
+        setPopularComparisons([]);
+      } finally {
+        setPopularLoading(false);
+      }
+    };
+    void fetchPopular();
   }, []);
 
-  // 필터링 및 정렬
-  const filteredComparisons = comparisons
-    .filter(
-      (comp) =>
-        comp.university1.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        comp.university2.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-    .sort((a, b) => {
-      if (sortOption === "data-desc") {
-        return b.totalAdmitted - a.totalAdmitted;
-      } else {
-        return 0;
-      }
-    });
+  const handleVsCompare = () => {
+    if (univAId === null || univBId === null) return;
+    if (univAId === univBId) return;
+    setVsCompareActive(true);
+    setCurrentPage(1);
+  };
 
-  // 랜덤 정렬을 위한 셔플
-  const shuffledComparisons = sortOption === "random" 
-    ? [...filteredComparisons].sort(() => Math.random() - 0.5)
-    : filteredComparisons;
+  const clearVsCompare = () => {
+    setVsCompareActive(false);
+    setUnivAName("");
+    setUnivBName("");
+    setUnivAId(null);
+    setUnivBId(null);
+    setCurrentPage(1);
+  };
 
-  // 페이지네이션 계산
-  const totalPages = Math.ceil(shuffledComparisons.length / itemsPerPage);
+  const filteredComparisons = comparisons.filter((c) => {
+    const query = searchQuery.toLowerCase();
+    if (!query) return true;
+    return (
+      c.university1.toLowerCase().includes(query) ||
+      c.university2.toLowerCase().includes(query)
+    );
+  });
+
+  const totalPages = Math.ceil(filteredComparisons.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedComparisons = shuffledComparisons.slice(startIndex, endIndex);
+  const paginatedComparisons = filteredComparisons.slice(
+    startIndex,
+    startIndex + itemsPerPage
+  );
 
-  // 검색어나 필터 변경 시 첫 페이지로 리셋
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, sortOption]);
+  }, [searchQuery, sortOption, vsCompareActive]);
 
-  // Structured data generation (multilingual support)
+  useEffect(() => {
+    const fetchLatestVideos = async () => {
+      try {
+        const response = await fetch("/api/videos?limit=4&offset=0");
+        const data = await response.json();
+        setLatestVideos((data.data || []) as VideoPreview[]);
+      } catch (error) {
+        console.error("[CrossAdmit EN] Error fetching videos:", error);
+      }
+    };
+    void fetchLatestVideos();
+  }, []);
+
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "WebSite",
     name: "CrossAdmit | 크로스어드밋 | 交叉录取",
     alternateName: ["크로스어드밋", "交叉录取"],
     url: "https://crossadmit.com",
-    description: "Compare university admission statistics when students are accepted to multiple universities | 두 대학에 동시에 합격했을 때 학생들의 선택 통계 | 比较同时被多所大学录取时的学生选择统计",
+    description:
+      "Compare university admission statistics when students are accepted to multiple universities | 두 대학에 동시에 합격했을 때 학생들의 선택 통계",
     inLanguage: ["en", "ko", "zh-CN", "zh-TW", "es", "ja"],
     about: {
       "@type": "Thing",
-      name: "Study in Korea | 留学韩国 | Estudiar en Corea",
-      description: "Korean university admission statistics and information for international students",
+      name: "Study in Korea",
+      description:
+        "Korean university admission statistics and information for international students",
     },
     potentialAction: {
       "@type": "SearchAction",
@@ -147,6 +219,19 @@ export default function CrossAdmitPageEN() {
     },
   };
 
+  const sortBtnClass = (active: boolean) =>
+    `px-3 md:px-4 py-2 text-sm md:text-base font-medium rounded-md transition-colors whitespace-nowrap ${
+      active
+        ? "bg-blue-500 text-white"
+        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+    }`;
+
+  const emptyMessage = vsCompareActive
+    ? "No comparison data found."
+    : searchQuery.trim()
+      ? "No results found."
+      : "No comparison data found.";
+
   return (
     <>
       <script
@@ -154,61 +239,132 @@ export default function CrossAdmitPageEN() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
       <main className="min-h-screen bg-[#f5f3f0]">
-        {/* Header */}
         <div className="bg-white border-b border-gray-200">
           <div className="container mx-auto px-4 py-4 md:py-8">
-            <h1 className="text-2xl md:text-4xl font-bold text-gray-900 mb-2 md:mb-4">CrossAdmit</h1>
+            <h1 className="text-2xl md:text-4xl font-bold text-gray-900 mb-2 md:mb-4">
+              CrossAdmit
+            </h1>
             <p className="text-sm md:text-lg text-gray-600 mb-1 md:mb-2">
               When admitted to two universities simultaneously, which one do students choose?
             </p>
             <p className="text-xs md:text-sm text-gray-500 mb-4 md:mb-6">
-              Statistically significant differences are indicated by color (95% confidence interval)
+              Statistically significant differences are indicated by color (95% confidence
+              interval)
             </p>
-            <div className="flex gap-3">
-              <Link
-                href="/en/crossadmit/register"
-                className="inline-block px-4 md:px-6 py-2 md:py-3 text-sm md:text-base bg-yellow-500 hover:bg-yellow-600 text-white font-semibold rounded-lg shadow-md transition-colors"
-              >
-                Register Your School →
-              </Link>
-            </div>
+            <Link
+              href="/en/crossadmit/register"
+              className="inline-block px-4 md:px-6 py-2 md:py-3 text-sm md:text-base bg-yellow-500 hover:bg-yellow-600 text-white font-semibold rounded-lg shadow-md transition-colors"
+            >
+              Register Your School →
+            </Link>
           </div>
         </div>
 
         <div className="container mx-auto px-4 py-4 md:py-8">
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 md:gap-8">
-            {/* Main Content */}
-            <div className="lg:col-span-3">
-              {/* Search and Filter */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 md:p-4 mb-4 md:mb-6">
-                <div className="flex flex-col md:flex-row gap-3 md:gap-4">
-                  <div className="flex-1">
-                    <input
-                      type="text"
-                      placeholder="Search university name..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full px-3 md:px-4 py-2 md:py-3 text-sm md:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
-                    />
-                  </div>
-                  <div className="flex gap-2">
+            <div className="lg:col-span-3 space-y-4 md:space-y-6">
+              {/* Compare two universities directly */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 md:p-5">
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-sm md:text-base font-bold text-gray-900">
+                    Compare Two Universities
+                  </h2>
+                  {vsCompareActive && (
                     <button
+                      type="button"
+                      onClick={clearVsCompare}
+                      className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800"
+                      aria-label="Clear comparison"
+                    >
+                      <span className="text-lg leading-none">×</span>
+                      <span>Clear</span>
+                    </button>
+                  )}
+                </div>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 md:gap-3">
+                  <UniversityAutocomplete
+                    locale="en"
+                    value={univAName}
+                    univId={univAId}
+                    onChange={setUnivAName}
+                    onSelect={(u) => {
+                      setUnivAName(pickDisplayName(u));
+                      setUnivAId(u.id);
+                    }}
+                    onClearId={() => setUnivAId(null)}
+                    placeholder="University A"
+                  />
+                  <span className="text-center text-sm font-bold text-gray-500 shrink-0 py-1">
+                    VS
+                  </span>
+                  <UniversityAutocomplete
+                    locale="en"
+                    value={univBName}
+                    univId={univBId}
+                    onChange={setUnivBName}
+                    onSelect={(u) => {
+                      setUnivBName(pickDisplayName(u));
+                      setUnivBId(u.id);
+                    }}
+                    onClearId={() => setUnivBId(null)}
+                    placeholder="University B"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleVsCompare}
+                    disabled={
+                      univAId === null ||
+                      univBId === null ||
+                      univAId === univBId
+                    }
+                    className="shrink-0 px-4 py-2 text-sm md:text-base font-semibold rounded-md bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Compare
+                  </button>
+                </div>
+                {vsCompareActive && univAName && univBName && (
+                  <p className="mt-3 text-xs md:text-sm text-blue-700 bg-blue-50 rounded-md px-3 py-2">
+                    Results for{" "}
+                    <span className="font-semibold">{univAName}</span>
+                    {" vs "}
+                    <span className="font-semibold">{univBName}</span>
+                  </p>
+                )}
+              </div>
+
+              {/* Search and sort */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 md:p-4">
+                <div className="flex flex-col gap-3">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search university..."
+                    disabled={vsCompareActive}
+                    className="w-full px-3 md:px-4 py-2 text-sm md:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400 disabled:bg-gray-50 disabled:text-gray-400"
+                  />
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setSortOption("latest")}
+                      disabled={vsCompareActive}
+                      className={sortBtnClass(sortOption === "latest")}
+                    >
+                      Latest
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => setSortOption("random")}
-                      className={`px-4 py-2 text-sm md:text-base font-medium rounded-md transition-colors whitespace-nowrap ${
-                        sortOption === "random"
-                          ? "bg-blue-500 text-white"
-                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                      }`}
+                      disabled={vsCompareActive}
+                      className={sortBtnClass(sortOption === "random")}
                     >
                       Random
                     </button>
                     <button
-                      onClick={() => setSortOption("data-desc")}
-                      className={`px-4 py-2 text-sm md:text-base font-medium rounded-md transition-colors whitespace-nowrap ${
-                        sortOption === "data-desc"
-                          ? "bg-blue-500 text-white"
-                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                      }`}
+                      type="button"
+                      onClick={() => setSortOption("popular")}
+                      disabled={vsCompareActive}
+                      className={sortBtnClass(sortOption === "popular")}
                     >
                       Most Data
                     </button>
@@ -216,121 +372,83 @@ export default function CrossAdmitPageEN() {
                 </div>
               </div>
 
-              {/* Comparison Display */}
-              {selectedComparison && (
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mb-4 md:mb-6">
-                  <div className="grid grid-cols-2 divide-x divide-gray-200">
-                    {/* Left University */}
-                    <div className="p-4 md:p-12 text-center">
-                      <div
-                        className={`text-3xl md:text-7xl font-bold mb-1 md:mb-4 ${
-                          selectedComparison.percentage1 > selectedComparison.percentage2
-                            ? "text-green-600"
-                            : "text-gray-400"
-                        }`}
-                      >
-                        {selectedComparison.percentage1}%
-                      </div>
-                      <div className="text-xs md:text-base text-gray-500 mb-1 md:mb-2">choose</div>
-                      <div className="text-sm md:text-2xl font-bold text-blue-600 mb-2 md:mb-6 line-clamp-2">
-                        {selectedComparison.university1}
-                      </div>
-                      <div className="text-[10px] md:text-sm text-gray-500 hidden md:block">
-                        95% confidence interval: {selectedComparison.confidenceInterval1.min}% to{" "}
-                        {selectedComparison.confidenceInterval1.max}%
-                      </div>
-                    </div>
-
-                    {/* Right University */}
-                    <div className="p-4 md:p-12 text-center">
-                      <div
-                        className={`text-3xl md:text-7xl font-bold mb-1 md:mb-4 ${
-                          selectedComparison.percentage2 > selectedComparison.percentage1
-                            ? "text-red-600"
-                            : "text-gray-400"
-                        }`}
-                      >
-                        {selectedComparison.percentage2}%
-                      </div>
-                      <div className="text-xs md:text-base text-gray-500 mb-1 md:mb-2">choose</div>
-                      <div className="text-sm md:text-2xl font-bold text-blue-600 mb-2 md:mb-6 line-clamp-2">
-                        {selectedComparison.university2}
-                      </div>
-                      <div className="text-[10px] md:text-sm text-gray-500 hidden md:block">
-                        95% confidence interval: {selectedComparison.confidenceInterval2.min}% to{" "}
-                        {selectedComparison.confidenceInterval2.max}%
-                      </div>
-                    </div>
-                  </div>
-                  <div className="bg-gray-50 px-4 md:px-12 py-2 md:py-4 text-center text-xs md:text-sm text-gray-600">
-                    Total {selectedComparison.totalAdmitted} people admitted to both universities
-                    simultaneously
-                  </div>
-                </div>
-              )}
-
-              {/* Comparison List */}
+              {/* Comparison list */}
               <div className="space-y-2 md:space-y-3">
-                {paginatedComparisons.length > 0 ? (
-                  paginatedComparisons.map((comp) => (
+                {loading ? (
+                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center text-gray-500">
+                    Loading...
+                  </div>
+                ) : paginatedComparisons.length > 0 ? (
+                  paginatedComparisons.map((comparison) => (
                     <Link
-                      key={comp.id}
-                      href={`/en/crossadmit/${comp.id}`}
+                      key={comparison.id}
+                      href={`/en/crossadmit/${comparison.id}`}
                       className="block bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-all"
                     >
                       <div className="flex items-center justify-between p-3 md:p-4">
-                        {/* Left: University 1 */}
                         <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0">
-                          <div className={`text-lg md:text-2xl font-bold whitespace-nowrap ${
-                            comp.percentage1 > comp.percentage2
-                              ? "text-green-600"
-                              : "text-gray-400"
-                          }`}>
-                            {comp.percentage1}%
+                          <div className="text-center shrink-0">
+                            <div
+                              className={`text-lg md:text-2xl font-bold whitespace-nowrap ${
+                                comparison.percentage1 > comparison.percentage2
+                                  ? "text-green-600"
+                                  : "text-gray-400"
+                              }`}
+                            >
+                              {comparison.percentage1}%
+                            </div>
+                            <div className="text-[10px] md:text-xs text-gray-500">
+                              choose
+                            </div>
                           </div>
                           <div className="text-sm md:text-base font-semibold text-blue-600 truncate">
-                            {comp.university1}
+                            {comparison.university1}
                           </div>
                         </div>
 
-                        {/* Center: VS */}
                         <div className="px-2 md:px-4 text-xs md:text-sm text-gray-400 font-medium">
                           vs
                         </div>
 
-                        {/* Right: University 2 */}
                         <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0 justify-end">
                           <div className="text-sm md:text-base font-semibold text-blue-600 truncate text-right">
-                            {comp.university2}
+                            {comparison.university2}
                           </div>
-                          <div className={`text-lg md:text-2xl font-bold whitespace-nowrap ${
-                            comp.percentage2 > comp.percentage1
-                              ? "text-red-600"
-                              : "text-gray-400"
-                          }`}>
-                            {comp.percentage2}%
+                          <div className="text-center shrink-0">
+                            <div
+                              className={`text-lg md:text-2xl font-bold whitespace-nowrap ${
+                                comparison.percentage2 > comparison.percentage1
+                                  ? "text-red-600"
+                                  : "text-gray-400"
+                              }`}
+                            >
+                              {comparison.percentage2}%
+                            </div>
+                            <div className="text-[10px] md:text-xs text-gray-500">
+                              choose
+                            </div>
                           </div>
                         </div>
 
-                        {/* Data count */}
-                        <div className="ml-3 md:ml-4 text-xs md:text-sm text-gray-500 whitespace-nowrap hidden md:block">
-                          ({comp.totalAdmitted})
+                        <div className="ml-3 md:ml-4 text-xs md:text-sm text-gray-500 whitespace-nowrap hidden lg:block max-w-[140px] text-right">
+                          Total {comparison.totalAdmitted} people admitted to
+                          both
                         </div>
                       </div>
                     </Link>
                   ))
                 ) : (
                   <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center text-gray-500">
-                    No results found.
+                    {emptyMessage}
                   </div>
                 )}
               </div>
 
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex justify-center items-center gap-2 mt-6 md:mt-8">
+              {!vsCompareActive && totalPages > 1 && (
+                <div className="flex justify-center items-center gap-2">
                   <button
-                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    type="button"
+                    onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                     disabled={currentPage === 1}
                     className={`px-3 md:px-4 py-2 text-sm md:text-base rounded-md transition-colors ${
                       currentPage === 1
@@ -340,7 +458,7 @@ export default function CrossAdmitPageEN() {
                   >
                     Previous
                   </button>
-                  
+
                   <div className="flex gap-1 md:gap-2">
                     {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
                       if (
@@ -351,6 +469,7 @@ export default function CrossAdmitPageEN() {
                         return (
                           <button
                             key={page}
+                            type="button"
                             onClick={() => setCurrentPage(page)}
                             className={`px-3 md:px-4 py-2 text-sm md:text-base rounded-md transition-colors ${
                               currentPage === page
@@ -361,10 +480,8 @@ export default function CrossAdmitPageEN() {
                             {page}
                           </button>
                         );
-                      } else if (
-                        page === currentPage - 3 ||
-                        page === currentPage + 3
-                      ) {
+                      }
+                      if (page === currentPage - 3 || page === currentPage + 3) {
                         return (
                           <span key={page} className="px-2 text-gray-400">
                             ...
@@ -376,7 +493,10 @@ export default function CrossAdmitPageEN() {
                   </div>
 
                   <button
-                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    type="button"
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                    }
                     disabled={currentPage === totalPages}
                     className={`px-3 md:px-4 py-2 text-sm md:text-base rounded-md transition-colors ${
                       currentPage === totalPages
@@ -390,46 +510,103 @@ export default function CrossAdmitPageEN() {
               )}
             </div>
 
-            {/* Sidebar */}
-            <div className="lg:col-span-1">
+            <div className="space-y-4 md:space-y-6">
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6 md:sticky md:top-24">
-                <h3 className="text-base md:text-lg font-bold text-gray-900 mb-3 md:mb-4">Popular Comparisons</h3>
+                <h3 className="text-base md:text-lg font-bold text-gray-900 mb-3 md:mb-4">
+                  Popular Comparisons
+                </h3>
                 <div className="space-y-2 md:space-y-3">
-                  {popularComparisons.length > 0 ? (
+                  {popularLoading ? (
+                    <p className="text-sm text-gray-500">Loading...</p>
+                  ) : popularComparisons.length > 0 ? (
                     popularComparisons.map((item) => (
                       <Link
                         key={item.id}
                         href={`/en/crossadmit/${item.id}`}
-                        className="block p-2 md:p-3 border border-gray-200 rounded-lg hover:border-yellow-500 hover:bg-yellow-50 transition-all"
+                        className="block p-2 md:p-3 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-blue-300 transition-all"
                       >
                         <div className="text-xs md:text-sm font-medium text-gray-900 mb-1 line-clamp-1">
                           {item.university1}
                         </div>
-                        <div className="text-[10px] md:text-xs text-gray-500 mb-1 md:mb-2">vs</div>
+                        <div className="text-[10px] md:text-xs text-gray-500 mb-1 md:mb-2">
+                          vs
+                        </div>
                         <div className="text-xs md:text-sm font-medium text-gray-900 mb-1 md:mb-2 line-clamp-1">
                           {item.university2}
                         </div>
                         <div className="flex items-center gap-2 text-[10px] md:text-xs">
-                          <span className={`font-bold ${
-                            item.percentage1 > item.percentage2 ? "text-green-600" : "text-gray-400"
-                          }`}>
-                            {item.percentage1}%
+                          <span
+                            className={`font-bold ${
+                              item.percentage1 > item.percentage2
+                                ? "text-green-600"
+                                : "text-gray-400"
+                            }`}
+                          >
+                            {item.percentage1}% choose
                           </span>
                           <span className="text-gray-400">vs</span>
-                          <span className={`font-bold ${
-                            item.percentage2 > item.percentage1 ? "text-red-600" : "text-gray-400"
-                          }`}>
-                            {item.percentage2}%
+                          <span
+                            className={`font-bold ${
+                              item.percentage2 > item.percentage1
+                                ? "text-red-600"
+                                : "text-gray-400"
+                            }`}
+                          >
+                            {item.percentage2}% choose
                           </span>
                         </div>
                       </Link>
                     ))
                   ) : (
-                    <div className="text-xs md:text-sm text-gray-500">No popular comparisons yet</div>
+                    <p className="text-sm text-gray-500">
+                      No comparison data found.
+                    </p>
                   )}
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+
+        <div className="container mx-auto px-4 pb-8 md:pb-12">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg md:text-2xl font-bold text-gray-900">
+                Latest Study Abroad Videos
+              </h2>
+              <Link
+                href="/videos"
+                className="text-sm text-tea-600 hover:text-tea-700 font-medium"
+              >
+                View all
+              </Link>
+            </div>
+            {latestVideos.length === 0 ? (
+              <p className="text-sm text-gray-500">No videos yet</p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {latestVideos.map((video) => (
+                  <a
+                    key={video.id}
+                    href={video.source_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow"
+                  >
+                    <img
+                      src={video.thumbnail_url || "https://picsum.photos/640/360"}
+                      alt={video.title}
+                      className="w-full h-32 object-cover"
+                    />
+                    <div className="p-3">
+                      <p className="text-sm font-medium text-gray-900 line-clamp-2">
+                        {video.title}
+                      </p>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </main>
