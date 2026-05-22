@@ -44,12 +44,25 @@ export async function GET(request: NextRequest) {
       statsBySource[src] = (statsBySource[src] ?? 0) + 1;
     }
 
+    const { data: universities, error: univErr } = await admin
+      .from("universities")
+      .select("id, name_kr, name_en, intl_url, intl_url_verified")
+      .eq("is_active", true)
+      .not("name_en", "is", null)
+      .neq("name_en", "")
+      .order("name_kr", { ascending: true });
+
+    if (univErr) {
+      return NextResponse.json({ error: univErr.message }, { status: 500 });
+    }
+
     return NextResponse.json({
       runs: runs ?? [],
       stats: statsByCategory,
       statsBySource,
       posts: posts ?? [],
       totalPosts: (posts ?? []).length,
+      universities: universities ?? [],
     });
   } catch (e) {
     console.error("[admin study-korea]", e);
@@ -67,7 +80,35 @@ export async function PATCH(request: NextRequest) {
       id?: string;
       is_published?: boolean;
       is_featured?: boolean;
+      universityId?: number;
+      intl_url?: string;
+      intl_url_verified?: boolean;
     };
+
+    const admin = createAdminClient();
+
+    if (body.universityId != null) {
+      const univUpdates: Record<string, string | boolean> = {};
+      if (typeof body.intl_url === "string") {
+        univUpdates.intl_url = body.intl_url.trim();
+      }
+      if (typeof body.intl_url_verified === "boolean") {
+        univUpdates.intl_url_verified = body.intl_url_verified;
+      }
+      if (Object.keys(univUpdates).length === 0) {
+        return NextResponse.json({ error: "No fields to update" }, { status: 400 });
+      }
+      const { data, error } = await admin
+        .from("universities")
+        .update(univUpdates)
+        .eq("id", body.universityId)
+        .select("id,name_kr,name_en,intl_url,intl_url_verified")
+        .single();
+      if (error) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+      return NextResponse.json({ university: data });
+    }
 
     if (!body.id) {
       return NextResponse.json({ error: "id required" }, { status: 400 });
@@ -85,7 +126,6 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "No fields to update" }, { status: 400 });
     }
 
-    const admin = createAdminClient();
     const { data, error } = await admin
       .from("study_korea_posts")
       .update(updates)

@@ -1,6 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import UniversityAutocomplete, {
+  type UniversityPick,
+} from "@/components/crossadmit/UniversityAutocomplete";
+import UniversityIntlCards from "@/components/study-korea/UniversityIntlCards";
 import {
   CATEGORY_LABELS_EN,
   CATEGORY_LABELS_KR,
@@ -44,7 +48,8 @@ type Props = { locale: "ko" | "en" };
 export default function StudyKoreaGuide({ locale }: Props) {
   const labels = locale === "ko" ? CATEGORY_LABELS_KR : CATEGORY_LABELS_EN;
   const [tab, setTab] = useState<string>("all");
-  const [university, setUniversity] = useState("");
+  const [univSearch, setUnivSearch] = useState("");
+  const [selectedUniv, setSelectedUniv] = useState<UniversityPick | null>(null);
   const [language, setLanguage] = useState("");
   const [sort, setSort] = useState<"latest" | "popular">("latest");
   const [summaryLang, setSummaryLang] = useState<"en" | "kr">(
@@ -65,7 +70,7 @@ export default function StudyKoreaGuide({ locale }: Props) {
       sort,
     });
     if (tab !== "all") params.set("category", tab);
-    if (university) params.set("university", university);
+    if (selectedUniv) params.set("university_id", String(selectedUniv.id));
     if (language) params.set("language", language);
 
     try {
@@ -81,7 +86,7 @@ export default function StudyKoreaGuide({ locale }: Props) {
     } finally {
       setLoading(false);
     }
-  }, [tab, university, language, sort, page]);
+  }, [tab, selectedUniv, language, sort, page]);
 
   useEffect(() => {
     void fetchPosts();
@@ -89,11 +94,9 @@ export default function StudyKoreaGuide({ locale }: Props) {
 
   useEffect(() => {
     setPage(0);
-  }, [tab, university, language, sort]);
+  }, [tab, selectedUniv, language, sort]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-
-  const univOptions = useMemo(() => Object.keys(UNIVERSITY_LABELS), []);
 
   const formatDate = (iso: string | null) => {
     if (!iso) return "";
@@ -118,6 +121,8 @@ export default function StudyKoreaGuide({ locale }: Props) {
           </p>
         </header>
 
+        <UniversityIntlCards locale={locale} />
+
         <div className="flex flex-wrap gap-2 mb-6">
           {TABS.map((t) => (
             <button
@@ -136,22 +141,35 @@ export default function StudyKoreaGuide({ locale }: Props) {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-          <select
-            className="rounded-lg border border-sage-200 px-3 py-2 text-sm bg-white"
-            value={university}
-            onChange={(e) => setUniversity(e.target.value)}
-          >
-            <option value="">
-              {locale === "ko" ? "대학 (전체)" : "University (all)"}
-            </option>
-            {univOptions.map((u) => (
-              <option key={u} value={u}>
-                {locale === "ko"
-                  ? UNIVERSITY_LABELS[u]?.kr
-                  : UNIVERSITY_LABELS[u]?.en}
-              </option>
-            ))}
-          </select>
+          <div className="sm:col-span-2 flex gap-2 items-stretch">
+            <UniversityAutocomplete
+              value={univSearch}
+              univId={selectedUniv?.id ?? null}
+              onChange={setUnivSearch}
+              onSelect={(u) => {
+                setSelectedUniv(u);
+                setUnivSearch(locale === "ko" ? u.name_kr : u.name_en || u.name_kr);
+              }}
+              onClearId={() => setSelectedUniv(null)}
+              placeholder={
+                locale === "ko" ? "대학 검색 (전체)" : "Search university (all)"
+              }
+              locale={locale}
+              className="flex-1 px-3 py-2 text-sm border border-sage-200 rounded-lg bg-white text-gray-900 placeholder:text-gray-400"
+            />
+            {selectedUniv && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedUniv(null);
+                  setUnivSearch("");
+                }}
+                className="px-3 py-2 rounded-lg border border-sage-200 bg-white text-sm text-gray-700 shrink-0"
+              >
+                {locale === "ko" ? "초기화" : "Clear"}
+              </button>
+            )}
+          </div>
           <select
             className="rounded-lg border border-sage-200 px-3 py-2 text-sm bg-white"
             value={language}

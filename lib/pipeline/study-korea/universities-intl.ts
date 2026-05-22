@@ -1,57 +1,17 @@
+import { loadVerifiedIntlUniversities } from "@/lib/universities/intl-targets";
 import { extractVisibleText, fetchHtml, loadHtml, slugId } from "./fetch-html";
 import { processAndSaveItems, type RawStudyKoreaItem } from "./process-items";
+import { normalizeUniversitySlug } from "./university-map";
+import { clearUniversityCache } from "./university-id";
 
 const FETCH_TIMEOUT_MS = 10_000;
-
-const UNIV_SLUG: Record<string, string> = {
-  SNU: "snu",
-  KAIST: "kaist",
-  Yonsei: "yonsei",
-  "Korea Univ": "korea_univ",
-  POSTECH: "postech",
-  Sungkyunkwan: "skku",
-  Hanyang: "hanyang",
-  Sogang: "sogang",
-  Ewha: "ewha",
-  UNIST: "unist",
-  DGIST: "dgist",
-};
-
-const UNIVERSITY_PAGES = [
-  { name: "SNU", url: "https://en.snu.ac.kr/apply/info" },
-  { name: "KAIST", url: "https://admission.kaist.ac.kr/intl-graduate/" },
-  {
-    name: "Yonsei",
-    url: "https://admission.yonsei.ac.kr/international/en/html/intro/intro_00.asp",
-  },
-  {
-    name: "Korea Univ",
-    url: "https://oia.korea.ac.kr/english/programs/inbound",
-  },
-  { name: "POSTECH", url: "https://admission.postech.ac.kr/international/" },
-  {
-    name: "Sungkyunkwan",
-    url: "https://www.skku.edu/eng/Admission/index.do",
-  },
-  {
-    name: "Hanyang",
-    url: "https://www.hanyang.ac.kr/web/eng/international_student",
-  },
-  {
-    name: "Sogang",
-    url: "https://iie.sogang.ac.kr/iie/en/01_intro/intro.html",
-  },
-  { name: "Ewha", url: "https://ibsi.ewha.ac.kr/eng/admissions/index.html" },
-  { name: "UNIST", url: "https://www.unist.ac.kr/admission/international/" },
-  { name: "DGIST", url: "https://www.dgist.ac.kr/en/html/sub07/070101.html" },
-];
 
 const ADMISSION_HINT =
   /TOPIK|GPA|application|admission|document|deadline|requirement|international|foreign|English|visa|scholarship|degree|undergraduate|graduate/i;
 
 function parseUniversityPage(
   html: string,
-  meta: { name: string; url: string }
+  meta: { id: number; name_kr: string; name_en: string; url: string }
 ): RawStudyKoreaItem | null {
   const $ = loadHtml(html);
 
@@ -73,50 +33,76 @@ function parseUniversityPage(
   if (!ADMISSION_HINT.test(main) && main.length < 400) return null;
 
   const content = main.slice(0, 8000);
+  const displayName = meta.name_en || meta.name_kr;
   const slug =
-    UNIV_SLUG[meta.name] ?? meta.name.toLowerCase().replace(/\s+/g, "_");
+    normalizeUniversitySlug("", `${meta.name_kr} ${meta.name_en}`) ||
+    `univ_${meta.id}`;
 
   return {
-    source_id: slugId(`${meta.name}-${meta.url}`),
-    title: `${meta.name} — International Admission Information`,
+    source_id: slugId(`intl-${meta.id}-${meta.url}`),
+    title: `${displayName} — International Admission Information`,
     content,
     url: meta.url,
-    author: meta.name,
+    author: displayName,
     category: "admission",
     university: slug,
+    university_id: meta.id,
     language: "en",
   };
 }
 
 export async function scrapeUniversitiesIntl() {
+  const targets = await loadVerifiedIntlUniversities();
   const items: RawStudyKoreaItem[] = [];
 
-  for (const page of UNIVERSITY_PAGES) {
+  console.log(
+    `[university_official] ${targets.length} universities with verified intl_url`
+  );
+
+  if (targets.length === 0) {
+    return processAndSaveItems(
+      "university_official",
+      "university_official",
+      [],
+      "no verified intl_url rows"
+    );
+  }
+
+  for (const univ of targets) {
     try {
-      const html = await fetchHtml(page.url, FETCH_TIMEOUT_MS);
-      const item = parseUniversityPage(html, page);
+      const html = await fetchHtml(univ.intl_url, FETCH_TIMEOUT_MS);
+      const item = parseUniversityPage(html, {
+        id: univ.id,
+        name_kr: univ.name_kr,
+        name_en: univ.name_en,
+        url: univ.intl_url,
+      });
       if (item) {
         items.push(item);
-        console.log(`[university_official] ${page.name} OK (${item.content.length} chars)`);
+        console.log(
+          `[university_official] ${univ.name_kr} OK (${item.content.length} chars)`
+        );
       } else {
-        console.warn(`[university_official] ${page.name} — insufficient content`);
+        console.warn(`[university_official] ${univ.name_kr} — insufficient content`);
       }
     } catch (e) {
       console.warn(
-        `[university_official] skip ${page.name}:`,
+        `[university_official] skip ${univ.name_kr}:`,
         e instanceof Error ? e.message : e
       );
     }
   }
 
+  clearUniversityCache();
+
   console.log(
-    `[university_official] collected ${items.length}/${UNIVERSITY_PAGES.length}`
+    `[university_official] collected ${items.length}/${targets.length}`
   );
 
   return processAndSaveItems(
     "university_official",
     "university_official",
     items,
-    UNIVERSITY_PAGES.map((p) => p.name).join(", ")
+    targets.map((u) => u.name_kr).join(", ")
   );
 }

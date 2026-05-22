@@ -74,6 +74,24 @@ export async function getUniversities(params?: {
   return (data ?? []) as University[];
 }
 
+/** intl_url이 채워진 대학 (유학가이드 카드용) */
+export async function getUniversitiesWithIntlUrl(): Promise<University[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("universities")
+    .select("*")
+    .eq("is_active", true)
+    .not("intl_url", "is", null)
+    .neq("intl_url", "")
+    .order("name_kr", { ascending: true });
+
+  if (error) {
+    console.error("getUniversitiesWithIntlUrl:", error);
+    throw new Error(error.message);
+  }
+  return (data ?? []) as University[];
+}
+
 export async function getUniversityById(id: number): Promise<University | null> {
   const supabase = await createClient();
   const { data, error } = await supabase

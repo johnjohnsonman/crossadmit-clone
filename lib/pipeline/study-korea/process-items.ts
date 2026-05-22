@@ -17,6 +17,7 @@ export interface RawStudyKoreaItem {
   author?: string;
   category?: StudyKoreaCategory;
   university?: string;
+  university_id?: number | null;
   language?: string;
   upvotes?: number;
   comment_count?: number;
@@ -109,6 +110,7 @@ export async function processAndSaveItems(
           category,
           subcategory: (item.category ?? category) as typeof category,
           university,
+          university_id: item.university_id ?? undefined,
           language: item.language ?? (source === "naver_blog" ? "ko" : "en"),
           ai_summary,
           ai_summary_kr,

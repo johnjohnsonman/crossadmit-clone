@@ -34,6 +34,14 @@ type AdminPost = {
   created_at: string;
 };
 
+type AdminUniv = {
+  id: number;
+  name_kr: string;
+  name_en: string;
+  intl_url: string;
+  intl_url_verified: boolean;
+};
+
 function AdminStudyKoreaInner() {
   const searchParams = useSearchParams();
   const keyFromUrl = searchParams.get("key") ?? "";
@@ -44,6 +52,10 @@ function AdminStudyKoreaInner() {
   const [statsByCategory, setStatsByCategory] = useState<Record<string, number>>({});
   const [statsBySource, setStatsBySource] = useState<Record<string, number>>({});
   const [posts, setPosts] = useState<AdminPost[]>([]);
+  const [universities, setUniversities] = useState<AdminUniv[]>([]);
+  const [univEdits, setUnivEdits] = useState<
+    Record<number, { intl_url: string; intl_url_verified: boolean }>
+  >({});
   const [loading, setLoading] = useState(false);
   const [runningSource, setRunningSource] = useState<string | null>(null);
   const [runMsg, setRunMsg] = useState<string | null>(null);
@@ -83,6 +95,19 @@ function AdminStudyKoreaInner() {
       setStatsByCategory(json.stats ?? {});
       setStatsBySource(json.statsBySource ?? {});
       setPosts(json.posts ?? []);
+      const univs = (json.universities ?? []) as AdminUniv[];
+      setUniversities(univs);
+      const edits: Record<
+        number,
+        { intl_url: string; intl_url_verified: boolean }
+      > = {};
+      for (const u of univs) {
+        edits[u.id] = {
+          intl_url: u.intl_url ?? "",
+          intl_url_verified: Boolean(u.intl_url_verified),
+        };
+      }
+      setUnivEdits(edits);
     } catch (e) {
       setAuthorized(false);
       setLoadErr(e instanceof Error ? e.message : "오류");
@@ -150,6 +175,40 @@ function AdminStudyKoreaInner() {
       setPosts((prev) =>
         prev.map((p) => (p.id === id ? { ...p, [field]: value } : p))
       );
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "오류");
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  const saveUniversityIntl = async (univ: AdminUniv) => {
+    const edit = univEdits[univ.id];
+    if (!edit) return;
+    setSaving(`univ-${univ.id}`);
+    try {
+      const res = await fetch("/api/admin/study-korea", {
+        method: "PATCH",
+        headers: hdrs(true),
+        body: JSON.stringify({
+          universityId: univ.id,
+          intl_url: edit.intl_url,
+          intl_url_verified: edit.intl_url_verified,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "저장 실패");
+      const updated = json.university as AdminUniv;
+      setUniversities((prev) =>
+        prev.map((u) => (u.id === updated.id ? { ...u, ...updated } : u))
+      );
+      setUnivEdits((prev) => ({
+        ...prev,
+        [updated.id]: {
+          intl_url: updated.intl_url ?? "",
+          intl_url_verified: Boolean(updated.intl_url_verified),
+        },
+      }));
     } catch (e) {
       alert(e instanceof Error ? e.message : "오류");
     } finally {
@@ -422,6 +481,82 @@ function AdminStudyKoreaInner() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            </section>
+
+            <section className="bg-white rounded-xl border border-slate-200 overflow-hidden mt-6">
+              <div className="px-4 py-3 border-b bg-slate-50">
+                <h2 className="text-sm font-semibold text-gray-900">
+                  대학 국제처 URL ({universities.length})
+                </h2>
+                <p className="text-xs text-gray-600 mt-1">
+                  intl_url_verified=true 인 대학만 University Intl 크론이
+                  스크래핑합니다.
+                </p>
+              </div>
+              <div className="max-h-[480px] overflow-y-auto p-4 space-y-3">
+                {universities.map((u) => {
+                  const edit = univEdits[u.id] ?? {
+                    intl_url: "",
+                    intl_url_verified: false,
+                  };
+                  return (
+                    <div
+                      key={u.id}
+                      className="border border-slate-200 rounded-lg p-3 text-sm"
+                    >
+                      <div className="flex flex-wrap items-center gap-2 mb-2">
+                        <span className="font-semibold text-gray-900">
+                          {u.name_kr}
+                        </span>
+                        <span className="text-gray-500 text-xs">
+                          {u.name_en}
+                        </span>
+                        <label className="ml-auto flex items-center gap-1.5 text-xs text-gray-800">
+                          <input
+                            type="checkbox"
+                            checked={edit.intl_url_verified}
+                            onChange={(e) =>
+                              setUnivEdits((prev) => ({
+                                ...prev,
+                                [u.id]: {
+                                  ...edit,
+                                  intl_url_verified: e.target.checked,
+                                },
+                              }))
+                            }
+                          />
+                          verified (스크래핑)
+                        </label>
+                      </div>
+                      <input
+                        type="url"
+                        value={edit.intl_url}
+                        onChange={(e) =>
+                          setUnivEdits((prev) => ({
+                            ...prev,
+                            [u.id]: { ...edit, intl_url: e.target.value },
+                          }))
+                        }
+                        placeholder="https://..."
+                        className="w-full border border-slate-300 rounded px-2 py-1.5 text-xs text-gray-900 bg-white"
+                      />
+                      <button
+                        type="button"
+                        disabled={saving === `univ-${u.id}`}
+                        onClick={() => void saveUniversityIntl(u)}
+                        className="mt-2 px-3 py-1 rounded bg-tea-600 text-white text-xs font-medium disabled:opacity-50"
+                      >
+                        {saving === `univ-${u.id}` ? "저장 중…" : "저장"}
+                      </button>
+                    </div>
+                  );
+                })}
+                {universities.length === 0 && (
+                  <p className="text-gray-600 text-sm text-center py-6">
+                    name_en 이 있는 대학이 없습니다.
+                  </p>
+                )}
               </div>
             </section>
           </>

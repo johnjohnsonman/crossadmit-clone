@@ -14,6 +14,8 @@ export type University = {
   name_en: string;
   logo: string;
   is_active: boolean;
+  intl_url?: string;
+  intl_url_verified?: boolean;
 };
 
 export type UniversityDepartment = {

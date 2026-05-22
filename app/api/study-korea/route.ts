@@ -7,6 +7,7 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const category = searchParams.get("category");
   const university = searchParams.get("university");
+  const universityIdParam = searchParams.get("university_id");
   const language = searchParams.get("language");
   const sort = searchParams.get("sort") === "popular" ? "popular" : "latest";
   const limit = Math.min(parseInt(searchParams.get("limit") || "20", 10), 50);
@@ -25,7 +26,10 @@ export async function GET(request: NextRequest) {
     if (category && category !== "all") {
       q = q.eq("category", category);
     }
-    if (university) {
+    if (universityIdParam) {
+      const uid = parseInt(universityIdParam, 10);
+      if (!Number.isNaN(uid)) q = q.eq("university_id", uid);
+    } else if (university) {
       q = q.eq("university", university);
     }
     if (language) {
