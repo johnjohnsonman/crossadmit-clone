@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import Navbar from "@/components/Navbar";
-import FloatingAdmissions from "@/components/FloatingAdmissions";
-import Footer from "@/components/Footer";
+import SiteChrome from "@/components/SiteChrome";
 import StructuredData from "@/components/StructuredData";
 
 export const metadata: Metadata = {
@@ -150,10 +148,7 @@ export default function RootLayout({
         <link rel="alternate" hrefLang="x-default" href="https://crossadmit.com" />
       </head>
       <body className="antialiased">
-        <Navbar />
-        <FloatingAdmissions />
-        {children}
-        <Footer />
+        <SiteChrome>{children}</SiteChrome>
       </body>
     </html>
   );
