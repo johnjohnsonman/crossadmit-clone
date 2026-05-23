@@ -48,8 +48,8 @@ export type Admission = {
 export type AdmissionSchool = {
   id: number;
   admission_id: number;
-  univ_id: number;
-  dept_id: number;
+  univ_id: number | null;
+  dept_id: number | null;
   univ_name: string;
   dept_name: string;
   is_apply: boolean;

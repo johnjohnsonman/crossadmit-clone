@@ -14,8 +14,8 @@ import type {
 export const runtime = "nodejs";
 
 export type SchoolSubmitPayload = {
-  univ_id?: number;
-  dept_id?: number;
+  univ_id?: number | null;
+  dept_id?: number | null;
   univ_name: string;
   dept_name: string;
   status: "합격" | "등록" | "불합격";
@@ -30,6 +30,10 @@ function statusToFlags(status: SchoolSubmitPayload["status"]) {
     return { is_apply: true, is_accept: true, is_regist: false };
   }
   return { is_apply: true, is_accept: false, is_regist: false };
+}
+
+function toFkId(id: number | null | undefined): number | null {
+  return id != null && id > 0 ? id : null;
 }
 
 function isSchool(x: unknown): x is SchoolSubmitPayload {
@@ -60,8 +64,10 @@ export async function POST(request: NextRequest) {
     const rawSchools = body.schools ?? body.schools_applied;
     const schools: SchoolSubmitPayload[] = Array.isArray(rawSchools)
       ? rawSchools.filter(isSchool).map((s) => ({
-          univ_id: typeof s.univ_id === "number" ? s.univ_id : 0,
-          dept_id: typeof s.dept_id === "number" ? s.dept_id : 0,
+          univ_id:
+            typeof s.univ_id === "number" && s.univ_id > 0 ? s.univ_id : undefined,
+          dept_id:
+            typeof s.dept_id === "number" && s.dept_id > 0 ? s.dept_id : undefined,
           univ_name: String(s.univ_name).trim(),
           dept_name: String(s.dept_name).trim(),
           status: s.status,
@@ -161,8 +167,8 @@ export async function POST(request: NextRequest) {
       resolvedSchools.push({ ...s, univ_id: univId, dept_id: deptId });
       schoolRows.push({
         admission_id: admissionId,
-        univ_id: univId,
-        dept_id: deptId,
+        univ_id: toFkId(univId),
+        dept_id: toFkId(deptId),
         univ_name: s.univ_name,
         dept_name: s.dept_name,
         is_apply: flags.is_apply,
@@ -197,15 +203,17 @@ export async function POST(request: NextRequest) {
       for (let j = i + 1; j < accepted.length; j++) {
         const a = accepted[i];
         const b = accepted[j];
-        if (a.univ_id && b.univ_id && a.univ_id === b.univ_id) continue;
+        const aUniv = toFkId(a.univ_id);
+        const bUniv = toFkId(b.univ_id);
+        if (!aUniv || !bUniv || aUniv === bUniv) continue;
 
         const aReg = a.status === "등록";
         const bReg = b.status === "등록";
         if (aReg && !bReg) {
           crossRows.push({
             admission_id: admissionId,
-            univ_id_win: a.univ_id ?? 0,
-            univ_id_lose: b.univ_id ?? 0,
+            univ_id_win: aUniv,
+            univ_id_lose: bUniv,
             univ_name_win: a.univ_name,
             univ_name_lose: b.univ_name,
             dept_name_win: a.dept_name,
@@ -214,8 +222,8 @@ export async function POST(request: NextRequest) {
         } else if (bReg && !aReg) {
           crossRows.push({
             admission_id: admissionId,
-            univ_id_win: b.univ_id ?? 0,
-            univ_id_lose: a.univ_id ?? 0,
+            univ_id_win: bUniv,
+            univ_id_lose: aUniv,
             univ_name_win: b.univ_name,
             univ_name_lose: a.univ_name,
             dept_name_win: b.dept_name,
