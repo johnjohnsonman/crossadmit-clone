@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import RedditCategoryFeed from "@/components/reddit-style/RedditCategoryFeed";
 import { getCategoryMeta, REDDIT_CATEGORIES } from "@/lib/forum/reddit-categories";
 import { getCategorySeoName } from "@/lib/seo/categories";
@@ -38,6 +38,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function CategoryHubPage({ params, searchParams }: Props) {
   const { category } = await params;
+  if (category.toLowerCase() === "youtube") {
+    redirect("/videos");
+  }
   const sp = await searchParams;
   const meta = REDDIT_CATEGORIES.find((c) => c.id === category);
   if (!meta) notFound();

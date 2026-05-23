@@ -1,11 +1,15 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import {
+  applyForumPostExclusions,
+  isForumExcludedPost,
+} from "@/lib/forum/exclusions";
 import { normalizePostCategory, postPath } from "@/lib/forum/reddit-categories";
 
 export async function getSitemapPosts(limit = 2000) {
   const supabase = createAdminClient();
-  const { data, error } = await supabase
-    .from("study_korea_posts")
-    .select("slug, category, subcategory, created_at, ai_last_updated")
+  const { data, error } = await applyForumPostExclusions(
+    supabase.from("study_korea_posts").select("slug, category, subcategory, created_at, ai_last_updated, source")
+  )
     .eq("is_published", true)
     .or("moderation_status.in.(approved,auto_approved),moderation_status.is.null")
     .not("slug", "is", null)
@@ -17,7 +21,9 @@ export async function getSitemapPosts(limit = 2000) {
     return [];
   }
 
-  return (data ?? []).map((p) => {
+  return (data ?? [])
+    .filter((p) => !isForumExcludedPost(p))
+    .map((p) => {
     const cat = normalizePostCategory(p.category, p.subcategory);
     const last =
       (p as { ai_last_updated?: string | null }).ai_last_updated ?? p.created_at;

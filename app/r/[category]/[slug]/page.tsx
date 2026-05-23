@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import AdSenseSlot from "@/components/ads/AdSenseSlot";
 import CommentSection from "@/components/comments/CommentSection";
@@ -73,6 +73,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function PostDetailPage({ params }: Props) {
   const { category, slug } = await params;
+  if (category.toLowerCase() === "youtube") {
+    redirect("/videos");
+  }
   const post = await getPostBySlug(category, slug);
   if (!post) notFound();
 

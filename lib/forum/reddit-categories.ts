@@ -86,6 +86,7 @@ export function normalizePostCategory(
   subcategory?: string | null
 ): string {
   const raw = (category || subcategory || "general").toLowerCase();
+  if (raw === "youtube") return "general";
   if (VALID.has(raw as RedditCategoryId)) return raw;
   if (raw === "life" || raw === "cost") return "living_cost";
   return "general";

@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { enrichStudyKoreaPosts } from "@/lib/forum/enrich-posts";
 import { SLUG_NAME_HINTS } from "@/lib/forum/constants";
+import {
+  applyForumPostExclusions,
+  isForumExcludedCategory,
+} from "@/lib/forum/exclusions";
 import { resolveUniversityId } from "@/lib/pipeline/study-korea/university-id";
 
 export const dynamic = "force-dynamic";
@@ -46,17 +50,28 @@ export async function GET(request: NextRequest) {
   const kind = searchParams.get("kind"); // guides | discussions
 
   try {
+    if (category && isForumExcludedCategory(category)) {
+      return NextResponse.json({
+        posts: [],
+        total: 0,
+        limit,
+        offset,
+      });
+    }
+
     const supabase = await createClient();
-    let q = supabase
-      .from("study_korea_posts")
-      .select(
-        "id,source,source_id,title,url,author,category,subcategory,university,university_id,language,upvotes,comment_count,upvotes_count,downvotes_count,comments_count,views_count,slug,post_type,is_ai_generated,ai_sources,ai_last_updated,ai_summary,ai_summary_kr,ai_title_en,ai_summary_en,ai_content_en,source_created_at,created_at",
-        { count: "exact" }
-      )
-      .eq("is_published", true)
-      .or(
-        "moderation_status.in.(approved,auto_approved),moderation_status.is.null"
-      );
+    let q = applyForumPostExclusions(
+      supabase
+        .from("study_korea_posts")
+        .select(
+          "id,source,source_id,title,url,author,category,subcategory,university,university_id,language,upvotes,comment_count,upvotes_count,downvotes_count,comments_count,views_count,slug,post_type,is_ai_generated,ai_sources,ai_last_updated,ai_summary,ai_summary_kr,ai_title_en,ai_summary_en,ai_content_en,source_created_at,created_at",
+          { count: "exact" }
+        )
+        .eq("is_published", true)
+        .or(
+          "moderation_status.in.(approved,auto_approved),moderation_status.is.null"
+        )
+    );
 
     if (category && category !== "all") {
       q = q.or(`subcategory.eq.${category},category.eq.${category}`);

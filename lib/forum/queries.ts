@@ -1,4 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
+import {
+  applyForumPostExclusions,
+  isForumExcludedPost,
+} from "./exclusions";
 import { normalizePostCategory } from "./reddit-categories";
 
 export type StudyKoreaPostRow = {
@@ -46,14 +50,15 @@ export async function getPostBySlug(
   slug: string
 ): Promise<StudyKoreaPostRow | null> {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("study_korea_posts")
-    .select(POST_SELECT)
+  const { data, error } = await applyForumPostExclusions(
+    supabase.from("study_korea_posts").select(POST_SELECT)
+  )
     .eq("slug", slug)
     .eq("is_published", true)
     .maybeSingle();
 
   if (error || !data) return null;
+  if (isForumExcludedPost(data)) return null;
 
   const cat = normalizePostCategory(data.category, data.subcategory);
   if (cat !== normalizePostCategory(category)) return null;
@@ -63,9 +68,9 @@ export async function getPostBySlug(
 
 export async function getPublishedPostsForSitemap(limit = 2000) {
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("study_korea_posts")
-    .select("slug,category,subcategory,created_at")
+  const { data } = await applyForumPostExclusions(
+    supabase.from("study_korea_posts").select("slug,category,subcategory,created_at")
+  )
     .eq("is_published", true)
     .not("slug", "is", null)
     .order("created_at", { ascending: false })
@@ -86,9 +91,9 @@ export async function getRelatedPosts(
   limit = 5
 ): Promise<StudyKoreaPostRow[]> {
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("study_korea_posts")
-    .select(POST_SELECT)
+  const { data } = await applyForumPostExclusions(
+    supabase.from("study_korea_posts").select(POST_SELECT)
+  )
     .eq("is_published", true)
     .or(`category.eq.${category},subcategory.eq.${category}`)
     .neq("id", postId)
@@ -96,5 +101,7 @@ export async function getRelatedPosts(
     .order("upvotes", { ascending: false })
     .limit(limit);
 
-  return (data ?? []) as StudyKoreaPostRow[];
+  return ((data ?? []) as StudyKoreaPostRow[]).filter(
+    (row) => !isForumExcludedPost(row)
+  );
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { applyForumPostExclusions } from "@/lib/forum/exclusions";
 
 export const dynamic = "force-dynamic";
 
@@ -15,13 +16,15 @@ export async function GET(request: NextRequest) {
 
   try {
     const supabase = await createClient();
-    let q = supabase
-      .from("study_korea_posts")
-      .select(
-        "id,source,title,url,author,category,university,language,upvotes,comment_count,ai_summary,ai_summary_kr,ai_title_en,ai_summary_en,ai_content_en,ai_tags,is_featured,source_created_at,created_at",
-        { count: "exact" }
-      )
-      .eq("is_published", true);
+    let q = applyForumPostExclusions(
+      supabase
+        .from("study_korea_posts")
+        .select(
+          "id,source,title,url,author,category,university,language,upvotes,comment_count,ai_summary,ai_summary_kr,ai_title_en,ai_summary_en,ai_content_en,ai_tags,is_featured,source_created_at,created_at",
+          { count: "exact" }
+        )
+        .eq("is_published", true)
+    );
 
     if (category && category !== "all") {
       q = q.eq("category", category);
