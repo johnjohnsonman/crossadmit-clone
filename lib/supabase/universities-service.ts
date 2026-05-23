@@ -235,6 +235,7 @@ export type CrossComparisonStat = {
   percentage_lose: number;
   id: string;
   latest_id: number;
+  latest_at: string;
 };
 
 export type CrossComparisonSort = "latest" | "popular" | "random";
@@ -250,11 +251,23 @@ function shuffleStats<T>(arr: T[]): T[] {
 
 type SchoolRow = {
   admission_id: number;
-  univ_id: number;
+  univ_id: number | null;
   univ_name: string;
   dept_name: string;
   is_regist: boolean;
 };
+
+function schoolUnivKey(row: SchoolRow): string | null {
+  if (row.univ_id != null && row.univ_id > 0) return `id:${row.univ_id}`;
+  const name = (row.univ_name ?? "").trim().toLowerCase();
+  return name ? `name:${name}` : null;
+}
+
+function numericIdFromUnivKey(key: string): number | null {
+  if (!key.startsWith("id:")) return null;
+  const n = parseInt(key.slice(3), 10);
+  return Number.isNaN(n) ? null : n;
+}
 
 /** admission_schools 기반 실시간 크로스어드밋 집계 */
 async function getCrossComparisonStatsFromSchools(params?: {
@@ -268,13 +281,20 @@ async function getCrossComparisonStatsFromSchools(params?: {
 
   const { data: published, error: pubErr } = await supabase
     .from("admissions")
-    .select("id")
+    .select("id, created_at")
     .eq("published", true);
   if (pubErr) {
     console.error("getCrossComparisonStatsFromSchools admissions:", pubErr);
     return [];
   }
-  const pubIds = (published ?? []).map((a) => a.id as number);
+  const createdAtById = new Map<number, string>();
+  for (const a of published ?? []) {
+    createdAtById.set(
+      a.id as number,
+      String(a.created_at ?? new Date(0).toISOString())
+    );
+  }
+  const pubIds = [...createdAtById.keys()];
   if (pubIds.length === 0) return [];
 
   const { data: schoolRows, error: schErr } = await supabase
@@ -296,52 +316,70 @@ async function getCrossComparisonStatsFromSchools(params?: {
   }
 
   type PairAgg = {
-    lowId: number;
-    highId: number;
+    keyLow: string;
+    keyHigh: string;
+    lowId: number | null;
+    highId: number | null;
     nameLow: string;
     nameHigh: string;
     forward: number;
     reverse: number;
-    pairTotal: number;
+    bothAccepted: number;
     latestId: number;
+    latestAt: string;
   };
 
   const map = new Map<string, PairAgg>();
 
   for (const [admissionId, schools] of byAdmission) {
     if (schools.length < 2) continue;
+    const admissionAt =
+      createdAtById.get(admissionId) ?? new Date(0).toISOString();
 
     for (let i = 0; i < schools.length; i++) {
       for (let j = i + 1; j < schools.length; j++) {
         const a = schools[i];
         const b = schools[j];
-        const lowId = Math.min(a.univ_id, b.univ_id);
-        const highId = Math.max(a.univ_id, b.univ_id);
-        if (!lowId || !highId || lowId === highId) continue;
+        const keyA = schoolUnivKey(a);
+        const keyB = schoolUnivKey(b);
+        if (!keyA || !keyB || keyA === keyB) continue;
 
-        const key = `${lowId}:${highId}`;
-        let agg = map.get(key);
+        const [keyLow, keyHigh] =
+          keyA < keyB ? [keyA, keyB] : [keyB, keyA];
+        const pairKey = `${keyLow}:${keyHigh}`;
+
+        let agg = map.get(pairKey);
         if (!agg) {
+          const lowSchool = keyA === keyLow ? a : b;
+          const highSchool = keyA === keyHigh ? a : b;
           agg = {
-            lowId,
-            highId,
-            nameLow: a.univ_id === lowId ? a.univ_name : b.univ_name,
-            nameHigh: a.univ_id === highId ? a.univ_name : b.univ_name,
+            keyLow,
+            keyHigh,
+            lowId: numericIdFromUnivKey(keyLow),
+            highId: numericIdFromUnivKey(keyHigh),
+            nameLow: lowSchool.univ_name,
+            nameHigh: highSchool.univ_name,
             forward: 0,
             reverse: 0,
-            pairTotal: 0,
+            bothAccepted: 0,
             latestId: admissionId,
+            latestAt: admissionAt,
           };
-          map.set(key, agg);
+          map.set(pairKey, agg);
         }
-        agg.pairTotal += 1;
-        agg.latestId = Math.max(agg.latestId, admissionId);
+        agg.bothAccepted += 1;
+        if (admissionAt > agg.latestAt) {
+          agg.latestAt = admissionAt;
+          agg.latestId = admissionId;
+        } else if (admissionId > agg.latestId) {
+          agg.latestId = admissionId;
+        }
 
         if (a.is_regist && !b.is_regist) {
-          if (a.univ_id === lowId) agg.forward += 1;
+          if (keyA === keyLow) agg.forward += 1;
           else agg.reverse += 1;
         } else if (b.is_regist && !a.is_regist) {
-          if (b.univ_id === lowId) agg.forward += 1;
+          if (keyB === keyLow) agg.forward += 1;
           else agg.reverse += 1;
         }
       }
@@ -350,43 +388,48 @@ async function getCrossComparisonStatsFromSchools(params?: {
 
   const stats: CrossComparisonStat[] = [];
   for (const agg of map.values()) {
-    const decisions = agg.forward + agg.reverse;
-    if (decisions === 0) continue;
+    if (agg.bothAccepted === 0) continue;
 
-    if (
-      params?.univ_a !== undefined &&
-      params?.univ_b !== undefined &&
-      !(
-        (agg.lowId === params.univ_a && agg.highId === params.univ_b) ||
-        (agg.lowId === params.univ_b && agg.highId === params.univ_a)
-      )
-    ) {
-      continue;
+    if (params?.univ_a !== undefined && params?.univ_b !== undefined) {
+      const hasIds = agg.lowId != null && agg.highId != null;
+      if (
+        !hasIds ||
+        !(
+          (agg.lowId === params.univ_a && agg.highId === params.univ_b) ||
+          (agg.lowId === params.univ_b && agg.highId === params.univ_a)
+        )
+      ) {
+        continue;
+      }
     }
 
-    const pctWin = Math.round((agg.forward / decisions) * 100);
+    const decisions = agg.forward + agg.reverse;
+    const count = decisions > 0 ? decisions : agg.bothAccepted;
+    const pctWin =
+      decisions > 0 ? Math.round((agg.forward / decisions) * 100) : 50;
+
+    const statId =
+      agg.lowId != null && agg.highId != null
+        ? `cross-${agg.lowId}-vs-${agg.highId}`
+        : `cross-${agg.keyLow}-vs-${agg.keyHigh}`;
+
     stats.push({
-      id: `cross-${agg.lowId}-vs-${agg.highId}`,
-      univ_id_win: agg.lowId,
-      univ_id_lose: agg.highId,
-      univ_name_win: resolveUnivDisplayName(
-        agg.lowId,
-        agg.nameLow,
-        nameMap,
-        locale
-      ),
-      univ_name_lose: resolveUnivDisplayName(
-        agg.highId,
-        agg.nameHigh,
-        nameMap,
-        locale
-      ),
+      id: statId,
+      univ_id_win: agg.lowId ?? 0,
+      univ_id_lose: agg.highId ?? 0,
+      univ_name_win: agg.lowId
+        ? resolveUnivDisplayName(agg.lowId, agg.nameLow, nameMap, locale)
+        : agg.nameLow,
+      univ_name_lose: agg.highId
+        ? resolveUnivDisplayName(agg.highId, agg.nameHigh, nameMap, locale)
+        : agg.nameHigh,
       dept_name_win: "",
       dept_name_lose: "",
-      count: decisions,
+      count,
       percentage_win: pctWin,
       percentage_lose: 100 - pctWin,
       latest_id: agg.latestId,
+      latest_at: agg.latestAt,
     });
   }
 
@@ -413,5 +456,8 @@ export async function getCrossComparisonStats(params?: {
   if (sort === "random") {
     return shuffleStats(stats);
   }
-  return stats.sort((a, b) => b.latest_id - a.latest_id);
+  return stats.sort(
+    (a, b) =>
+      new Date(b.latest_at).getTime() - new Date(a.latest_at).getTime()
+  );
 }
