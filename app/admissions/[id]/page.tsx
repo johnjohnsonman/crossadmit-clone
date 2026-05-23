@@ -53,6 +53,17 @@ function sourceHostname(url: string): string {
   }
 }
 
+function isAutoCollectedSource(source: string | undefined | null): boolean {
+  return (source ?? "").trim() === "auto_collected";
+}
+
+function resolveSourceUrl(
+  row: { source_url?: string | null },
+  record: { sourceUrl?: string }
+): string | undefined {
+  return record.sourceUrl ?? (row.source_url?.trim() || undefined);
+}
+
 function AutoCollectedSourceLink({ url }: { url: string }) {
   return (
     <div className="mt-4 pt-3 border-t border-gray-800 text-xs text-gray-500">
@@ -166,6 +177,9 @@ export default async function AdmissionDetailPage({ params }: PageProps) {
   if (!row) notFound();
 
   const record = admissionToRecord(row);
+  const sourceUrl = resolveSourceUrl(row, record);
+  const showSourceLink =
+    isAutoCollectedSource(record.source) && Boolean(sourceUrl);
   const primaryType =
     record.admissionSchools.find((s) => s.isRegist)?.admissionType ||
     record.admissionSchools[0]?.admissionType ||
@@ -229,6 +243,9 @@ export default async function AdmissionDetailPage({ params }: PageProps) {
                       추천 후기
                     </span>
                   )}
+                  {showSourceLink && sourceUrl && (
+                    <AutoCollectedSourceLink url={sourceUrl} />
+                  )}
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <AdmissionLikeButton
@@ -286,19 +303,8 @@ export default async function AdmissionDetailPage({ params }: PageProps) {
                     </div>
                   ))}
                 </div>
-                {record.source === "auto_collected" && record.sourceUrl && (
-                  <AutoCollectedSourceLink url={record.sourceUrl} />
-                )}
               </section>
             )}
-
-            {reviews.length === 0 &&
-              record.source === "auto_collected" &&
-              record.sourceUrl && (
-                <section className="rounded-xl border border-gray-800 bg-gray-900 p-5 sm:p-6">
-                  <AutoCollectedSourceLink url={record.sourceUrl} />
-                </section>
-              )}
 
             <section className="rounded-xl border border-gray-800 bg-gray-900 p-5 sm:p-6">
               <CommentSection admissionId={id} />

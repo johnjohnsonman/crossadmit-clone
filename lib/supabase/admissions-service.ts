@@ -25,6 +25,27 @@ const ADMISSION_SELECT = `
   admission_schools (*)
 `;
 
+/** 상세 페이지 — source_url 등 필드 누락 방지 */
+const ADMISSION_DETAIL_SELECT = `
+  id,
+  user_handle,
+  year,
+  year_end,
+  title,
+  input_score,
+  input_gpa,
+  input_specialty,
+  view_count,
+  likes_count,
+  is_verified,
+  is_featured,
+  published,
+  source,
+  source_url,
+  created_at,
+  admission_schools (*)
+`;
+
 function intersectIds(
   current: number[] | null,
   next: number[]
@@ -172,7 +193,7 @@ export async function getAdmissionById(
 
   const { data, error } = await supabase
     .from("admissions")
-    .select(`${ADMISSION_SELECT}`)
+    .select(ADMISSION_DETAIL_SELECT)
     .eq("id", id)
     .eq("published", true)
     .maybeSingle();

@@ -63,7 +63,7 @@ export function admissionToRecord(
     isVerified: Boolean(row.is_verified),
     isFeatured: Boolean(row.is_featured),
     published: Boolean(row.published),
-    source: row.source ?? "",
+    source: (row.source ?? "").trim(),
     sourceUrl: row.source_url?.trim() || undefined,
     createdAt: new Date(row.created_at),
     admissionSchools: schools,
