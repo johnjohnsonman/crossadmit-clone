@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import type { Admission, CrossComparison } from "@/lib/supabase/types";
 
-export type AdmissionsSort = "latest" | "likes" | "views";
+export type AdmissionsSort = "latest" | "likes" | "views" | "oldest";
 
 export type AdmissionStatusFilter = "accept" | "regist" | "reject";
 
@@ -37,15 +37,26 @@ function intersectIds(
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function applySort(query: any, sort: AdmissionsSort) {
-  let q = query.order("is_featured", { ascending: false });
   if (sort === "likes") {
-    q = q.order("likes_count", { ascending: false });
-  } else if (sort === "views") {
-    q = q.order("view_count", { ascending: false });
-  } else {
-    q = q.order("created_at", { ascending: false });
+    return query
+      .order("likes_count", { ascending: false })
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false });
   }
-  return q.order("id", { ascending: false });
+  if (sort === "views") {
+    return query
+      .order("view_count", { ascending: false })
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false });
+  }
+  if (sort === "oldest") {
+    return query
+      .order("created_at", { ascending: true })
+      .order("id", { ascending: true });
+  }
+  return query
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: false });
 }
 
 async function schoolFilterIds(
@@ -110,7 +121,9 @@ export async function getAdmissions(
   const supabase = await createClient();
 
   const sortMode: AdmissionsSort =
-    params.sort === "likes" || params.sort === "views"
+    params.sort === "likes" ||
+    params.sort === "views" ||
+    params.sort === "oldest"
       ? params.sort
       : "latest";
 

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import AutocompleteInput from "@/components/AutocompleteInput";
 import { KOREAN_MAJORS } from "@/lib/data/korean-majors";
 import {
@@ -214,11 +214,16 @@ export default function AdmissionNewPage() {
     }
   }
 
+  const goToAdmissionsList = useCallback(() => {
+    router.push("/admissions");
+    router.refresh();
+  }, [router]);
+
   useEffect(() => {
     if (!success) return;
-    const t = setTimeout(() => router.push("/admissions"), 3000);
+    const t = setTimeout(() => goToAdmissionsList(), 3000);
     return () => clearTimeout(t);
-  }, [success, router]);
+  }, [success, goToAdmissionsList]);
 
   function updateRow(id: string, patch: Partial<SchoolRow>) {
     setRows((prev) =>
@@ -294,14 +299,15 @@ export default function AdmissionNewPage() {
         <div className="container mx-auto max-w-lg px-4 text-center">
           <div className="rounded-xl border border-orange-200 bg-gray-900 p-8 shadow-sm">
             <p className="text-lg font-semibold text-white">
-              후기가 등록되었습니다! 검토 후 게시됩니다. 감사합니다 🎉
+              후기가 등록되었습니다! 감사합니다 🎉
             </p>
-            <Link
-              href="/admissions"
-              className="mt-6 inline-flex rounded-lg bg-orange-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-orange-700"
+            <button
+              type="button"
+              onClick={goToAdmissionsList}
+              className="mt-6 inline-flex rounded-lg bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-orange-600"
             >
               목록으로 돌아가기
-            </Link>
+            </button>
             <p className="mt-4 text-xs text-gray-500">
               잠시 후 목록 페이지로 이동합니다…
             </p>

@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
       likes_count: 0,
       is_verified: false,
       is_featured: false,
-      published: false,
+      published: true,
       source: "user_submission",
       created_at: new Date().toISOString(),
     };
@@ -198,7 +198,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: "등록되었습니다.",
+      message: "후기가 등록되었습니다!",
       id: admissionId,
     });
   } catch (e) {

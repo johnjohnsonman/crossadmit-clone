@@ -29,8 +29,9 @@ const TEXT = {
     statusAll: "상태",
     sortLabel: "정렬",
     sortLatest: "최신순",
-    sortLikes: "공감순",
+    sortLikes: "인기순",
     sortViews: "조회순",
+    sortOldest: "오래된순",
     empty: "조건에 맞는 합격 후기가 없습니다.",
     resetFilters: "필터 초기화",
     more: "더보기 →",
@@ -54,6 +55,7 @@ const TEXT = {
     sortLatest: "Latest",
     sortLikes: "Most likes",
     sortViews: "Most views",
+    sortOldest: "Oldest",
     empty: "No stories match your filters.",
     resetFilters: "Clear filters",
     more: "View more →",
@@ -184,19 +186,21 @@ export default function AdmissionsBulletinBoard({
   const [appliedYear, setAppliedYear] = useState("");
   const [appliedType, setAppliedType] = useState("");
   const [appliedStatus, setAppliedStatus] = useState("");
-  const [appliedSort, setAppliedSort] = useState<"latest" | "likes" | "views">(
-    () => {
-      const s = searchParams.get("sort");
-      return s === "likes" || s === "popular" ? "likes" : "latest";
-    }
+  type SortMode = "latest" | "likes" | "views" | "oldest";
+
+  const parseSortParam = (s: string | null): SortMode => {
+    if (s === "likes" || s === "popular") return "likes";
+    if (s === "views") return "views";
+    if (s === "oldest") return "oldest";
+    return "latest";
+  };
+
+  const [appliedSort, setAppliedSort] = useState<SortMode>(() =>
+    parseSortParam(searchParams.get("sort"))
   );
 
   useEffect(() => {
-    const s = searchParams.get("sort");
-    if (s === "likes" || s === "popular") {
-      setAppliedSort("likes");
-      setDraftSort("likes");
-    }
+    setAppliedSort(parseSortParam(searchParams.get("sort")));
   }, [searchParams]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -278,7 +282,6 @@ export default function AdmissionsBulletinBoard({
 
   const viewAllPopular = () => {
     setAppliedSort("likes");
-    setDraftSort("likes");
     setPage(1);
     scrollToList();
   };
@@ -300,7 +303,7 @@ export default function AdmissionsBulletinBoard({
     setAppliedStatus(v);
     setPage(1);
   };
-  const setSort = (v: "latest" | "likes" | "views") => {
+  const setSort = (v: SortMode) => {
     setAppliedSort(v);
     setPage(1);
   };
@@ -353,9 +356,10 @@ export default function AdmissionsBulletinBoard({
       });
     }
     if (appliedSort !== "latest") {
-      const sortLabels = {
+      const sortLabels: Record<SortMode, string> = {
         likes: t.sortLikes,
         views: t.sortViews,
+        oldest: t.sortOldest,
         latest: t.sortLatest,
       };
       pills.push({
@@ -461,12 +465,11 @@ export default function AdmissionsBulletinBoard({
               <select
                 className={selectClass}
                 value={appliedSort}
-                onChange={(e) =>
-                  setSort(e.target.value as "latest" | "likes" | "views")
-                }
+                onChange={(e) => setSort(e.target.value as SortMode)}
               >
                 <option value="latest">{t.sortLatest}</option>
                 <option value="likes">{t.sortLikes}</option>
+                <option value="oldest">{t.sortOldest}</option>
                 <option value="views">{t.sortViews}</option>
               </select>
             </div>

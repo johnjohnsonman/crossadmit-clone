@@ -18,6 +18,7 @@ function parseStatus(raw: string | null): AdmissionStatusFilter | undefined {
 function parseSort(raw: string | null) {
   if (raw === "likes" || raw === "popular") return "likes" as const;
   if (raw === "views") return "views" as const;
+  if (raw === "oldest") return "oldest" as const;
   return "latest" as const;
 }
 
