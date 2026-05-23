@@ -1,30 +1,38 @@
 "use client";
 
-import { useEffect } from "react";
-import { usePathname } from "next/navigation";
+import { Suspense, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
-import NavbarEN from "@/components/NavbarEN";
 import FloatingAdmissions from "@/components/FloatingAdmissions";
 import Footer from "@/components/Footer";
+import type { Locale } from "@/lib/i18n/dictionary";
+
+function SiteChromeInner({ children }: { children: React.ReactNode }) {
+  const searchParams = useSearchParams();
+  const locale: Locale = searchParams.get("lang") === "en" ? "en" : "ko";
+
+  useEffect(() => {
+    document.documentElement.lang = locale === "en" ? "en" : "ko";
+  }, [locale]);
+
+  return (
+    <>
+      <Navbar />
+      <FloatingAdmissions />
+      {children}
+      <Footer />
+    </>
+  );
+}
 
 export default function SiteChrome({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const pathname = usePathname();
-  const isEn = pathname?.startsWith("/en") ?? false;
-
-  useEffect(() => {
-    document.documentElement.lang = isEn ? "en" : "ko";
-  }, [isEn]);
-
   return (
-    <>
-      {isEn ? <NavbarEN /> : <Navbar />}
-      <FloatingAdmissions />
-      {children}
-      <Footer />
-    </>
+    <Suspense fallback={<>{children}</>}>
+      <SiteChromeInner>{children}</SiteChromeInner>
+    </Suspense>
   );
 }

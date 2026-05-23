@@ -15,7 +15,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       alternates: {
         languages: {
           ko: baseUrl,
-          en: `${baseUrl}/en`,
+          en: `${baseUrl}?lang=en`,
           "zh-CN": `${baseUrl}/zh`,
           "zh-TW": `${baseUrl}/zh-tw`,
           es: `${baseUrl}/es`,
@@ -31,7 +31,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       alternates: {
         languages: {
           ko: `${baseUrl}/crossadmit`,
-          en: `${baseUrl}/en/crossadmit`,
+          en: `${baseUrl}/crossadmit?lang=en`,
           "zh-CN": `${baseUrl}/zh/crossadmit`,
           "zh-TW": `${baseUrl}/zh-tw/crossadmit`,
           es: `${baseUrl}/es/crossadmit`,

@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     canonical: "https://crossadmit.com/crossadmit",
     languages: {
       ko: "https://crossadmit.com/crossadmit",
-      en: "https://crossadmit.com/en/crossadmit",
+      en: "https://crossadmit.com/crossadmit?lang=en",
       "zh-CN": "https://crossadmit.com/zh/crossadmit",
       "zh-TW": "https://crossadmit.com/zh-tw/crossadmit",
       es: "https://crossadmit.com/es/crossadmit",

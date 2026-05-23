@@ -39,7 +39,7 @@ export const metadata: Metadata = {
     canonical: "https://crossadmit.com",
     languages: {
       ko: "https://crossadmit.com",
-      en: "https://crossadmit.com/en",
+      en: "https://crossadmit.com?lang=en",
       "zh-CN": "https://crossadmit.com/zh",
       "zh-TW": "https://crossadmit.com/zh-tw",
       es: "https://crossadmit.com/es",
@@ -140,7 +140,7 @@ export default function RootLayout({
         <StructuredData data={websiteSchema} />
         {/* 다국어 hreflang 태그 */}
         <link rel="alternate" hrefLang="ko" href="https://crossadmit.com" />
-        <link rel="alternate" hrefLang="en" href="https://crossadmit.com/en" />
+        <link rel="alternate" hrefLang="en" href="https://crossadmit.com?lang=en" />
         <link rel="alternate" hrefLang="zh-CN" href="https://crossadmit.com/zh" />
         <link rel="alternate" hrefLang="zh-TW" href="https://crossadmit.com/zh-tw" />
         <link rel="alternate" hrefLang="es" href="https://crossadmit.com/es" />

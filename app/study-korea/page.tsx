@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import StudyKoreaGuide from "@/components/study-korea/StudyKoreaGuide";
+import { resolveLocale } from "@/lib/i18n/locale";
 
 export const metadata = {
   title: "한국 유학 가이드 | CrossAdmit",
@@ -20,7 +21,7 @@ type Props = {
 
 export default async function StudyKoreaPage({ searchParams }: Props) {
   const sp = await searchParams;
-  const locale = sp.lang === "en" ? "en" : "ko";
+  const locale = resolveLocale(sp.lang);
 
   return (
     <Suspense fallback={<StudyKoreaFallback />}>

@@ -34,7 +34,7 @@ export async function generateMetadata({
       canonical: `https://crossadmit.com/crossadmit/${id}`,
       languages: {
         ko: `https://crossadmit.com/crossadmit/${id}`,
-        en: `https://crossadmit.com/en/crossadmit/${id}`,
+        en: `https://crossadmit.com/crossadmit/${id}?lang=en`,
         "zh-CN": `https://crossadmit.com/zh/crossadmit/${id}`,
         "zh-TW": `https://crossadmit.com/zh-tw/crossadmit/${id}`,
         es: `https://crossadmit.com/es/crossadmit/${id}`,

@@ -1,5 +1,7 @@
 import { Suspense } from "react";
 import StudyForumBoard from "@/components/forum/StudyForumBoard";
+import { getDictionary } from "@/lib/i18n/dictionary";
+import { resolveLocale } from "@/lib/i18n/locale";
 
 export const metadata = {
   title: "유학 포럼 | CrossAdmit",
@@ -20,11 +22,12 @@ type Props = {
 
 export default async function ForumPage({ searchParams }: Props) {
   const sp = await searchParams;
-  const locale = sp.lang === "en" ? "en" : "ko";
+  const locale = resolveLocale(sp.lang);
+  const dict = getDictionary(locale);
 
   return (
     <Suspense fallback={<ForumFallback />}>
-      <StudyForumBoard locale={locale} />
+      <StudyForumBoard locale={locale} dict={dict} />
     </Suspense>
   );
 }

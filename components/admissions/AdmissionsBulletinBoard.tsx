@@ -12,6 +12,8 @@ import AdmissionLikeButton from "@/components/admissions/AdmissionLikeButton";
 import PopularAdmissionsSection, {
   AdmissionsListDivider,
 } from "@/components/admissions/PopularAdmissionsSection";
+import type { Dictionary, Locale } from "@/lib/i18n/dictionary";
+import { withLang } from "@/lib/i18n/locale";
 
 const PAGE_SIZE = 20;
 
@@ -156,11 +158,17 @@ function PageNumbers({
 
 export default function AdmissionsBulletinBoard({
   locale = "ko",
+  dict,
 }: {
-  locale?: "ko" | "en";
+  locale?: Locale;
+  dict?: Dictionary;
 }) {
-  const t = TEXT[locale];
-  const basePath = locale === "en" ? "/en/admissions" : "/admissions";
+  const t = {
+    ...TEXT[locale],
+    ...(dict && { title: dict.admissions_title }),
+  };
+  const basePath = "/admissions";
+  const detailHref = (id: string) => withLang(`/admissions/${id}`, locale);
   const searchParams = useSearchParams();
   const listSectionRef = useRef<HTMLDivElement>(null);
 
@@ -375,7 +383,7 @@ export default function AdmissionsBulletinBoard({
               </p>
             </div>
             <Link
-              href="/admissions/new"
+              href={withLang("/admissions/new", locale)}
               className="inline-flex shrink-0 items-center justify-center rounded-lg bg-[#2D5A27] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#244a20] transition-colors"
             >
               {t.register}
@@ -390,6 +398,7 @@ export default function AdmissionsBulletinBoard({
           loading={popularLoading}
           locale={locale}
           basePath={basePath}
+          hrefForId={detailHref}
           onViewAll={viewAllPopular}
         />
       </div>
@@ -616,7 +625,7 @@ export default function AdmissionsBulletinBoard({
                         </span>
                       </div>
                       <Link
-                        href={`${basePath}/${record.id}`}
+                        href={detailHref(record.id)}
                         className="text-sm font-medium text-[#2D5A27] hover:underline opacity-80 group-hover:opacity-100"
                       >
                         {t.more}
@@ -626,7 +635,7 @@ export default function AdmissionsBulletinBoard({
 
                   <div className="mt-2 sm:hidden">
                     <Link
-                      href={`${basePath}/${record.id}`}
+                      href={detailHref(record.id)}
                       className="text-sm font-medium text-[#2D5A27] hover:underline"
                     >
                       {t.more}

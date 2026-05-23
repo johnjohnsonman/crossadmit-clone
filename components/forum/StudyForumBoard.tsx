@@ -9,7 +9,15 @@ import UniversityAutocomplete, {
 import SourceBadge from "@/components/ui/SourceBadge";
 import { ForumListSkeleton } from "@/components/ui/Skeleton";
 import ForumPopularSidebar from "@/components/forum/ForumPopularSidebar";
-import { forumTabsForLocale, subcategoryLabel } from "@/lib/forum/constants";
+import { subcategoryLabel } from "@/lib/forum/constants";
+import {
+  formatDict,
+  getDictionary,
+  type Dictionary,
+  type Locale,
+} from "@/lib/i18n/dictionary";
+import { withLang } from "@/lib/i18n/locale";
+import LanguageToggle from "@/components/LanguageToggle";
 import {
   postDisplaySummary,
   postDisplayTitle,
@@ -39,7 +47,8 @@ export interface ForumPost {
 }
 
 type Props = {
-  locale?: "ko" | "en";
+  locale?: Locale;
+  dict: Dictionary;
   fixedUniversity?: string;
   showUniversityFilter?: boolean;
   universityInfo?: {
@@ -55,6 +64,7 @@ const PAGE_SIZE = 20;
 
 export default function StudyForumBoard({
   locale = "ko",
+  dict,
   fixedUniversity,
   showUniversityFilter = true,
   universityInfo,
@@ -119,9 +129,15 @@ export default function StudyForumBoard({
   };
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  const forumTabs = forumTabsForLocale(locale);
-  const forumBase = locale === "en" ? "/en/forum" : "/forum";
-
+  const forumTabs = [
+    { id: "all", label: dict.forum_all },
+    { id: "admission", label: dict.forum_admission },
+    { id: "scholarship", label: dict.forum_scholarship },
+    { id: "dormitory", label: dict.forum_dormitory },
+    { id: "visa", label: dict.forum_visa },
+    { id: "life", label: dict.forum_life },
+    { id: "language", label: dict.forum_language },
+  ];
   const formatDate = (iso: string | null) => {
     if (!iso) return "";
     const d = new Date(iso);
@@ -138,12 +154,10 @@ export default function StudyForumBoard({
         <div className="border-b border-[#E5E5E0] bg-white">
           <div className="container mx-auto max-w-6xl px-4 py-8 sm:py-10">
             <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-[#1A1A1A]">
-              {locale === "ko" ? "유학 포럼" : "Study Korea Forum"}
+              {dict.forum_title}
             </h1>
             <p className="mt-2 text-sm text-[#6B7280] leading-relaxed max-w-2xl">
-              {locale === "ko"
-                ? "외국인 유학생들의 한국 유학 경험과 정보를 공유합니다"
-                : "Share Korean study abroad experiences and information"}
+              {dict.forum_subtitle}
             </p>
           </div>
         </div>
@@ -178,7 +192,7 @@ export default function StudyForumBoard({
                 href={admissionsHref}
                 className="inline-block mt-3 text-sm font-medium text-[#2D5A27] hover:underline"
               >
-                {locale === "ko" ? "→ 합격DB 보기" : "→ Admissions DB"}
+                {dict.forum_admissions_link}
               </Link>
             )}
           </div>
@@ -222,11 +236,7 @@ export default function StudyForumBoard({
                       );
                     }}
                     onClearId={() => setSelectedUniv(null)}
-                    placeholder={
-                      locale === "ko"
-                        ? "대학명으로 필터..."
-                        : "Filter by university..."
-                    }
+                    placeholder={dict.forum_filter_placeholder}
                     locale={locale}
                     className="flex-1 px-3 py-2.5 text-sm border border-[#E5E5E0] rounded-r-lg rounded-l-none bg-white text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-1 focus:ring-[#2D5A27]/25"
                   />
@@ -235,7 +245,7 @@ export default function StudyForumBoard({
                       type="button"
                       onClick={clearUniversity}
                       className="px-3 rounded-lg border border-[#E5E5E0] bg-white text-[#6B7280] hover:bg-[#FAFAF8] text-sm shrink-0"
-                      aria-label={locale === "ko" ? "필터 초기화" : "Clear"}
+                      aria-label={dict.forum_clear_filter}
                     >
                       ✕
                     </button>
@@ -246,27 +256,26 @@ export default function StudyForumBoard({
 
             <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
               <p className="text-xs text-[#6B7280]">
-                {locale === "ko" ? "총" : ""}{" "}
-                <span className="font-medium text-[#1A1A1A] tabular-nums">
-                  {total}
-                </span>
-                {locale === "ko" ? "개 게시글" : " posts"}
+                {formatDict(dict.forum_post_count, { n: total })}
               </p>
-              <div className="flex rounded-lg border border-[#E5E5E0] overflow-hidden bg-white text-xs">
-                <button
-                  type="button"
-                  className={`px-3 py-1.5 ${viewLang === "en" ? "bg-[#2D5A27] text-white font-medium" : "text-[#6B7280]"}`}
-                  onClick={() => setViewLang("en")}
-                >
-                  US
-                </button>
-                <button
-                  type="button"
-                  className={`px-3 py-1.5 ${viewLang === "ko" ? "bg-[#2D5A27] text-white font-medium" : "text-[#6B7280]"}`}
-                  onClick={() => setViewLang("ko")}
-                >
-                  KR
-                </button>
+              <div className="flex items-center gap-2">
+                <div className="flex rounded-lg border border-[#E5E5E0] overflow-hidden bg-white text-xs">
+                  <button
+                    type="button"
+                    className={`px-3 py-1.5 ${viewLang === "en" ? "bg-[#2D5A27] text-white font-medium" : "text-[#6B7280]"}`}
+                    onClick={() => setViewLang("en")}
+                  >
+                    US
+                  </button>
+                  <button
+                    type="button"
+                    className={`px-3 py-1.5 ${viewLang === "ko" ? "bg-[#2D5A27] text-white font-medium" : "text-[#6B7280]"}`}
+                    onClick={() => setViewLang("ko")}
+                  >
+                    KR
+                  </button>
+                </div>
+                <LanguageToggle />
               </div>
             </div>
 
@@ -274,7 +283,7 @@ export default function StudyForumBoard({
               <ForumListSkeleton count={5} />
             ) : posts.length === 0 ? (
               <div className="rounded-xl border border-[#E5E5E0] bg-white py-16 text-center text-sm text-[#6B7280]">
-                {locale === "ko" ? "게시글이 없습니다." : "No posts found."}
+                {dict.forum_empty}
               </div>
             ) : (
               <ul className="space-y-3">
@@ -316,7 +325,9 @@ export default function StudyForumBoard({
                         {summary && (
                           <p className="mt-2 text-sm text-[#6B7280] leading-relaxed line-clamp-2">
                             <span className="text-[#9CA3AF]">
-                              {viewLang === "en" ? "AI summary: " : "AI 요약: "}
+                              {viewLang === "en"
+                                ? getDictionary("en").forum_summary_prefix
+                                : getDictionary("ko").forum_summary_prefix}
                             </span>
                             {summary}
                           </p>
@@ -328,7 +339,10 @@ export default function StudyForumBoard({
                           <span className="text-[#6B7280]">
                             {p.university_matched_id ? (
                               <Link
-                                href={`${forumBase}/${p.university || "other"}`}
+                                href={withLang(
+                                  `/forum/${p.university || "other"}`,
+                                  locale
+                                )}
                                 className="hover:text-[#2D5A27] font-medium"
                                 onClick={(e) => e.stopPropagation()}
                               >
@@ -349,7 +363,7 @@ export default function StudyForumBoard({
                             rel="noopener noreferrer"
                             className="font-medium text-[#2D5A27] hover:underline"
                           >
-                            {locale === "ko" ? "외부 링크 →" : "Open →"}
+                            {dict.forum_external_link}
                           </a>
                         </div>
                       </div>
@@ -367,7 +381,7 @@ export default function StudyForumBoard({
                   onClick={() => setPage((p) => Math.max(0, p - 1))}
                   className="px-4 py-2 text-sm rounded-lg border border-[#E5E5E0] bg-white text-[#1A1A1A] disabled:opacity-40 hover:bg-[#FAFAF8]"
                 >
-                  {locale === "ko" ? "이전" : "Prev"}
+                  {dict.forum_prev}
                 </button>
                 <span className="px-3 py-2 text-sm text-[#6B7280] tabular-nums">
                   {page + 1} / {totalPages}
@@ -378,7 +392,7 @@ export default function StudyForumBoard({
                   onClick={() => setPage((p) => p + 1)}
                   className="px-4 py-2 text-sm rounded-lg border border-[#E5E5E0] bg-white text-[#1A1A1A] disabled:opacity-40 hover:bg-[#FAFAF8]"
                 >
-                  {locale === "ko" ? "다음" : "Next"}
+                  {dict.forum_next}
                 </button>
               </div>
             )}
@@ -388,6 +402,7 @@ export default function StudyForumBoard({
             <div className="lg:col-span-1">
               <div className="lg:sticky lg:top-6">
                 <ForumPopularSidebar
+                  dict={dict}
                   locale={locale}
                   onSelect={selectPopularUniv}
                   activeId={selectedUniv?.id ?? null}

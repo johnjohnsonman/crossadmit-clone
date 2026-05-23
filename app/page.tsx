@@ -1,9 +1,11 @@
 import { Metadata } from "next";
+import { Suspense } from "react";
 import CrossAdmitPage from "./crossadmit/page";
 
 export const metadata: Metadata = {
   title: "크로스어드밋 | 대학 선택 통계 및 합격자 데이터베이스 | CrossAdmit | 交叉录取",
-  description: "두 대학에 동시에 합격했을 때 학생들의 선택 통계를 확인하세요. 서울대 vs 연세대, 고려대 vs 연세대 등 주요 대학 간 선택 통계를 제공합니다. Compare university admission statistics when students are accepted to multiple universities. Study in Korea. 比较同时被多所大学录取时的学生选择统计。留学韩国。",
+  description:
+    "두 대학에 동시에 합격했을 때 학생들의 선택 통계를 확인하세요. 서울대 vs 연세대, 고려대 vs 연세대 등 주요 대학 간 선택 통계를 제공합니다. Compare university admission statistics when students are accepted to multiple universities. Study in Korea. 比较同时被多所大学录取时的学生选择统计。留学韩国。",
   keywords: [
     "크로스어드밋",
     "대학 선택 통계",
@@ -37,7 +39,7 @@ export const metadata: Metadata = {
     canonical: "https://crossadmit.com",
     languages: {
       ko: "https://crossadmit.com",
-      en: "https://crossadmit.com/en",
+      en: "https://crossadmit.com?lang=en",
       "zh-CN": "https://crossadmit.com/zh",
       "zh-TW": "https://crossadmit.com/zh-tw",
       es: "https://crossadmit.com/es",
@@ -46,7 +48,8 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "크로스어드밋 | 대학 선택 통계 | CrossAdmit | 交叉录取",
-    description: "두 대학에 동시에 합격했을 때 학생들의 선택 통계를 확인하세요. Compare university admission statistics. 比较大学录取统计。",
+    description:
+      "두 대학에 동시에 합격했을 때 학생들의 선택 통계를 확인하세요. Compare university admission statistics. 比较大学录取统计。",
     type: "website",
     url: "https://crossadmit.com",
     locale: "ko_KR",
@@ -55,5 +58,15 @@ export const metadata: Metadata = {
 };
 
 export default function Home() {
-  return <CrossAdmitPage />;
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen bg-[#f5f3f0] flex items-center justify-center">
+          <p className="text-gray-600">Loading…</p>
+        </main>
+      }
+    >
+      <CrossAdmitPage />
+    </Suspense>
+  );
 }

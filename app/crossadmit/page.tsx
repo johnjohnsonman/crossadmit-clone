@@ -1,8 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { Suspense, useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import UniversityAutocomplete from "@/components/crossadmit/UniversityAutocomplete";
+import { getDictionary, type Locale } from "@/lib/i18n/dictionary";
+import { withLang } from "@/lib/i18n/locale";
 
 interface CrossAdmitRecord {
   id: string;
@@ -64,7 +67,11 @@ function mapStatsToRecords(stats: ApiStat[]): CrossAdmitRecord[] {
   }));
 }
 
-export default function CrossAdmitPage() {
+function CrossAdmitPageInner() {
+  const searchParams = useSearchParams();
+  const locale: Locale = searchParams.get("lang") === "en" ? "en" : "ko";
+  const t = getDictionary(locale);
+
   const [comparisons, setComparisons] = useState<CrossAdmitRecord[]>([]);
   const [popularComparisons, setPopularComparisons] = useState<PopularComparison[]>([]);
   const [latestVideos, setLatestVideos] = useState<VideoPreview[]>([]);
@@ -232,19 +239,19 @@ export default function CrossAdmitPage() {
         <div className="bg-white border-b border-gray-200">
           <div className="container mx-auto px-4 py-4 md:py-8">
             <h1 className="text-2xl md:text-4xl font-bold text-gray-900 mb-2 md:mb-4">
-              크로스어드밋
+              {t.crossadmit_title}
             </h1>
             <p className="text-sm md:text-lg text-gray-600 mb-1 md:mb-2">
-              두 대학에 동시에 합격했을 때, 학생들은 어디를 선택할까요?
+              {t.crossadmit_subtitle}
             </p>
             <p className="text-xs md:text-sm text-gray-500 mb-4 md:mb-6">
-              통계적으로 유의미한 차이가 있는 경우 색상으로 표시됩니다 (95% 신뢰구간)
+              {t.crossadmit_note}
             </p>
             <Link
-              href="/crossadmit/register"
+              href={withLang("/crossadmit/register", locale)}
               className="inline-block px-4 md:px-6 py-2 md:py-3 text-sm md:text-base bg-yellow-500 hover:bg-yellow-600 text-white font-semibold rounded-lg shadow-md transition-colors"
             >
-              내 학교 등록 인증하기 →
+              {t.crossadmit_register}
             </Link>
           </div>
         </div>
@@ -581,5 +588,19 @@ export default function CrossAdmitPage() {
         </div>
       </main>
     </>
+  );
+}
+
+export default function CrossAdmitPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen bg-[#f5f3f0] flex items-center justify-center">
+          <p className="text-gray-600">Loading…</p>
+        </main>
+      }
+    >
+      <CrossAdmitPageInner />
+    </Suspense>
   );
 }

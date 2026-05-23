@@ -266,7 +266,7 @@ export default function RegisterPageEN() {
       if (response.ok) {
         setIsSuccess(true);
         setTimeout(() => {
-          window.location.href = "/en/crossadmit";
+          window.location.href = "/crossadmit?lang=en";
         }, 2000);
       } else {
         alert("Registration failed. Please try again.");
@@ -301,7 +301,7 @@ export default function RegisterPageEN() {
           {/* Header */}
           <div className="mb-8">
             <Link
-              href="/en/crossadmit"
+              href="/crossadmit?lang=en"
               className="text-blue-600 hover:text-blue-700 text-sm mb-4 inline-block"
             >
               ← Back to CrossAdmit

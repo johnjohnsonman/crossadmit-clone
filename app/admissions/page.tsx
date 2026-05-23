@@ -1,5 +1,7 @@
 import { Suspense } from "react";
 import AdmissionsBulletinBoard from "@/components/admissions/AdmissionsBulletinBoard";
+import { getDictionary } from "@/lib/i18n/dictionary";
+import { resolveLocale } from "@/lib/i18n/locale";
 
 function AdmissionsFallback() {
   return (
@@ -9,10 +11,18 @@ function AdmissionsFallback() {
   );
 }
 
-export default function AdmissionsPage() {
+type Props = {
+  searchParams: Promise<{ lang?: string }>;
+};
+
+export default async function AdmissionsPage({ searchParams }: Props) {
+  const sp = await searchParams;
+  const locale = resolveLocale(sp.lang);
+  const dict = getDictionary(locale);
+
   return (
     <Suspense fallback={<AdmissionsFallback />}>
-      <AdmissionsBulletinBoard locale="ko" />
+      <AdmissionsBulletinBoard locale={locale} dict={dict} />
     </Suspense>
   );
 }

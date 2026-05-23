@@ -10,16 +10,17 @@ type Props = {
   loading?: boolean;
   locale?: "ko" | "en";
   basePath?: string;
+  hrefForId?: (id: string) => string;
   onViewAll: () => void;
 };
 
 function PopularCard({
   record,
-  basePath,
+  href,
   locale,
 }: {
   record: AdmissionRecord;
-  basePath: string;
+  href: string;
   locale: "ko" | "en";
 }) {
   const lines = schoolDisplayLines(record, locale);
@@ -34,7 +35,7 @@ function PopularCard({
 
   return (
     <Link
-      href={`${basePath}/${record.id}`}
+      href={href}
       className="group flex min-w-[240px] max-w-[280px] shrink-0 flex-col rounded-xl border border-[#E5E5E0] bg-white p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md sm:min-w-0 sm:max-w-none sm:flex-1"
     >
       <div className="flex justify-end">
@@ -77,8 +78,10 @@ export default function PopularAdmissionsSection({
   loading,
   locale = "ko",
   basePath = "/admissions",
+  hrefForId,
   onViewAll,
 }: Props) {
+  const linkFor = hrefForId ?? ((id: string) => `${basePath}/${id}`);
   const title = locale === "ko" ? "🔥 인기 후기" : "🔥 Popular stories";
   const viewAll = locale === "ko" ? "전체보기 →" : "View all →";
 
@@ -124,7 +127,7 @@ export default function PopularAdmissionsSection({
           <PopularCard
             key={record.id}
             record={record}
-            basePath={basePath}
+            href={linkFor(record.id)}
             locale={locale}
           />
         ))}
