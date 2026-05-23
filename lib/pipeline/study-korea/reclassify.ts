@@ -78,28 +78,44 @@ export type ReclassifyBatchResult = {
   logs: string[];
 };
 
+export type ReclassifyBatchDebug = {
+  query_returned: number;
+  first_item_id: string | null;
+  where_filter: string;
+  batch_size: number;
+};
+
 export async function runReclassifyBatch(
   supabase: SupabaseClient,
   batchSize = BATCH_SIZE
-): Promise<ReclassifyBatchResult> {
+): Promise<ReclassifyBatchResult & { debug: ReclassifyBatchDebug }> {
   const cutoff = weekAgoIso();
-  const { data: candidates, error } = await supabase
+  const pendingFilter = `recently_reclassified_at.is.null,recently_reclassified_at.lt.${cutoff}`;
+
+  const { data: rows, error } = await supabase
     .from("study_korea_posts")
     .select(
       "id, title, content, ai_summary, ai_summary_kr, category, is_published, recently_reclassified_at"
     )
+    .or(pendingFilter)
     .order("created_at", { ascending: false })
-    .limit(batchSize * 3);
+    .limit(batchSize);
 
-  const rows = (candidates ?? [])
-    .filter((r) => {
-      const at = r.recently_reclassified_at as string | null;
-      if (!at) return true;
-      return new Date(at).getTime() < new Date(cutoff).getTime();
-    })
-    .slice(0, batchSize);
+  console.log("[reclassify] WHERE:", pendingFilter);
+  console.log("[reclassify] query result count:", rows?.length ?? 0);
+  console.log(
+    "[reclassify] sample IDs:",
+    (rows ?? []).slice(0, 3).map((i) => i.id)
+  );
 
   if (error) throw new Error(error.message);
+
+  const debug: ReclassifyBatchDebug = {
+    query_returned: rows?.length ?? 0,
+    first_item_id: rows?.[0]?.id ?? null,
+    where_filter: pendingFilter,
+    batch_size: batchSize,
+  };
 
   const result: ReclassifyBatchResult = {
     processed: 0,
@@ -113,7 +129,7 @@ export async function runReclassifyBatch(
   if (!rows?.length) {
     const status = await getReclassifyStatus(supabase);
     result.remaining = status.remaining;
-    return result;
+    return { ...result, debug };
   }
 
   for (let i = 0; i < rows.length; i++) {
@@ -170,5 +186,5 @@ export async function runReclassifyBatch(
 
   const status = await getReclassifyStatus(supabase);
   result.remaining = status.remaining;
-  return result;
+  return { ...result, debug };
 }

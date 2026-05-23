@@ -64,6 +64,7 @@ export async function POST(request: NextRequest) {
       total: status.total,
       reclassified: status.reclassified,
       logs: batch.logs,
+      debug: batch.debug,
     });
   } catch (e) {
     console.error("[admin reclassify POST]", e);
