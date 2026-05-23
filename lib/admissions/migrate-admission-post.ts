@@ -1,5 +1,8 @@
 import type { MigrateStep } from "@/lib/admissions/migrate-step-error";
 import {
+  sanitizeExtractedSchools,
+} from "@/lib/admissions/sanitize-schools";
+import {
   normalizeUnivId,
   resolveDepartmentId,
 } from "@/lib/admissions/resolve-school-ids";
@@ -25,37 +28,31 @@ function toFkId(id: number | null | undefined): number | null {
 export function normalizeExtractedOverrides(
   raw: Partial<ExtractedAdmission>
 ): ExtractedAdmission {
-  const schools = Array.isArray(raw.schools)
-    ? raw.schools.map((s) => ({
-        univ_id:
-          typeof s.univ_id === "number" && s.univ_id > 0 ? s.univ_id : null,
-        univ_name: String(s.univ_name ?? "").trim() || "미상",
-        dept_name: String(s.dept_name ?? "").trim() || "미상",
-        is_accept: Boolean(s.is_accept),
-        is_regist: Boolean(s.is_regist),
-      }))
-    : [];
-
-  let registSeen = false;
-  const normalizedSchools = schools.map((s) => {
-    let is_regist = s.is_regist;
-    if (is_regist) {
-      if (registSeen) is_regist = false;
-      else registSeen = true;
-    }
-    return { ...s, is_regist };
-  });
-
   const conf = raw.confidence;
   const confidence =
     conf === "high" || conf === "medium" || conf === "low" || conf === "skip"
       ? conf
       : "low";
 
-  return {
+  const base: ExtractedAdmission = {
     year: typeof raw.year === "number" ? raw.year : new Date().getFullYear() - 1,
     admission_type: String(raw.admission_type ?? "기타").trim() || "기타",
-    schools: normalizedSchools.length > 0 ? normalizedSchools : [
+    schools: Array.isArray(raw.schools) ? raw.schools : [],
+    nickname: String(raw.nickname ?? "익명").trim() || "익명",
+    review: String(raw.review ?? "").trim(),
+    exam_score: raw.exam_score ?? null,
+    gpa: raw.gpa ?? null,
+    test_scores: raw.test_scores ?? null,
+    extra_activities: raw.extra_activities ?? null,
+    confidence,
+  };
+
+  const sanitized = sanitizeExtractedSchools(base);
+  if (sanitized.schools.length > 0) return sanitized;
+
+  return {
+    ...sanitized,
+    schools: [
       {
         univ_id: null,
         univ_name: "미상",
@@ -64,13 +61,6 @@ export function normalizeExtractedOverrides(
         is_regist: false,
       },
     ],
-    nickname: String(raw.nickname ?? "익명").trim() || "익명",
-    review: String(raw.review ?? "").trim(),
-    exam_score: raw.exam_score ?? null,
-    gpa: raw.gpa ?? null,
-    test_scores: raw.test_scores ?? null,
-    extra_activities: raw.extra_activities ?? null,
-    confidence,
   };
 }
 
@@ -90,7 +80,9 @@ export async function migrateStudyKoreaPostToAdmission(
       suggest_forum?: boolean;
     }
 > {
-  if (extracted.confidence === "skip") {
+  const extractedSafe = sanitizeExtractedSchools(extracted);
+
+  if (extractedSafe.confidence === "skip") {
     console.log("[MIGRATE] confidence_check: skip");
     return {
       success: false,
@@ -98,40 +90,44 @@ export async function migrateStudyKoreaPostToAdmission(
       step: "confidence_check",
       error:
         "외국 대학 후기로 한국 대학 타겟과 맞지 않음. 포럼으로 이관을 권장합니다.",
-      extracted,
+      extracted: extractedSafe,
       suggest_forum: true,
     };
   }
 
-  console.log("[MIGRATE] confidence_check: ok", extracted.confidence);
-
-  const specFields = mapExtractedToAdmissionFields(extracted);
-  const year =
-    extracted.year > 1990 && extracted.year <= new Date().getFullYear() + 1
-      ? extracted.year
-      : new Date().getFullYear() - 1;
-
-  const primary =
-    extracted.schools.find((s) => s.is_regist) ??
-    extracted.schools.find((s) => s.is_accept) ??
-    extracted.schools[0];
-
-  if (!primary) {
+  if (extractedSafe.schools.length === 0) {
     return {
       success: false,
       status: 400,
       step: "confidence_check",
-      error: "추출된 학교 정보가 없습니다.",
-      extracted,
+      error:
+        "Claude가 학교 정보를 추출하지 못함. 본문이 너무 짧거나 학교명이 명확하지 않음.",
+      extracted: extractedSafe,
     };
   }
+
+  console.log("[MIGRATE] confidence_check: ok", extractedSafe.confidence);
+
+  const specFields = mapExtractedToAdmissionFields(extractedSafe);
+  const year =
+    extractedSafe.year > 1990 &&
+    extractedSafe.year <= new Date().getFullYear() + 1
+      ? extractedSafe.year
+      : new Date().getFullYear() - 1;
+
+  const primary =
+    extractedSafe.schools.find((s) => s.is_regist) ??
+    extractedSafe.schools.find((s) => s.is_accept) ??
+    extractedSafe.schools[0]!;
+
+  const schools = extractedSafe.schools;
 
   const autoTitle = `${primary.univ_name} ${primary.dept_name} · ${year}년 합격 후기`;
   const sourceUrl = post.url?.trim() || null;
 
   const admissionPayload = {
     original_user_id: 0,
-    user_handle: extracted.nickname || "익명",
+    user_handle: extractedSafe.nickname || "익명",
     year,
     year_end: year,
     title: autoTitle,
@@ -193,10 +189,12 @@ export async function migrateStudyKoreaPostToAdmission(
 
   const admissionId = admission.id as number;
   const reviewText =
-    extracted.review || post.content || post.title || "";
+    extractedSafe.review || post.content || post.title || "";
 
   const schoolRows = [];
-  for (const school of extracted.schools) {
+  for (const school of schools) {
+    if (!school?.univ_name?.trim()) continue;
+
     const univId = await normalizeUnivId(supabase, school.univ_id ?? undefined);
     const deptId = await resolveDepartmentId(
       supabase,
@@ -207,16 +205,27 @@ export async function migrateStudyKoreaPostToAdmission(
       admission_id: admissionId,
       univ_id: toFkId(univId),
       dept_id: toFkId(deptId),
-      univ_name: String(school.univ_name ?? "").trim() || "미상",
-      dept_name: String(school.dept_name ?? "").trim() || "미상",
+      univ_name: school.univ_name.trim(),
+      dept_name: school.dept_name.trim() || "미상",
       is_apply: true,
-      is_accept: school.is_accept,
-      is_regist: school.is_regist,
+      is_accept: Boolean(school.is_accept),
+      is_regist: Boolean(school.is_regist),
       is_grad: false,
-      admission_type: extracted.admission_type || "기타",
+      admission_type: extractedSafe.admission_type || "기타",
       review: reviewText,
       thumbnail: "",
     });
+  }
+
+  if (schoolRows.length === 0) {
+    await supabase.from("admissions").delete().eq("id", admissionId);
+    return {
+      success: false,
+      status: 400,
+      step: "admission_schools_insert",
+      error: "저장 가능한 학교 정보가 없습니다.",
+      extracted: extractedSafe,
+    };
   }
 
   console.log("[MIGRATE] admission_schools_insert:", schoolRows.length);

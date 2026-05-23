@@ -1,3 +1,4 @@
+import { sanitizeExtractedSchools } from "@/lib/admissions/sanitize-schools";
 import Anthropic from "@anthropic-ai/sdk";
 
 const MODEL = "claude-haiku-4-5-20251001";
@@ -169,33 +170,17 @@ ${univList}`,
     const detail = e instanceof Error ? e.message : String(e);
     throw new Error(`AI JSON 파싱 실패: ${detail}`);
   }
-  if (!Array.isArray(parsed.schools) || parsed.schools.length === 0) {
-    parsed.confidence = "low";
+  const sanitized = sanitizeExtractedSchools(parsed);
+  if (sanitized.schools.length === 0) {
+    sanitized.confidence = "low";
   }
 
-  let registSeen = false;
-  parsed.schools = parsed.schools.map((s) => {
-    let is_regist = Boolean(s.is_regist);
-    if (is_regist) {
-      if (registSeen) is_regist = false;
-      else registSeen = true;
-    }
-    return {
-      univ_id:
-        typeof s.univ_id === "number" && s.univ_id > 0 ? s.univ_id : null,
-      univ_name: String(s.univ_name ?? "").trim() || "미상",
-      dept_name: String(s.dept_name ?? "").trim() || "미상",
-      is_accept: Boolean(s.is_accept),
-      is_regist,
-    };
-  });
-
-  const hasAccept = parsed.schools.some((s) => s.is_accept);
-  const hasRegist = parsed.schools.some((s) => s.is_regist);
-  if (hasAccept && !hasRegist && parsed.confidence !== "skip") {
-    if (parsed.confidence === "high") parsed.confidence = "medium";
-    else if (parsed.confidence === "medium") parsed.confidence = "low";
+  const hasAccept = sanitized.schools.some((s) => s.is_accept);
+  const hasRegist = sanitized.schools.some((s) => s.is_regist);
+  if (hasAccept && !hasRegist && sanitized.confidence !== "skip") {
+    if (sanitized.confidence === "high") sanitized.confidence = "medium";
+    else if (sanitized.confidence === "medium") sanitized.confidence = "low";
   }
 
-  return parsed;
+  return sanitized;
 }

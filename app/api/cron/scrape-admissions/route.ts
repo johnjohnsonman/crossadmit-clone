@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { collectAdmissionPosts } from "@/lib/pipeline/study-korea/admission-collector";
+import {
+  ADMISSION_CRON_MAX_QUERIES,
+  collectAdmissionPosts,
+} from "@/lib/pipeline/study-korea/admission-collector";
 import { verifyCronOrAdmin } from "@/lib/pipeline/study-korea/auth";
 import { isNaverConfigured } from "@/lib/pipeline/study-korea/naver-api";
 
@@ -20,7 +23,10 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const stats = await collectAdmissionPosts({ signal: request.signal });
+    const stats = await collectAdmissionPosts({
+      signal: request.signal,
+      maxQueries: ADMISSION_CRON_MAX_QUERIES,
+    });
     return NextResponse.json({
       success: true,
       count: stats.newCount,

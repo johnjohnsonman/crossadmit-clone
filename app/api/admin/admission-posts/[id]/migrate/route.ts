@@ -12,6 +12,7 @@ import {
   migrateStudyKoreaPostToAdmission,
   normalizeExtractedOverrides,
 } from "@/lib/admissions/migrate-admission-post";
+import { sanitizeExtractedSchools } from "@/lib/admissions/sanitize-schools";
 import type { ExtractedAdmission } from "@/lib/pipeline/study-korea/extract-admission-review";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -75,7 +76,9 @@ export async function POST(
       extracted = await extractFromStudyKoreaPost(supabase, post);
     }
 
-    console.log("[MIGRATE] migrate_to_admissions");
+    extracted = sanitizeExtractedSchools(extracted);
+    console.log("[MIGRATE] migrate_to_admissions schools:", extracted.schools.length);
+
     const result = await migrateStudyKoreaPostToAdmission(
       supabase,
       postId,

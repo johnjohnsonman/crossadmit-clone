@@ -1,9 +1,8 @@
+import { escapeIlike } from "@/lib/utils/escape-ilike";
+
 /** PostgREST `.or()` 파싱을 깨뜨리는 문자 제거 후 검색어 정규화 */
 export function safeSearchTerm(raw: string): string {
-  return raw
-    .replace(/[(),%_'"\\]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+  return escapeIlike(raw);
 }
 
 /** 자동완성 라벨 `USC (University of ...)` → 검색용 약어/이름 */

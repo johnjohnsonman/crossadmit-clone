@@ -157,12 +157,16 @@ export async function POST(request: NextRequest) {
     const resolvedSchools: SchoolSubmitPayload[] = [];
 
     for (const s of schools) {
-      const univId = await normalizeUnivId(admin, s.univ_id);
+      const clientUnivId =
+        typeof s.univ_id === "number" && s.univ_id > 0 ? s.univ_id : undefined;
+      const clientDeptId =
+        typeof s.dept_id === "number" && s.dept_id > 0 ? s.dept_id : undefined;
+      const univId = await normalizeUnivId(admin, clientUnivId);
       const deptId = await resolveDepartmentId(
         admin,
         univId,
         s.dept_name,
-        s.dept_id
+        clientDeptId
       );
       const flags = statusToFlags(s.status);
       resolvedSchools.push({ ...s, univ_id: univId, dept_id: deptId });

@@ -15,10 +15,15 @@ export type CollectedAdmissionPost = {
   url: string;
 };
 
+/** Cron 전체 수집 시 쿼리 상한 (타임아웃 방지) */
+export const ADMISSION_CRON_MAX_QUERIES = 50;
+
 export type CollectAdmissionOptions = {
   targetNewCount?: number;
   startQueryIndex?: number;
   signal?: AbortSignal;
+  /** 미지정 시 전체 쿼리; cron은 ADMISSION_CRON_MAX_QUERIES 권장 */
+  maxQueries?: number;
 };
 
 export type CollectAdmissionStats = {
@@ -43,7 +48,12 @@ export async function collectAdmissionPosts(
   const signal = opts.signal;
 
   const supabase = createAdminClient();
-  const queries = [...ADMISSION_QUERIES];
+  const allQueries = [...ADMISSION_QUERIES];
+  const queryCap =
+    opts.maxQueries != null && opts.maxQueries > 0
+      ? Math.min(opts.maxQueries, allQueries.length)
+      : allQueries.length;
+  const queries = allQueries.slice(0, queryCap);
   const naverOk = isNaverConfigured();
 
   const stats: CollectAdmissionStats = {
