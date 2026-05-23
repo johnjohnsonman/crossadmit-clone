@@ -107,6 +107,49 @@ function AdminStudyKoreaInner() {
   const [slugBackfillLoading, setSlugBackfillLoading] = useState(false);
   const [slugBackfillRunning, setSlugBackfillRunning] = useState(false);
   const [slugBackfillLog, setSlugBackfillLog] = useState<string | null>(null);
+  const [aiGuides, setAiGuides] = useState({
+    total: 0,
+    pending: 0,
+    completed: 0,
+    topics: [] as {
+      id: string;
+      topic_title: string;
+      category: string;
+      priority: number;
+      status: string;
+      generated_post_id: string | null;
+    }[],
+    generated_posts: [] as {
+      id: string;
+      topic_title: string;
+      path: string | null;
+    }[],
+  });
+  const [aiGuidesLoading, setAiGuidesLoading] = useState(false);
+  const [aiGuidesRunning, setAiGuidesRunning] = useState(false);
+  const [aiGuidesAuto, setAiGuidesAuto] = useState(false);
+  const [aiGuidesLog, setAiGuidesLog] = useState<string | null>(null);
+  const aiGuidesStopRef = useRef(false);
+  const [aiTopicModal, setAiTopicModal] = useState(false);
+  const [aiTopicForm, setAiTopicForm] = useState({
+    topic_title: "",
+    category: "visa",
+    keywords: "",
+    priority: 5,
+  });
+  const [aiTopicSaving, setAiTopicSaving] = useState(false);
+
+  const AI_GUIDE_CATEGORIES = [
+    "visa",
+    "scholarship",
+    "admission",
+    "living_cost",
+    "language",
+    "settlement",
+    "dormitory",
+    "employment",
+    "culture",
+  ] as const;
 
   const REDDIT_SUBREDDITS = [
     "studyinkorea",
@@ -200,6 +243,125 @@ function AdminStudyKoreaInner() {
     }
   };
 
+  const loadAiGuidesStatus = useCallback(async () => {
+    if (!key.trim()) return;
+    setAiGuidesLoading(true);
+    try {
+      const res = await fetch("/api/admin/ai-guides/generate", {
+        headers: hdrs(),
+      });
+      if (res.status === 401) return;
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "AI 가이드 상태 조회 실패");
+      setAiGuides({
+        total: json.total ?? 0,
+        pending: json.pending ?? 0,
+        completed: json.completed ?? 0,
+        topics: json.topics ?? [],
+        generated_posts: json.generated_posts ?? [],
+      });
+    } catch (e) {
+      setAiGuidesLog(
+        e instanceof Error ? e.message : "AI 가이드 상태 조회 오류"
+      );
+    } finally {
+      setAiGuidesLoading(false);
+    }
+  }, [key, hdrs]);
+
+  const runAiGuideOnce = async (): Promise<boolean> => {
+    if (!key.trim()) return false;
+    const res = await fetch("/api/admin/ai-guides/generate", {
+      method: "POST",
+      headers: hdrs(true),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || "AI 가이드 생성 실패");
+    setAiGuides({
+      total: json.total ?? 0,
+      pending: json.pending ?? 0,
+      completed: json.completed ?? 0,
+      topics: json.topics ?? [],
+      generated_posts: json.generated_posts ?? [],
+    });
+    const r = json.result;
+    if (r?.ok) {
+      setAiGuidesLog(`✓ 생성: ${r.title} → ${r.redirect}`);
+      return true;
+    }
+    setAiGuidesLog(r?.reason ?? "대기 중인 토픽 없음");
+    return false;
+  };
+
+  const runAiGuideBatch = async () => {
+    if (!key.trim() || aiGuidesRunning) return;
+    setAiGuidesRunning(true);
+    setAiGuidesLog(null);
+    try {
+      await runAiGuideOnce();
+    } catch (e) {
+      setAiGuidesLog(e instanceof Error ? e.message : "AI 가이드 생성 오류");
+    } finally {
+      setAiGuidesRunning(false);
+    }
+  };
+
+  const runAiGuideAuto = async () => {
+    if (!key.trim() || aiGuidesAuto) return;
+    setAiGuidesAuto(true);
+    aiGuidesStopRef.current = false;
+    setAiGuidesLog("5개 자동 생성 시작…");
+    let done = 0;
+    try {
+      for (let i = 0; i < 5; i++) {
+        if (aiGuidesStopRef.current) break;
+        setAiGuidesRunning(true);
+        const ok = await runAiGuideOnce();
+        if (!ok) break;
+        done++;
+        await new Promise((r) => setTimeout(r, 1500));
+      }
+      setAiGuidesLog((prev) => `${prev ?? ""} · 완료 ${done}건`);
+    } catch (e) {
+      setAiGuidesLog(e instanceof Error ? e.message : "자동 생성 오류");
+    } finally {
+      setAiGuidesRunning(false);
+      setAiGuidesAuto(false);
+    }
+  };
+
+  const stopAiGuideAuto = () => {
+    aiGuidesStopRef.current = true;
+    setAiGuidesAuto(false);
+  };
+
+  const submitAiTopic = async () => {
+    if (!key.trim() || !aiTopicForm.topic_title.trim()) return;
+    setAiTopicSaving(true);
+    try {
+      const res = await fetch("/api/admin/ai-guides/topics", {
+        method: "POST",
+        headers: hdrs(true),
+        body: JSON.stringify(aiTopicForm),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "토픽 추가 실패");
+      setAiTopicModal(false);
+      setAiTopicForm({
+        topic_title: "",
+        category: "visa",
+        keywords: "",
+        priority: 5,
+      });
+      await loadAiGuidesStatus();
+      setAiGuidesLog(`토픽 추가: ${json.topic?.topic_title}`);
+    } catch (e) {
+      setAiGuidesLog(e instanceof Error ? e.message : "토픽 추가 오류");
+    } finally {
+      setAiTopicSaving(false);
+    }
+  };
+
   const loadBackfillStatus = useCallback(async () => {
     if (!key.trim()) return;
     setEnBackfillLoading(true);
@@ -261,13 +423,14 @@ function AdminStudyKoreaInner() {
       void loadBackfillStatus();
       void loadSlugBackfillStatus();
       void loadReclassifyStatus();
+      void loadAiGuidesStatus();
     } catch (e) {
       setAuthorized(false);
       setLoadErr(e instanceof Error ? e.message : "오류");
     } finally {
       setLoading(false);
     }
-  }, [hdrs, key, loadBackfillStatus, loadReclassifyStatus]);
+  }, [hdrs, key, loadBackfillStatus, loadReclassifyStatus, loadAiGuidesStatus]);
 
   useEffect(() => {
     if (keyFromUrl.trim()) void loadAll();
@@ -697,6 +860,17 @@ function AdminStudyKoreaInner() {
     slugBackfill.total > 0
       ? Math.round((slugBackfill.with_slug / slugBackfill.total) * 100)
       : 0;
+  const aiGuidePct =
+    aiGuides.total > 0
+      ? Math.round((aiGuides.completed / aiGuides.total) * 100)
+      : 0;
+
+  const postPathByTopicId = (topicId: string) => {
+    const t = aiGuides.topics.find((x) => x.id === topicId);
+    if (!t?.generated_post_id) return null;
+    return aiGuides.generated_posts.find((p) => p.id === t.generated_post_id)
+      ?.path;
+  };
 
   return (
     <div className="min-h-screen bg-slate-100 text-gray-900">
@@ -814,6 +988,205 @@ function AdminStudyKoreaInner() {
                 </p>
               )}
             </section>
+
+            <section className="bg-purple-50 rounded-xl border border-purple-300 p-4 shadow-sm">
+              <h2 className="text-sm font-bold text-purple-900 mb-2">
+                🤖 AI Knowledge Hub Generator
+              </h2>
+              <p className="text-sm text-purple-800 mb-3">
+                사실 기반 한국 유학 가이드를 AI로 생성합니다. 거짓 경험담은
+                생성하지 않습니다.
+              </p>
+              <p className="text-sm text-purple-800 mb-3">
+                <span className="font-semibold tabular-nums">
+                  {aiGuides.completed}
+                </span>
+                {" / "}
+                <span className="font-semibold tabular-nums">
+                  {aiGuides.total}
+                </span>
+                {aiGuidesLoading ? (
+                  <span className="text-purple-600 ml-2">(불러오는 중…)</span>
+                ) : (
+                  <span className="text-purple-700 ml-2">
+                    (남은 {aiGuides.pending}개 토픽)
+                  </span>
+                )}
+              </p>
+              <div className="h-3 w-full rounded-full bg-purple-100 overflow-hidden mb-3">
+                <div
+                  className="h-full bg-purple-600 transition-all duration-300"
+                  style={{ width: `${aiGuidePct}%` }}
+                />
+              </div>
+              <div className="flex flex-wrap gap-2 mb-4">
+                <button
+                  type="button"
+                  disabled={
+                    aiGuidesRunning || aiGuidesAuto || aiGuides.pending === 0
+                  }
+                  onClick={() => void runAiGuideBatch()}
+                  className="px-4 py-2 rounded-lg bg-purple-600 text-white text-sm font-semibold hover:bg-purple-700 disabled:opacity-50"
+                >
+                  {aiGuidesRunning && !aiGuidesAuto ? "생성 중…" : "▶ 1개 생성"}
+                </button>
+                <button
+                  type="button"
+                  disabled={
+                    aiGuidesRunning || aiGuidesAuto || aiGuides.pending === 0
+                  }
+                  onClick={() => void runAiGuideAuto()}
+                  className="px-4 py-2 rounded-lg bg-purple-700 text-white text-sm font-semibold hover:bg-purple-800 disabled:opacity-50"
+                >
+                  {aiGuidesAuto ? "자동 생성 중…" : "▶▶ 5개 자동 생성"}
+                </button>
+                <button
+                  type="button"
+                  disabled={!aiGuidesAuto}
+                  onClick={stopAiGuideAuto}
+                  className="px-4 py-2 rounded-lg bg-white border border-purple-300 text-purple-900 text-sm font-medium hover:bg-purple-100 disabled:opacity-50"
+                >
+                  ⏹ 중지
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAiTopicModal(true)}
+                  className="px-4 py-2 rounded-lg bg-white border border-purple-400 text-purple-900 text-sm font-medium hover:bg-purple-100"
+                >
+                  + 새 토픽 추가
+                </button>
+              </div>
+              {aiGuidesLog && (
+                <p className="text-xs text-purple-800 mb-3 bg-purple-100/80 px-3 py-2 rounded-lg">
+                  {aiGuidesLog}
+                </p>
+              )}
+              <ul className="max-h-64 overflow-y-auto space-y-1 text-xs">
+                {aiGuides.topics.map((t) => {
+                  const path = postPathByTopicId(t.id);
+                  return (
+                    <li
+                      key={t.id}
+                      className="flex flex-wrap items-center gap-2 py-1 border-b border-purple-100"
+                    >
+                      <span
+                        className={`px-1.5 py-0.5 rounded font-semibold ${
+                          t.status === "completed"
+                            ? "bg-green-100 text-green-800"
+                            : "bg-amber-100 text-amber-900"
+                        }`}
+                      >
+                        {t.status}
+                      </span>
+                      <span className="text-purple-950 font-medium flex-1 min-w-[12rem]">
+                        {t.topic_title}
+                      </span>
+                      <span className="text-purple-600">
+                        P{t.priority} · {t.category}
+                      </span>
+                      {path && (
+                        <a
+                          href={path}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-purple-700 underline"
+                        >
+                          미리보기
+                        </a>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+
+            {aiTopicModal && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+                <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+                  <h3 className="text-lg font-bold text-gray-900 mb-4">
+                    새 AI 가이드 토픽
+                  </h3>
+                  <label className="block text-sm font-medium mb-1">
+                    Topic Title
+                  </label>
+                  <input
+                    type="text"
+                    value={aiTopicForm.topic_title}
+                    onChange={(e) =>
+                      setAiTopicForm((f) => ({
+                        ...f,
+                        topic_title: e.target.value,
+                      }))
+                    }
+                    placeholder='e.g. "How to apply for spouse visa F-3"'
+                    className="w-full border rounded-lg px-3 py-2 text-sm mb-3"
+                  />
+                  <label className="block text-sm font-medium mb-1">
+                    Category
+                  </label>
+                  <select
+                    value={aiTopicForm.category}
+                    onChange={(e) =>
+                      setAiTopicForm((f) => ({ ...f, category: e.target.value }))
+                    }
+                    className="w-full border rounded-lg px-3 py-2 text-sm mb-3"
+                  >
+                    {AI_GUIDE_CATEGORIES.map((c) => (
+                      <option key={c} value={c}>
+                        {CATEGORY_LABELS_KR[c] ?? c}
+                      </option>
+                    ))}
+                  </select>
+                  <label className="block text-sm font-medium mb-1">
+                    Keywords (comma-separated)
+                  </label>
+                  <input
+                    type="text"
+                    value={aiTopicForm.keywords}
+                    onChange={(e) =>
+                      setAiTopicForm((f) => ({
+                        ...f,
+                        keywords: e.target.value,
+                      }))
+                    }
+                    className="w-full border rounded-lg px-3 py-2 text-sm mb-3"
+                  />
+                  <label className="block text-sm font-medium mb-1">
+                    Priority (1–10)
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={10}
+                    value={aiTopicForm.priority}
+                    onChange={(e) =>
+                      setAiTopicForm((f) => ({
+                        ...f,
+                        priority: Number(e.target.value) || 5,
+                      }))
+                    }
+                    className="w-full border rounded-lg px-3 py-2 text-sm mb-4"
+                  />
+                  <div className="flex gap-2 justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setAiTopicModal(false)}
+                      className="px-4 py-2 text-sm rounded-lg border"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      disabled={aiTopicSaving}
+                      onClick={() => void submitAiTopic()}
+                      className="px-4 py-2 text-sm rounded-lg bg-purple-600 text-white font-semibold disabled:opacity-50"
+                    >
+                      {aiTopicSaving ? "…" : "Add to Queue"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* English backfill */}
             <section className="bg-blue-50 rounded-xl border border-blue-200 p-4 shadow-sm">

@@ -9,6 +9,7 @@ import {
   sourceSubredditLabel,
 } from "@/lib/forum/post-display";
 import { normalizePostCategory, postPath } from "@/lib/forum/reddit-categories";
+import AIGuideBadge from "./AIGuideBadge";
 
 export type RedditPostCardData = {
   id: string;
@@ -19,6 +20,7 @@ export type RedditPostCardData = {
   category: string;
   subcategory?: string | null;
   post_type?: string | null;
+  is_ai_generated?: boolean | null;
   anonymous_nickname?: string | null;
   slug?: string | null;
   upvotes?: number | null;
@@ -42,13 +44,17 @@ export default function PostCard({ post }: Props) {
   const href = post.slug ? postPath(cat, post.slug) : post.url;
   const isUserAnon =
     post.post_type === "user_anon" || post.source === "user_anon";
+  const isAiGuide =
+    post.post_type === "ai_guide" ||
+    post.source === "ai_guide" ||
+    Boolean(post.is_ai_generated);
   const isExternal = !post.slug;
   const title = post.ai_title_en?.trim() || post.title;
   const preview =
     post.ai_summary_en?.trim() || post.ai_summary?.trim() || "";
   const score = postScore(post);
   const comments = postCommentsCount(post);
-  const sub = isUserAnon ? cat : sourceSubredditLabel(post.source);
+  const sub = isAiGuide ? "AI-Guides" : isUserAnon ? cat : sourceSubredditLabel(post.source);
   const author = isUserAnon
     ? post.anonymous_nickname || post.author || "Anonymous"
     : post.author?.replace(/^\/u\//, "") || "anonymous";
@@ -60,17 +66,26 @@ export default function PostCard({ post }: Props) {
         <VoteColumn score={score} layout="side" />
       </div>
       <div className="flex-1 min-w-0 py-2 pr-3">
-        <p className="text-xs text-[#7C7C7C] dark:text-[#818384] mb-1">
+        <p className="text-xs text-[#7C7C7C] dark:text-[#818384] mb-1 flex flex-wrap items-center gap-1">
+          {isAiGuide && <AIGuideBadge compact />}
           <Link
             href={`/r/${cat}`}
             className="font-bold hover:underline text-[#1C1C1C] dark:text-[#D7DADC]"
           >
             r/{sub}
           </Link>
-          <span className="mx-1">·</span>
-          Posted by {isUserAnon ? "" : "u/"}
-          {author}
-          <span className="mx-1">·</span>
+          <span>·</span>
+          {isAiGuide ? (
+            <span className="text-purple-700 dark:text-purple-300 font-medium">
+              AI Generated Guide
+            </span>
+          ) : (
+            <>
+              Posted by {isUserAnon ? "" : "u/"}
+              {author}
+            </>
+          )}
+          <span>·</span>
           {when}
         </p>
         <h2 className="text-base font-semibold text-[#1C1C1C] dark:text-[#D7DADC] leading-snug hover:text-[#FF4500]">
@@ -98,8 +113,9 @@ export default function PostCard({ post }: Props) {
     </>
   );
 
-  const cardClass =
-    "flex bg-white dark:bg-[#1A1A1B] border border-[#EDEFF1] dark:border-[#343536] rounded hover:border-[#898989] dark:hover:border-[#818384] transition-colors overflow-hidden";
+  const cardClass = isAiGuide
+    ? "flex bg-purple-50/80 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800 rounded hover:border-purple-400 dark:hover:border-purple-600 transition-colors overflow-hidden"
+    : "flex bg-white dark:bg-[#1A1A1B] border border-[#EDEFF1] dark:border-[#343536] rounded hover:border-[#898989] dark:hover:border-[#818384] transition-colors overflow-hidden";
 
   if (isExternal) {
     return (

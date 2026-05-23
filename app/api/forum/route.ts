@@ -43,13 +43,14 @@ export async function GET(request: NextRequest) {
   const limit = Math.min(parseInt(searchParams.get("limit") || "20", 10), 50);
   const offset = parseInt(searchParams.get("offset") || "0", 10);
   const withStats = searchParams.get("stats") === "1";
+  const kind = searchParams.get("kind"); // guides | discussions
 
   try {
     const supabase = await createClient();
     let q = supabase
       .from("study_korea_posts")
       .select(
-        "id,source,source_id,title,url,author,category,subcategory,university,university_id,language,upvotes,comment_count,upvotes_count,downvotes_count,comments_count,views_count,slug,ai_summary,ai_summary_kr,ai_title_en,ai_summary_en,ai_content_en,source_created_at,created_at",
+        "id,source,source_id,title,url,author,category,subcategory,university,university_id,language,upvotes,comment_count,upvotes_count,downvotes_count,comments_count,views_count,slug,post_type,is_ai_generated,ai_sources,ai_last_updated,ai_summary,ai_summary_kr,ai_title_en,ai_summary_en,ai_content_en,source_created_at,created_at",
         { count: "exact" }
       )
       .eq("is_published", true)
@@ -63,6 +64,12 @@ export async function GET(request: NextRequest) {
 
     if (source) {
       q = q.eq("source", source);
+    }
+
+    if (kind === "guides") {
+      q = q.eq("post_type", "ai_guide");
+    } else if (kind === "discussions") {
+      q = q.neq("post_type", "ai_guide");
     }
 
     const univId = universityIdParam

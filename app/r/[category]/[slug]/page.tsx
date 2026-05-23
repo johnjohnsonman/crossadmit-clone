@@ -7,6 +7,9 @@ import StructuredData from "@/components/StructuredData";
 import CommunitySidebar from "@/components/reddit-style/CommunitySidebar";
 import RedditLayout from "@/components/reddit-style/RedditLayout";
 import VoteColumn from "@/components/reddit-style/VoteColumn";
+import AIGuideBanner from "@/components/reddit-style/AIGuideBanner";
+import AIGuideBadge from "@/components/reddit-style/AIGuideBadge";
+import GuideFeedback from "@/components/reddit-style/GuideFeedback";
 import {
   formatTimeAgo,
   postCommentsCount,
@@ -63,16 +66,25 @@ export default async function PostDetailPage({ params }: Props) {
   const meta = getCategoryMeta(cat);
   const isUserAnon =
     post.post_type === "user_anon" || post.source === "user_anon";
+  const isAiGuide =
+    post.post_type === "ai_guide" ||
+    post.source === "ai_guide" ||
+    Boolean(post.is_ai_generated);
   const title = post.ai_title_en?.trim() || post.title;
   const body = isUserAnon
     ? post.content?.trim() ||
       post.ai_content_en?.trim() ||
       post.ai_summary_en?.trim() ||
       ""
-    : post.ai_content_en?.trim() ||
-      post.ai_summary_en?.trim() ||
-      post.ai_summary?.trim() ||
-      "";
+    : isAiGuide
+      ? post.ai_content_en?.trim() ||
+        post.content?.trim() ||
+        post.ai_summary_en?.trim() ||
+        ""
+      : post.ai_content_en?.trim() ||
+        post.ai_summary_en?.trim() ||
+        post.ai_summary?.trim() ||
+        "";
   const score = postScore(post);
   const comments = postCommentsCount(post);
   const sub = isUserAnon ? meta.label : sourceSubredditLabel(post.source);
@@ -90,8 +102,10 @@ export default async function PostDetailPage({ params }: Props) {
     headline: title,
     description: (post.ai_summary_en || post.ai_summary || "").slice(0, 200),
     datePublished: post.source_created_at ?? post.created_at,
-    dateModified: post.created_at,
-    author: { "@type": "Person", name: displayName },
+    dateModified: post.ai_last_updated ?? post.created_at,
+    author: isAiGuide
+      ? { "@type": "Organization", name: "CrossAdmit" }
+      : { "@type": "Person", name: displayName },
     publisher: {
       "@type": "Organization",
       name: "CrossAdmit",
@@ -130,12 +144,19 @@ export default async function PostDetailPage({ params }: Props) {
         <span className="line-clamp-1">{title}</span>
       </nav>
 
-      <article className="bg-white dark:bg-[#1A1A1B] border border-[#EDEFF1] dark:border-[#343536] rounded flex overflow-hidden">
+      <article
+        className={`rounded flex overflow-hidden border ${
+          isAiGuide
+            ? "bg-purple-50/50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-800"
+            : "bg-white dark:bg-[#1A1A1B] border-[#EDEFF1] dark:border-[#343536]"
+        }`}
+      >
         <div className="hidden md:flex p-2">
           <VoteColumn score={score} layout="side" />
         </div>
         <div className="flex-1 p-4 min-w-0">
-          <p className="text-xs text-[#7C7C7C] mb-2">
+          <p className="text-xs text-[#7C7C7C] mb-2 flex flex-wrap items-center gap-2">
+            {isAiGuide && <AIGuideBadge />}
             {isUserAnon ? (
               <>
                 <Link
@@ -146,6 +167,21 @@ export default async function PostDetailPage({ params }: Props) {
                 </Link>
                 <span className="mx-1">·</span>
                 Posted by {displayName}
+                <span className="mx-1">·</span>
+                {when}
+              </>
+            ) : isAiGuide ? (
+              <>
+                <span className="text-purple-800 dark:text-purple-200 font-medium">
+                  AI Generated Guide · CrossAdmit Knowledge Hub
+                </span>
+                <span className="mx-1">·</span>
+                <Link
+                  href={`/r/${cat}`}
+                  className="font-bold text-[#1C1C1C] dark:text-[#D7DADC] hover:underline"
+                >
+                  r/{meta.label}
+                </Link>
                 <span className="mx-1">·</span>
                 {when}
               </>
@@ -170,6 +206,13 @@ export default async function PostDetailPage({ params }: Props) {
             {title}
           </h1>
 
+          {isAiGuide && (
+            <AIGuideBanner
+              sources={post.ai_sources as string[] | null}
+              lastUpdated={post.ai_last_updated}
+            />
+          )}
+
           <div className="my-4">
             <AdSenseSlot format="rectangle" />
           </div>
@@ -180,7 +223,20 @@ export default async function PostDetailPage({ params }: Props) {
             )}
           </div>
 
-          {!isUserAnon && post.url && (
+          {isAiGuide && post.ai_content_kr?.trim() && (
+            <details className="mt-6 border border-purple-200 dark:border-purple-800 rounded-lg p-3">
+              <summary className="text-sm font-bold text-purple-900 dark:text-purple-100 cursor-pointer">
+                한국어 버전 (Korean)
+              </summary>
+              <div className="mt-3 prose prose-sm max-w-none whitespace-pre-wrap text-[#1C1C1C] dark:text-[#D7DADC]">
+                {post.ai_content_kr}
+              </div>
+            </details>
+          )}
+
+          {isAiGuide && <GuideFeedback postId={post.id} />}
+
+          {!isUserAnon && !isAiGuide && post.url && (
             <p className="mt-4 text-sm">
               <a
                 href={post.url}

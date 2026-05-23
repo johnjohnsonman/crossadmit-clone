@@ -23,36 +23,69 @@ type Props = {
 
 const PAGE_SIZE = 20;
 
+async function fetchForumPosts(params: URLSearchParams) {
+  const res = await fetch(`/api/forum?${params}`);
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error || "Failed to load posts");
+  return {
+    posts: (json.posts ?? []) as RedditPostCardData[],
+    total: json.total ?? 0,
+  };
+}
+
 export default function RedditCategoryFeed({
   categoryId,
   categoryMeta,
   sort,
 }: Props) {
+  const [guides, setGuides] = useState<RedditPostCardData[]>([]);
+  const [guidesTotal, setGuidesTotal] = useState(0);
   const [posts, setPosts] = useState<RedditPostCardData[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const fetchPosts = useCallback(async () => {
+  const sortParam = sort === "latest" ? "new" : sort;
+
+  const fetchAll = useCallback(async () => {
     setLoading(true);
-    const params = new URLSearchParams({
-      limit: String(PAGE_SIZE),
-      offset: String(page * PAGE_SIZE),
-      category: categoryId,
-      sort: sort === "latest" ? "new" : sort,
-    });
-    const res = await fetch(`/api/forum?${params}`);
-    const json = await res.json();
-    if (res.ok) {
-      setPosts(json.posts ?? []);
-      setTotal(json.total ?? 0);
+    setError(null);
+    try {
+      const guideParams = new URLSearchParams({
+        limit: "10",
+        offset: "0",
+        category: categoryId,
+        sort: sortParam,
+        kind: "guides",
+      });
+      const discParams = new URLSearchParams({
+        limit: String(PAGE_SIZE),
+        offset: String(page * PAGE_SIZE),
+        category: categoryId,
+        sort: sortParam,
+        kind: "discussions",
+      });
+
+      const [guideRes, discRes] = await Promise.all([
+        fetchForumPosts(guideParams),
+        fetchForumPosts(discParams),
+      ]);
+
+      setGuides(guideRes.posts);
+      setGuidesTotal(guideRes.total);
+      setPosts(discRes.posts);
+      setTotal(discRes.total);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Load failed");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-  }, [page, sort, categoryId]);
+  }, [page, sortParam, categoryId]);
 
   useEffect(() => {
-    void fetchPosts();
-  }, [fetchPosts]);
+    void fetchAll();
+  }, [fetchAll]);
 
   useEffect(() => {
     setPage(0);
@@ -93,19 +126,61 @@ export default function RedditCategoryFeed({
           <div className="p-8 text-center text-sm bg-white rounded border">
             Loading…
           </div>
+        ) : error ? (
+          <div className="p-8 text-center text-sm text-red-600 bg-white rounded border">
+            {error}
+          </div>
         ) : (
-          posts.map((p, i) => (
-            <div key={p.id}>
-              {i === 4 && (
-                <div className="my-2">
-                  <AdSenseSlot />
+          <>
+            {(guides.length > 0 || guidesTotal > 0) && (
+              <section className="mb-4">
+                <h2 className="text-sm font-bold text-purple-900 dark:text-purple-200 px-1 mb-2 flex items-center gap-2">
+                  📚 Guides
+                  <span className="text-xs font-normal text-purple-700 dark:text-purple-400">
+                    AI-generated · factual
+                  </span>
+                </h2>
+                <div className="space-y-2">
+                  {guides.map((p) => (
+                    <PostCard key={p.id} post={p} />
+                  ))}
+                </div>
+                {guidesTotal > guides.length && (
+                  <p className="text-xs text-purple-700 px-1 mt-2">
+                    Showing {guides.length} of {guidesTotal} guides in this
+                    category
+                  </p>
+                )}
+              </section>
+            )}
+
+            <section>
+              <h2 className="text-sm font-bold text-[#1C1C1C] dark:text-[#D7DADC] px-1 mb-2">
+                💬 Discussions
+              </h2>
+              {posts.length === 0 ? (
+                <div className="p-6 text-center text-sm bg-white dark:bg-[#1A1A1B] rounded border text-[#7C7C7C]">
+                  No discussions in this category yet.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {posts.map((p, i) => (
+                    <div key={p.id}>
+                      {i === 4 && (
+                        <div className="my-2">
+                          <AdSenseSlot />
+                        </div>
+                      )}
+                      <PostCard post={p} />
+                    </div>
+                  ))}
                 </div>
               )}
-              <PostCard post={p} />
-            </div>
-          ))
+            </section>
+          </>
         )}
-        {totalPages > 1 && !loading && (
+
+        {totalPages > 1 && !loading && !error && (
           <div className="flex justify-center gap-2 py-4">
             <button
               type="button"
