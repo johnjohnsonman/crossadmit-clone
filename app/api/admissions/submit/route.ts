@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validateRegisteredSchool } from "@/lib/admissions/school-registration";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type {
   AdmissionSchoolInsert,
@@ -92,6 +93,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const registValidation = validateRegisteredSchool(schools);
+    if (!registValidation.ok) {
+      return NextResponse.json(
+        { success: false, error: registValidation.error },
+        { status: 400 }
+      );
+    }
+
     const registered = schools.filter((s) => s.status === "등록");
     const primary = registered[0] ?? schools[0];
     const autoTitle =
@@ -164,26 +173,40 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const registSchools = schools.filter((s) => s.status === "등록");
-    const acceptedNotRegist = schools.filter(
-      (s) => s.status === "합격"
+    const accepted = schools.filter(
+      (s) => s.status === "합격" || s.status === "등록"
     );
 
     const crossRows: CrossComparisonInsert[] = [];
-    for (const win of registSchools) {
-      for (const lose of acceptedNotRegist) {
-        if (win.univ_id && lose.univ_id && win.univ_id === lose.univ_id) {
-          continue;
+    for (let i = 0; i < accepted.length; i++) {
+      for (let j = i + 1; j < accepted.length; j++) {
+        const a = accepted[i];
+        const b = accepted[j];
+        if (a.univ_id && b.univ_id && a.univ_id === b.univ_id) continue;
+
+        const aReg = a.status === "등록";
+        const bReg = b.status === "등록";
+        if (aReg && !bReg) {
+          crossRows.push({
+            admission_id: admissionId,
+            univ_id_win: a.univ_id ?? 0,
+            univ_id_lose: b.univ_id ?? 0,
+            univ_name_win: a.univ_name,
+            univ_name_lose: b.univ_name,
+            dept_name_win: a.dept_name,
+            dept_name_lose: b.dept_name,
+          });
+        } else if (bReg && !aReg) {
+          crossRows.push({
+            admission_id: admissionId,
+            univ_id_win: b.univ_id ?? 0,
+            univ_id_lose: a.univ_id ?? 0,
+            univ_name_win: b.univ_name,
+            univ_name_lose: a.univ_name,
+            dept_name_win: b.dept_name,
+            dept_name_lose: a.dept_name,
+          });
         }
-        crossRows.push({
-          admission_id: admissionId,
-          univ_id_win: win.univ_id ?? 0,
-          univ_id_lose: lose.univ_id ?? 0,
-          univ_name_win: win.univ_name,
-          univ_name_lose: lose.univ_name,
-          dept_name_win: win.dept_name,
-          dept_name_lose: lose.dept_name,
-        });
       }
     }
 

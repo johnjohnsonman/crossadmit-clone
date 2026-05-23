@@ -248,20 +248,52 @@ function shuffleStats<T>(arr: T[]): T[] {
   return out;
 }
 
-/** 대학 쌍별 집계 (win 방향 건수 + 역방향 건수 → 비율) */
-export async function getCrossComparisonStats(params?: {
+type SchoolRow = {
+  admission_id: number;
+  univ_id: number;
+  univ_name: string;
+  dept_name: string;
+  is_regist: boolean;
+};
+
+/** admission_schools 기반 실시간 크로스어드밋 집계 */
+async function getCrossComparisonStatsFromSchools(params?: {
   univ_a?: number;
   univ_b?: number;
-  sort?: CrossComparisonSort;
   locale?: "ko" | "en";
 }): Promise<CrossComparisonStat[]> {
-  const rows = await getCrossComparisons({
-    univ_a: params?.univ_a,
-    univ_b: params?.univ_b,
-    limit: 5000,
-  });
+  const supabase = await createClient();
   const nameMap = await loadUniversityNameMap();
   const locale = params?.locale;
+
+  const { data: published, error: pubErr } = await supabase
+    .from("admissions")
+    .select("id")
+    .eq("published", true);
+  if (pubErr) {
+    console.error("getCrossComparisonStatsFromSchools admissions:", pubErr);
+    return [];
+  }
+  const pubIds = (published ?? []).map((a) => a.id as number);
+  if (pubIds.length === 0) return [];
+
+  const { data: schoolRows, error: schErr } = await supabase
+    .from("admission_schools")
+    .select("admission_id, univ_id, univ_name, dept_name, is_accept, is_regist")
+    .in("admission_id", pubIds)
+    .eq("is_accept", true);
+  if (schErr) {
+    console.error("getCrossComparisonStatsFromSchools schools:", schErr);
+    return [];
+  }
+
+  const byAdmission = new Map<number, SchoolRow[]>();
+  for (const raw of schoolRows ?? []) {
+    const row = raw as SchoolRow;
+    const list = byAdmission.get(row.admission_id) ?? [];
+    list.push(row);
+    byAdmission.set(row.admission_id, list);
+  }
 
   type PairAgg = {
     lowId: number;
@@ -270,43 +302,69 @@ export async function getCrossComparisonStats(params?: {
     nameHigh: string;
     forward: number;
     reverse: number;
+    pairTotal: number;
     latestId: number;
   };
 
   const map = new Map<string, PairAgg>();
 
-  for (const r of rows) {
-    const a = r.univ_id_win;
-    const b = r.univ_id_lose;
-    const low = Math.min(a, b);
-    const high = Math.max(a, b);
-    const key = `${low}:${high}`;
-    let agg = map.get(key);
-    if (!agg) {
-      agg = {
-        lowId: low,
-        highId: high,
-        nameLow: a < b ? r.univ_name_win : r.univ_name_lose,
-        nameHigh: a < b ? r.univ_name_lose : r.univ_name_win,
-        forward: 0,
-        reverse: 0,
-        latestId: r.id,
-      };
-      map.set(key, agg);
-    }
-    agg.latestId = Math.max(agg.latestId, r.id);
-    if (r.univ_id_win === low) {
-      agg.forward += 1;
-    } else {
-      agg.reverse += 1;
+  for (const [admissionId, schools] of byAdmission) {
+    if (schools.length < 2) continue;
+
+    for (let i = 0; i < schools.length; i++) {
+      for (let j = i + 1; j < schools.length; j++) {
+        const a = schools[i];
+        const b = schools[j];
+        const lowId = Math.min(a.univ_id, b.univ_id);
+        const highId = Math.max(a.univ_id, b.univ_id);
+        if (!lowId || !highId || lowId === highId) continue;
+
+        const key = `${lowId}:${highId}`;
+        let agg = map.get(key);
+        if (!agg) {
+          agg = {
+            lowId,
+            highId,
+            nameLow: a.univ_id === lowId ? a.univ_name : b.univ_name,
+            nameHigh: a.univ_id === highId ? a.univ_name : b.univ_name,
+            forward: 0,
+            reverse: 0,
+            pairTotal: 0,
+            latestId: admissionId,
+          };
+          map.set(key, agg);
+        }
+        agg.pairTotal += 1;
+        agg.latestId = Math.max(agg.latestId, admissionId);
+
+        if (a.is_regist && !b.is_regist) {
+          if (a.univ_id === lowId) agg.forward += 1;
+          else agg.reverse += 1;
+        } else if (b.is_regist && !a.is_regist) {
+          if (b.univ_id === lowId) agg.forward += 1;
+          else agg.reverse += 1;
+        }
+      }
     }
   }
 
   const stats: CrossComparisonStat[] = [];
   for (const agg of map.values()) {
-    const total = agg.forward + agg.reverse;
-    if (total === 0) continue;
-    const pctWin = Math.round((agg.forward / total) * 100);
+    const decisions = agg.forward + agg.reverse;
+    if (decisions === 0) continue;
+
+    if (
+      params?.univ_a !== undefined &&
+      params?.univ_b !== undefined &&
+      !(
+        (agg.lowId === params.univ_a && agg.highId === params.univ_b) ||
+        (agg.lowId === params.univ_b && agg.highId === params.univ_a)
+      )
+    ) {
+      continue;
+    }
+
+    const pctWin = Math.round((agg.forward / decisions) * 100);
     stats.push({
       id: `cross-${agg.lowId}-vs-${agg.highId}`,
       univ_id_win: agg.lowId,
@@ -325,12 +383,28 @@ export async function getCrossComparisonStats(params?: {
       ),
       dept_name_win: "",
       dept_name_lose: "",
-      count: total,
+      count: decisions,
       percentage_win: pctWin,
       percentage_lose: 100 - pctWin,
       latest_id: agg.latestId,
     });
   }
+
+  return stats;
+}
+
+/** 대학 쌍별 집계 (admission_schools 실시간 계산) */
+export async function getCrossComparisonStats(params?: {
+  univ_a?: number;
+  univ_b?: number;
+  sort?: CrossComparisonSort;
+  locale?: "ko" | "en";
+}): Promise<CrossComparisonStat[]> {
+  const stats = await getCrossComparisonStatsFromSchools({
+    univ_a: params?.univ_a,
+    univ_b: params?.univ_b,
+    locale: params?.locale,
+  });
 
   const sort = params?.sort ?? "latest";
   if (sort === "popular") {

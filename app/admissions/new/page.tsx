@@ -9,6 +9,7 @@ import {
   KOREAN_UNIVERSITIES,
   resolveUniversityInput,
 } from "@/lib/data/korean-universities";
+import { validateRegisteredSchool } from "@/lib/admissions/school-registration";
 
 type SchoolStatus = "합격" | "등록" | "불합격";
 
@@ -231,6 +232,30 @@ export default function AdmissionNewPage() {
     );
   }
 
+  function setRowStatus(rowId: string, status: SchoolStatus) {
+    if (status === "등록") {
+      setRows((prev) =>
+        prev.map((r) => ({
+          ...r,
+          status:
+            r.id === rowId ? "등록" : r.status === "등록" ? "합격" : r.status,
+        }))
+      );
+      return;
+    }
+    updateRow(rowId, { status });
+  }
+
+  const filledSchoolRows = useMemo(
+    () =>
+      rows.filter(
+        (r) => r.universityInput.trim().length > 0 && r.majorInput.trim().length > 0
+      ),
+    [rows]
+  );
+
+  const showMultiAcceptHint = filledSchoolRows.length >= 2;
+
   function addRow() {
     setRows((prev) =>
       prev.length >= MAX_SCHOOLS ? prev : [...prev, newRow()]
@@ -259,6 +284,12 @@ export default function AdmissionNewPage() {
     }
     if (!admissionType) {
       setFormError("전형 종류를 선택해주세요.");
+      return;
+    }
+
+    const registCheck = validateRegisteredSchool(schoolsPayload.list);
+    if (!registCheck.ok) {
+      setFormError(registCheck.error);
       return;
     }
 
@@ -345,10 +376,16 @@ export default function AdmissionNewPage() {
               <h2 className="text-lg font-semibold text-white">
                 지원 학교 및 결과
               </h2>
-              <p className="mt-1 text-sm text-gray-600">
-                합격/불합격한 학교를 모두 입력하고, 등록한 학교에
-                &apos;등록&apos;을 선택하세요
+              <p className="mt-1 text-sm text-gray-400">
+                합격/불합격한 학교를 모두 입력하고, 실제 입학한 학교는
+                &apos;등록&apos;으로 선택하세요
               </p>
+              {showMultiAcceptHint ? (
+                <p className="mt-2 rounded-lg border border-orange-500/30 bg-orange-500/10 px-3 py-2 text-sm text-orange-300">
+                  ※ 여러 학교에 합격하신 경우, 실제 등록한 학교 1곳을
+                  &apos;등록&apos;으로 선택해주세요
+                </p>
+              ) : null}
 
               <div className="mt-4 space-y-2">
                 {rows.map((row, idx) => (
@@ -407,9 +444,7 @@ export default function AdmissionNewPage() {
                           className={statusSelectClass(row.status)}
                           value={row.status}
                           onChange={(e) =>
-                            updateRow(row.id, {
-                              status: e.target.value as SchoolStatus,
-                            })
+                            setRowStatus(row.id, e.target.value as SchoolStatus)
                           }
                         >
                           <option value="합격">합격</option>
