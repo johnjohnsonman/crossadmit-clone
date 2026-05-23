@@ -4,7 +4,10 @@ import {
   normalizeUnivId,
   resolveDepartmentId,
 } from "@/lib/admissions/resolve-school-ids";
-import { extractAdmissionFromPost } from "@/lib/pipeline/study-korea/extract-admission-review";
+import {
+  extractAdmissionFromPost,
+  mapExtractedToAdmissionFields,
+} from "@/lib/pipeline/study-korea/extract-admission-review";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const maxDuration = 60;
@@ -62,6 +65,16 @@ export async function POST(
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 
+  if (extracted.confidence === "skip") {
+    return NextResponse.json(
+      {
+        error: "외국 대학 후기이거나 합격 후기가 아닙니다.",
+        extracted,
+      },
+      { status: 400 }
+    );
+  }
+
   if (extracted.confidence === "low") {
     return NextResponse.json(
       {
@@ -71,6 +84,8 @@ export async function POST(
       { status: 400 }
     );
   }
+
+  const specFields = mapExtractedToAdmissionFields(extracted);
 
   const year =
     extracted.year > 1990 && extracted.year <= new Date().getFullYear() + 1
@@ -92,6 +107,9 @@ export async function POST(
       year,
       year_end: year,
       title: autoTitle,
+      input_score: specFields.input_score,
+      input_gpa: specFields.input_gpa,
+      input_specialty: specFields.input_specialty,
       view_count: 0,
       likes_count: 0,
       is_verified: false,

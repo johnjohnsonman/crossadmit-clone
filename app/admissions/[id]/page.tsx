@@ -31,20 +31,34 @@ function SpecBlock({
 }) {
   const has =
     content?.trim() && formatText(content) !== "-";
+  if (!has) return null;
   return (
     <div className="rounded-lg bg-gray-800/50 border border-gray-800 p-4 sm:p-5">
       <h3 className="text-xs font-medium text-gray-400 tracking-wide">
         {title}
       </h3>
       <div className="mt-3 text-sm leading-relaxed text-white">
-        {has ? (
-          formatTextWithLineBreaks(content)
-        ) : (
-          <span className="text-gray-500">정보 없음</span>
-        )}
+        {formatTextWithLineBreaks(content)}
       </div>
     </div>
   );
+}
+
+/** input_specialty: 첫 줄=어학시험, 이후=비교과 (자동 이관 형식) */
+function splitInputSpecialty(raw: string | undefined): {
+  testScores?: string;
+  extraActivities?: string;
+} {
+  const text = raw?.trim() ?? "";
+  if (!text) return {};
+  const lines = text.split(/\n+/).map((l) => l.trim()).filter(Boolean);
+  if (lines.length <= 1) {
+    return { testScores: text };
+  }
+  return {
+    testScores: lines[0],
+    extraActivities: lines.slice(1).join("\n"),
+  };
 }
 
 function ResultRow({ school }: { school: AdmissionSchoolRecord }) {
@@ -158,6 +172,9 @@ export default async function AdmissionDetailPage({ params }: PageProps) {
   };
 
   const reviews = record.admissionSchools.filter((s) => s.review?.trim());
+  const { testScores, extraActivities } = splitInputSpecialty(
+    record.inputSpecialty
+  );
 
   return (
     <main className="min-h-screen bg-gray-950 text-gray-300">
@@ -210,19 +227,22 @@ export default async function AdmissionDetailPage({ params }: PageProps) {
               </ul>
             </section>
 
-            <section>
-              <h2 className="text-sm font-semibold tracking-tight text-white mb-3">
-                스펙
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <SpecBlock title="수능/시험 점수" content={record.inputScore} />
-                <SpecBlock title="내신 / GPA" content={record.inputGpa} />
-                <SpecBlock
-                  title="비교과/특기"
-                  content={record.inputSpecialty}
-                />
-              </div>
-            </section>
+            {(record.inputScore ||
+              record.inputGpa ||
+              testScores ||
+              extraActivities) && (
+              <section>
+                <h2 className="text-sm font-semibold tracking-tight text-white mb-3">
+                  스펙
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <SpecBlock title="수능/시험 점수" content={record.inputScore} />
+                  <SpecBlock title="내신 / GPA" content={record.inputGpa} />
+                  <SpecBlock title="어학 / 표준화 시험" content={testScores} />
+                  <SpecBlock title="비교과 / 활동" content={extraActivities} />
+                </div>
+              </section>
+            )}
 
             {reviews.length > 0 && (
               <section className="rounded-xl border border-gray-800 bg-gray-900 p-5 sm:p-6">
