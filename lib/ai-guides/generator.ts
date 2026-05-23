@@ -1,6 +1,8 @@
 import Anthropic from "@anthropic-ai/sdk";
 
 const MODEL = "claude-haiku-4-5-20251001";
+const MAX_TOKENS_EN = 4000;
+const MAX_TOKENS_KR = 4000;
 
 export type AIGuideTopicInput = {
   topic_title: string;
@@ -9,109 +11,154 @@ export type AIGuideTopicInput = {
   reference_urls?: string[];
 };
 
-export type AIGuideContent = {
+export type EnglishGuideResult = {
   title_en: string;
-  title_ko: string;
-  content_en: string;
-  content_ko: string;
   summary_en: string;
-  summary_ko: string;
+  content_en: string;
   sources: string[];
 };
 
-const SYSTEM_PROMPT = `You are creating an educational guide for international students considering studying in Korea.
+export type KoreanGuideTranslation = {
+  title_kr: string;
+  summary_kr: string;
+  content_kr: string;
+};
 
-CRITICAL RULES:
-1. Only provide factual, verifiable information
-2. DO NOT pretend to be a real student
-3. DO NOT make up personal experiences or anecdotes ("When I was a student...")
-4. Cite official sources where possible (immigration.go.kr, studyinkorea.go.kr, university .ac.kr sites)
-5. Use clear, helpful language
-6. Structure with Markdown headings and bullet points
-7. Include practical tips backed by official policy only
-8. End content with a line: "**Disclaimer:** Always verify with official sources before applying or traveling."
-
-Format: Markdown
-Length: 800-1500 words per language version`;
-
-function parseGuideJson(text: string): AIGuideContent {
-  try {
-    const parsed = JSON.parse(text) as Record<string, unknown>;
-    return normalizeGuide(parsed);
-  } catch {
-    const m = text.match(/\{[\s\S]*\}/);
-    if (!m) throw new Error("Failed to parse AI guide JSON");
-    return normalizeGuide(JSON.parse(m[0]) as Record<string, unknown>);
-  }
+function getClient(): Anthropic {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) throw new Error("ANTHROPIC_API_KEY is not set");
+  return new Anthropic({ apiKey });
 }
 
-function normalizeGuide(parsed: Record<string, unknown>): AIGuideContent {
-  const sources = Array.isArray(parsed.sources)
-    ? parsed.sources.map((s) => String(s)).filter(Boolean)
-    : [];
+async function callClaude(
+  system: string,
+  user: string,
+  maxTokens: number
+): Promise<string> {
+  const client = getClient();
+  const response = await client.messages.create({
+    model: MODEL,
+    max_tokens: maxTokens,
+    system,
+    messages: [{ role: "user", content: user }],
+  });
+  const block = response.content.find((b) => b.type === "text");
+  if (!block || block.type !== "text") {
+    throw new Error("Claude returned no text");
+  }
+  return block.text.trim();
+}
+
+/** Parse markdown: first # heading = title, first paragraph = summary, body = full text */
+export function parseMarkdownGuide(markdown: string): {
+  title: string;
+  summary: string;
+  body: string;
+} {
+  const text = markdown.trim();
+  const lines = text.split("\n");
+
+  let title = "";
+  let titleLineIdx = -1;
+  for (let i = 0; i < lines.length; i++) {
+    const m = lines[i].match(/^#\s+(.+)/);
+    if (m) {
+      title = m[1].trim();
+      titleLineIdx = i;
+      break;
+    }
+  }
+
+  const afterTitle =
+    titleLineIdx >= 0 ? lines.slice(titleLineIdx + 1).join("\n").trim() : text;
+
+  const paragraphs = afterTitle
+    .split(/\n\n+/)
+    .map((p) => p.trim())
+    .filter((p) => p && !p.startsWith("#"));
+
+  const summaryRaw = paragraphs[0] ?? "";
+  const summary = summaryRaw.replace(/\s+/g, " ").slice(0, 300);
+
+  const body = text.length > 0 ? text : afterTitle;
 
   return {
-    title_en: String(parsed.title_en ?? "").trim(),
-    title_ko: String(parsed.title_ko ?? "").trim(),
-    content_en: String(parsed.content_en ?? "").trim(),
-    content_ko: String(parsed.content_ko ?? "").trim(),
-    summary_en: String(parsed.summary_en ?? "").trim().slice(0, 300),
-    summary_ko: String(parsed.summary_ko ?? "").trim().slice(0, 300),
+    title: title || "Study in Korea Guide",
+    summary: summary || title,
+    body: body || text,
+  };
+}
+
+function extractUrls(text: string): string[] {
+  const urls = text.match(/https?:\/\/[^\s)\]>]+/g) ?? [];
+  return [...new Set(urls.map((u) => u.replace(/[.,;]+$/, "")))];
+}
+
+export async function generateEnglishGuide(
+  topic: AIGuideTopicInput
+): Promise<EnglishGuideResult> {
+  const refs =
+    topic.reference_urls?.length ?
+      `\nReference URLs: ${topic.reference_urls.join(", ")}`
+    : "";
+
+  const system = `Create a factual guide for international students in Korea.
+Rules: Only factual information. No fake personal experiences. Use clear English.
+End with: **Always verify with official sources.**`;
+
+  const user = `Topic: ${topic.topic_title}
+Category: ${topic.category}
+Keywords: ${topic.keywords.join(", ")}${refs}
+
+Write a Markdown guide (600-1000 words):
+- Start with a single # title line
+- Then a short intro paragraph
+- Include: introduction, key points, practical steps, official source links
+
+Output Markdown only. No JSON.`;
+
+  const raw = await callClaude(system, user, MAX_TOKENS_EN);
+  const parsed = parseMarkdownGuide(raw);
+  const sources = [
+    ...(topic.reference_urls ?? []),
+    ...extractUrls(raw),
+  ].filter((u, i, a) => u && a.indexOf(u) === i);
+
+  return {
+    title_en: parsed.title,
+    summary_en: parsed.summary.slice(0, 300),
+    content_en: parsed.body,
     sources,
   };
 }
 
-export async function generateAIGuide(
-  topic: AIGuideTopicInput
-): Promise<AIGuideContent> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) throw new Error("ANTHROPIC_API_KEY is not set");
+export async function translateGuideToKorean(input: {
+  title_en: string;
+  summary_en: string;
+  content_en: string;
+}): Promise<KoreanGuideTranslation> {
+  const system =
+    "Translate the English guide to Korean. Keep Markdown formatting. Use natural Korean. Output Markdown only.";
 
-  const client = new Anthropic({ apiKey });
-  const refs =
-    topic.reference_urls?.length ?
-      `\nReference URLs to consider: ${topic.reference_urls.join(", ")}`
-    : "";
+  const user = `Translate to Korean.
 
-  const userPrompt = `Create a comprehensive factual guide on:
-"${topic.topic_title}"
+English title: ${input.title_en}
+English summary: ${input.summary_en}
 
-Category: ${topic.category}
-Target SEO keywords: ${topic.keywords.join(", ")}${refs}
+English guide:
+${input.content_en}
 
-Provide:
-1. English version (full guide, markdown)
-2. Korean version (full translation, markdown)
-3. Short summaries in both languages (~150 characters each)
-4. List of official source URLs used (immigration, studyinkorea, universities, etc.)
+Format:
+- First line: # Korean title
+- Then Korean body (full translation)
+- Keep headings and lists`;
 
-Respond with JSON only (no markdown fences):
-{
-  "title_en": "...",
-  "title_ko": "...",
-  "content_en": "markdown content",
-  "content_ko": "markdown content",
-  "summary_en": "...",
-  "summary_ko": "...",
-  "sources": ["https://...", "https://..."]
-}`;
+  const raw = await callClaude(system, user, MAX_TOKENS_KR);
+  const parsed = parseMarkdownGuide(raw);
 
-  const response = await client.messages.create({
-    model: MODEL,
-    max_tokens: 8192,
-    system: SYSTEM_PROMPT,
-    messages: [{ role: "user", content: userPrompt }],
-  });
-
-  const block = response.content.find((b) => b.type === "text");
-  if (!block || block.type !== "text") {
-    throw new Error("Claude returned no text for AI guide");
-  }
-
-  const guide = parseGuideJson(block.text);
-  if (!guide.title_en || !guide.content_en) {
-    throw new Error("AI guide missing required English fields");
-  }
-
-  return guide;
+  return {
+    title_kr: parsed.title,
+    summary_kr: parsed.summary.slice(0, 300),
+    content_kr: parsed.body,
+  };
 }

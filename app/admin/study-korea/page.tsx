@@ -110,6 +110,7 @@ function AdminStudyKoreaInner() {
   const [aiGuides, setAiGuides] = useState({
     total: 0,
     pending: 0,
+    generating_kr: 0,
     completed: 0,
     topics: [] as {
       id: string;
@@ -129,6 +130,7 @@ function AdminStudyKoreaInner() {
   const [aiGuidesRunning, setAiGuidesRunning] = useState(false);
   const [aiGuidesAuto, setAiGuidesAuto] = useState(false);
   const [aiGuidesLog, setAiGuidesLog] = useState<string | null>(null);
+  const [aiGuidesLogError, setAiGuidesLogError] = useState(false);
   const aiGuidesStopRef = useRef(false);
   const [aiTopicModal, setAiTopicModal] = useState(false);
   const [aiTopicForm, setAiTopicForm] = useState({
@@ -256,11 +258,13 @@ function AdminStudyKoreaInner() {
       setAiGuides({
         total: json.total ?? 0,
         pending: json.pending ?? 0,
+        generating_kr: json.generating_kr ?? 0,
         completed: json.completed ?? 0,
         topics: json.topics ?? [],
         generated_posts: json.generated_posts ?? [],
       });
     } catch (e) {
+      setAiGuidesLogError(true);
       setAiGuidesLog(
         e instanceof Error ? e.message : "AI 가이드 상태 조회 오류"
       );
@@ -269,38 +273,93 @@ function AdminStudyKoreaInner() {
     }
   }, [key, hdrs]);
 
+  const applyAiGuideStatus = (json: Record<string, unknown>) => {
+    setAiGuides({
+      total: Number(json.total ?? 0),
+      pending: Number(json.pending ?? 0),
+      generating_kr: Number(json.generating_kr ?? 0),
+      completed: Number(json.completed ?? 0),
+      topics: (json.topics as typeof aiGuides.topics) ?? [],
+      generated_posts:
+        (json.generated_posts as typeof aiGuides.generated_posts) ?? [],
+    });
+  };
+
+  const parseApiJson = async (res: Response, step: string) => {
+    const text = await res.text();
+    try {
+      return JSON.parse(text) as Record<string, unknown>;
+    } catch {
+      throw new Error(
+        `${step} failed: ${text.substring(0, 120) || res.statusText}`
+      );
+    }
+  };
+
   const runAiGuideOnce = async (): Promise<boolean> => {
     if (!key.trim()) return false;
-    const res = await fetch("/api/admin/ai-guides/generate", {
+
+    setAiGuidesLogError(false);
+    setAiGuidesLog("Step 1/2: Generating English guide…");
+
+    const res1 = await fetch("/api/admin/ai-guides/generate", {
       method: "POST",
       headers: hdrs(true),
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error || "AI 가이드 생성 실패");
-    setAiGuides({
-      total: json.total ?? 0,
-      pending: json.pending ?? 0,
-      completed: json.completed ?? 0,
-      topics: json.topics ?? [],
-      generated_posts: json.generated_posts ?? [],
-    });
-    const r = json.result;
-    if (r?.ok) {
-      setAiGuidesLog(`✓ 생성: ${r.title} → ${r.redirect}`);
-      return true;
+    const data1 = await parseApiJson(res1, "Step 1");
+    if (!res1.ok) {
+      throw new Error(String(data1.error ?? "Step 1 failed"));
     }
-    setAiGuidesLog(r?.reason ?? "대기 중인 토픽 없음");
-    return false;
+    if (!data1.success) {
+      const msg = String(data1.error ?? "Step 1 failed");
+      if (msg.includes("No pending")) return false;
+      throw new Error(msg);
+    }
+    applyAiGuideStatus(data1);
+
+    const postId = String(data1.post_id ?? "");
+    if (!postId) {
+      throw new Error("Step 1: missing post_id");
+    }
+
+    const topicTitle = String(data1.topic_title ?? "Guide");
+    setAiGuidesLog(
+      `Step 1 done: "${topicTitle}". Step 2/2: Translating to Korean…`
+    );
+
+    const res2 = await fetch("/api/admin/ai-guides/translate", {
+      method: "POST",
+      headers: hdrs(true),
+      body: JSON.stringify({ post_id: postId }),
+    });
+    const data2 = await parseApiJson(res2, "Step 2");
+    if (!res2.ok || !data2.success) {
+      throw new Error(String(data2.error ?? "Step 2 failed"));
+    }
+    applyAiGuideStatus(data2);
+
+    const redirect = String(data2.redirect ?? "");
+    setAiGuidesLog(
+      `✅ Done: ${String(data2.topic_title ?? topicTitle)}${redirect ? ` → ${redirect}` : ""}`
+    );
+    return true;
   };
 
   const runAiGuideBatch = async () => {
     if (!key.trim() || aiGuidesRunning) return;
     setAiGuidesRunning(true);
     setAiGuidesLog(null);
+    setAiGuidesLogError(false);
     try {
-      await runAiGuideOnce();
+      const ok = await runAiGuideOnce();
+      if (!ok) {
+        setAiGuidesLogError(true);
+        setAiGuidesLog("대기 중인 토픽이 없습니다.");
+      }
+      await loadAiGuidesStatus();
     } catch (e) {
-      setAiGuidesLog(e instanceof Error ? e.message : "AI 가이드 생성 오류");
+      setAiGuidesLogError(true);
+      setAiGuidesLog(`❌ ${e instanceof Error ? e.message : "AI 가이드 생성 오류"}`);
     } finally {
       setAiGuidesRunning(false);
     }
@@ -310,20 +369,37 @@ function AdminStudyKoreaInner() {
     if (!key.trim() || aiGuidesAuto) return;
     setAiGuidesAuto(true);
     aiGuidesStopRef.current = false;
+    setAiGuidesLogError(false);
     setAiGuidesLog("5개 자동 생성 시작…");
     let done = 0;
     try {
       for (let i = 0; i < 5; i++) {
         if (aiGuidesStopRef.current) break;
         setAiGuidesRunning(true);
-        const ok = await runAiGuideOnce();
-        if (!ok) break;
-        done++;
-        await new Promise((r) => setTimeout(r, 1500));
+        setAiGuidesLog(`[${i + 1}/5] 시작…`);
+        try {
+          const ok = await runAiGuideOnce();
+          if (!ok) break;
+          done++;
+        } catch (e) {
+          setAiGuidesLogError(true);
+          setAiGuidesLog(
+            `❌ [${i + 1}/5] ${e instanceof Error ? e.message : "오류"}`
+          );
+          break;
+        }
+        if (i < 4 && !aiGuidesStopRef.current) {
+          setAiGuidesLog((prev) => `${prev ?? ""}\n3초 후 다음 토픽…`);
+          await new Promise((r) => setTimeout(r, 3000));
+        }
       }
-      setAiGuidesLog((prev) => `${prev ?? ""} · 완료 ${done}건`);
+      if (!aiGuidesStopRef.current) {
+        setAiGuidesLog((prev) => `${prev ?? ""}\n완료 ${done}건`);
+      }
+      await loadAiGuidesStatus();
     } catch (e) {
-      setAiGuidesLog(e instanceof Error ? e.message : "자동 생성 오류");
+      setAiGuidesLogError(true);
+      setAiGuidesLog(`❌ ${e instanceof Error ? e.message : "자동 생성 오류"}`);
     } finally {
       setAiGuidesRunning(false);
       setAiGuidesAuto(false);
@@ -1009,7 +1085,11 @@ function AdminStudyKoreaInner() {
                   <span className="text-purple-600 ml-2">(불러오는 중…)</span>
                 ) : (
                   <span className="text-purple-700 ml-2">
-                    (남은 {aiGuides.pending}개 토픽)
+                    (대기 {aiGuides.pending}
+                    {aiGuides.generating_kr > 0
+                      ? ` · 번역 중 ${aiGuides.generating_kr}`
+                      : ""}
+                    )
                   </span>
                 )}
               </p>
@@ -1057,7 +1137,13 @@ function AdminStudyKoreaInner() {
                 </button>
               </div>
               {aiGuidesLog && (
-                <p className="text-xs text-purple-800 mb-3 bg-purple-100/80 px-3 py-2 rounded-lg">
+                <p
+                  className={`text-xs mb-3 px-3 py-2 rounded-lg whitespace-pre-wrap ${
+                    aiGuidesLogError
+                      ? "text-red-800 bg-red-50 border border-red-200"
+                      : "text-purple-800 bg-purple-100/80"
+                  }`}
+                >
                   {aiGuidesLog}
                 </p>
               )}
@@ -1073,7 +1159,9 @@ function AdminStudyKoreaInner() {
                         className={`px-1.5 py-0.5 rounded font-semibold ${
                           t.status === "completed"
                             ? "bg-green-100 text-green-800"
-                            : "bg-amber-100 text-amber-900"
+                            : t.status === "generating_kr"
+                              ? "bg-blue-100 text-blue-800"
+                              : "bg-amber-100 text-amber-900"
                         }`}
                       >
                         {t.status}
