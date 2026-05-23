@@ -9,6 +9,8 @@ import RedditLayout from "@/components/reddit-style/RedditLayout";
 import VoteColumn from "@/components/reddit-style/VoteColumn";
 import AIGuideBanner from "@/components/reddit-style/AIGuideBanner";
 import AIGuideBadge from "@/components/reddit-style/AIGuideBadge";
+import AIGuideContent from "@/components/reddit-style/AIGuideContent";
+import AIGuideSources from "@/components/reddit-style/AIGuideSources";
 import GuideFeedback from "@/components/reddit-style/GuideFeedback";
 import {
   formatTimeAgo,
@@ -144,19 +146,12 @@ export default async function PostDetailPage({ params }: Props) {
         <span className="line-clamp-1">{title}</span>
       </nav>
 
-      <article
-        className={`rounded flex overflow-hidden border ${
-          isAiGuide
-            ? "bg-purple-50/50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-800"
-            : "bg-white dark:bg-[#1A1A1B] border-[#EDEFF1] dark:border-[#343536]"
-        }`}
-      >
+      <article className="rounded flex overflow-hidden border bg-white dark:bg-[#1A1A1B] border-[#EDEFF1] dark:border-[#343536]">
         <div className="hidden md:flex p-2">
           <VoteColumn score={score} layout="side" />
         </div>
         <div className="flex-1 p-4 min-w-0">
           <p className="text-xs text-[#7C7C7C] mb-2 flex flex-wrap items-center gap-2">
-            {isAiGuide && <AIGuideBadge />}
             {isUserAnon ? (
               <>
                 <Link
@@ -202,39 +197,43 @@ export default async function PostDetailPage({ params }: Props) {
               </>
             )}
           </p>
+          {isAiGuide && (
+            <div className="mb-2 flex flex-wrap items-center gap-2">
+              <AIGuideBadge />
+              <span className="text-xs font-medium text-purple-700 dark:text-purple-300">
+                AI Generated · Verified Sources
+              </span>
+            </div>
+          )}
           <h1 className="text-2xl font-bold text-[#1C1C1C] dark:text-[#D7DADC] leading-tight">
             {title}
           </h1>
 
-          {isAiGuide && (
-            <AIGuideBanner
-              sources={post.ai_sources as string[] | null}
-              lastUpdated={post.ai_last_updated}
-            />
-          )}
+          {isAiGuide && <AIGuideBanner />}
 
           <div className="my-4">
             <AdSenseSlot format="rectangle" />
           </div>
 
-          <div className="prose prose-sm max-w-none text-[#1C1C1C] dark:text-[#D7DADC] leading-relaxed whitespace-pre-wrap">
-            {body || (
-              <p className="text-[#7C7C7C] italic">No content available.</p>
-            )}
-          </div>
-
-          {isAiGuide && post.ai_content_kr?.trim() && (
-            <details className="mt-6 border border-purple-200 dark:border-purple-800 rounded-lg p-3">
-              <summary className="text-sm font-bold text-purple-900 dark:text-purple-100 cursor-pointer">
-                한국어 버전 (Korean)
-              </summary>
-              <div className="mt-3 prose prose-sm max-w-none whitespace-pre-wrap text-[#1C1C1C] dark:text-[#D7DADC]">
-                {post.ai_content_kr}
-              </div>
-            </details>
+          {isAiGuide ? (
+            <>
+              <AIGuideContent
+                contentEn={body}
+                contentKr={post.ai_content_kr}
+              />
+              <AIGuideSources
+                sources={post.ai_sources}
+                lastUpdated={post.ai_last_updated}
+              />
+              <GuideFeedback postId={post.id} />
+            </>
+          ) : (
+            <div className="prose prose-sm max-w-none text-[#1C1C1C] dark:text-[#D7DADC] leading-relaxed whitespace-pre-wrap">
+              {body || (
+                <p className="text-[#7C7C7C] italic">No content available.</p>
+              )}
+            </div>
           )}
-
-          {isAiGuide && <GuideFeedback postId={post.id} />}
 
           {!isUserAnon && !isAiGuide && post.url && (
             <p className="mt-4 text-sm">

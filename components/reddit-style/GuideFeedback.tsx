@@ -20,8 +20,8 @@ export default function GuideFeedback({ postId }: Props) {
           onClick={() => setVote("up")}
           className={`px-4 py-2 rounded-full text-sm font-bold border transition-colors ${
             vote === "up"
-              ? "bg-purple-600 text-white border-purple-600"
-              : "bg-white dark:bg-[#1A1A1B] border-[#EDEFF1] dark:border-[#343536] hover:bg-purple-50"
+              ? "bg-[#1C1C1C] dark:bg-[#D7DADC] text-white dark:text-[#1A1A1B] border-transparent"
+              : "bg-white dark:bg-[#1A1A1B] border-[#EDEFF1] dark:border-[#343536] hover:bg-[#EDEFF1] dark:hover:bg-[#343536]"
           }`}
           aria-pressed={vote === "up"}
         >
