@@ -20,12 +20,14 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const collected = await collectAdmissionPosts();
+    const stats = await collectAdmissionPosts({ signal: request.signal });
     return NextResponse.json({
       success: true,
-      count: collected.length,
-      saved: collected.length,
-      message: `${collected.length}개의 합격 후기 수집됨 (검토 대기)`,
+      count: stats.newCount,
+      saved: stats.newCount,
+      duplicates: stats.dupCount,
+      filtered: stats.filteredCount,
+      message: `${stats.newCount}개의 합격 후기 수집됨 (검토 대기)`,
     });
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);

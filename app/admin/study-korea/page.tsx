@@ -161,6 +161,27 @@ function AdminStudyKoreaInner() {
   const [mentorViewStatsLoading, setMentorViewStatsLoading] = useState(false);
   const [admissionPending, setAdmissionPending] = useState<number | null>(null);
   const [admissionCollectRunning, setAdmissionCollectRunning] = useState(false);
+  const [admissionCollectStatus, setAdmissionCollectStatus] = useState("");
+  const [admissionCollectStats, setAdmissionCollectStats] = useState<{
+    new?: number;
+    duplicates?: number;
+    filtered?: number;
+    queries_used?: number;
+    sample_titles?: string[];
+    aborted?: boolean;
+    next_start_index?: number;
+  } | null>(null);
+  const admissionAbortRef = useRef<AbortController | null>(null);
+  const [krIntlStats, setKrIntlStats] = useState({
+    total_kr: 0,
+    verified: 0,
+    pending: 0,
+  });
+  const [krIntlRunning, setKrIntlRunning] = useState(false);
+  const [krIntlFailures, setKrIntlFailures] = useState<
+    { id: number; name_kr: string; name_en: string; reason: string }[]
+  >([]);
+  const [krIntlLog, setKrIntlLog] = useState<string | null>(null);
 
   const AI_GUIDE_CATEGORIES = [
     "visa",
@@ -265,6 +286,25 @@ function AdminStudyKoreaInner() {
       setSlugBackfillRunning(false);
     }
   };
+
+  const loadKrIntlStats = useCallback(async () => {
+    if (!key.trim()) return;
+    try {
+      const res = await fetch("/api/admin/universities/auto-verify-kr", {
+        headers: hdrs(),
+      });
+      if (res.status === 401) return;
+      const json = await res.json();
+      if (!res.ok) return;
+      setKrIntlStats({
+        total_kr: json.total_kr ?? 0,
+        verified: json.verified ?? 0,
+        pending: json.pending ?? 0,
+      });
+    } catch {
+      /* ignore */
+    }
+  }, [key, hdrs]);
 
   const loadAdmissionPendingCount = useCallback(async () => {
     if (!key.trim()) return;
@@ -648,36 +688,107 @@ function AdminStudyKoreaInner() {
       void loadMentorTranslateStatus();
       void loadMentorViewStats();
       void loadAdmissionPendingCount();
+      void loadKrIntlStats();
     } catch (e) {
       setAuthorized(false);
       setLoadErr(e instanceof Error ? e.message : "오류");
     } finally {
       setLoading(false);
     }
-  }, [hdrs, key, loadBackfillStatus, loadReclassifyStatus, loadAiGuidesStatus, loadMentorTranslateStatus, loadMentorViewStats, loadAdmissionPendingCount]);
+  }, [hdrs, key, loadBackfillStatus, loadReclassifyStatus, loadAiGuidesStatus, loadMentorTranslateStatus, loadMentorViewStats, loadAdmissionPendingCount, loadKrIntlStats]);
 
-  const runAdmissionCollect = async () => {
+  const runKrIntlAutoVerify = async () => {
+    if (!key.trim()) return;
+    setKrIntlRunning(true);
+    setKrIntlLog(null);
+    setKrIntlFailures([]);
+    try {
+      const res = await fetch("/api/admin/universities/auto-verify-kr", {
+        method: "POST",
+        headers: hdrs(true),
+        body: JSON.stringify({ limit: 15 }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "자동 verify 실패");
+      if (json.stats) {
+        setKrIntlStats(json.stats);
+      } else {
+        await loadKrIntlStats();
+      }
+      setKrIntlFailures(json.failed ?? []);
+      setKrIntlLog(
+        `${json.success_count ?? 0}개 verify 완료, ${json.fail_count ?? 0}개 실패 (배치 15건)`
+      );
+      await loadAll();
+    } catch (e) {
+      setKrIntlLog(e instanceof Error ? e.message : "오류");
+    } finally {
+      setKrIntlRunning(false);
+    }
+  };
+
+  const collectAdmissionSmall = async (limit: number) => {
     if (!key.trim()) return;
     setAdmissionCollectRunning(true);
+    setAdmissionCollectStatus(`${limit}건 수집 중…`);
+    setAdmissionCollectStats(null);
     setRunMsg(null);
+
+    const ac = new AbortController();
+    admissionAbortRef.current = ac;
+
     try {
-      const res = await fetch("/api/cron/scrape-admissions", {
-        headers: { "x-admin-secret": key.trim() },
+      const res = await fetch("/api/admin/scrape-admissions-small", {
+        method: "POST",
+        signal: ac.signal,
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-secret": key.trim(),
+        },
+        body: JSON.stringify({ limit }),
       });
-      const parsed = await parseCronJson(res);
-      if (!parsed.ok) throw new Error(parsed.error);
-      const json = parsed.data;
+      const json = (await res.json()) as {
+        error?: string;
+        new?: number;
+        duplicates?: number;
+        filtered?: number;
+        queries_used?: number;
+        sample_titles?: string[];
+        aborted?: boolean;
+        next_start_index?: number;
+        message?: string;
+      };
       if (!res.ok) throw new Error(String(json.error || "수집 실패"));
-      const count = Number(json.count ?? json.saved ?? 0);
-      setRunMsg(`합격 후기 수집 완료 — ${count}건 검토 대기`);
+      setAdmissionCollectStats(json);
+      const label = json.aborted ? "중단됨" : "완료";
+      setAdmissionCollectStatus(
+        `${label}: 신규 ${json.new ?? 0}건, 중복 ${json.duplicates ?? 0}건` +
+          (json.filtered ? `, 필터 제외 ${json.filtered}건` : "")
+      );
+      setRunMsg(
+        `합격 후기 수집 — 신규 ${json.new ?? 0}건 (검토 대기 목록 갱신)`
+      );
       await loadAdmissionPendingCount();
     } catch (e) {
-      setRunMsg(
-        `합격 후기 수집: ${e instanceof Error ? e.message : "오류"}`
-      );
+      if (e instanceof Error && e.name === "AbortError") {
+        setAdmissionCollectStatus("중단됨 (클라이언트)");
+      } else {
+        setAdmissionCollectStatus(
+          `실패: ${e instanceof Error ? e.message : "오류"}`
+        );
+      }
     } finally {
       setAdmissionCollectRunning(false);
+      admissionAbortRef.current = null;
     }
+  };
+
+  const abortAdmissionCollect = () => {
+    admissionAbortRef.current?.abort();
+  };
+
+  const runAdmissionCollect = async () => {
+    await collectAdmissionSmall(200);
   };
 
   useEffect(() => {
@@ -1200,25 +1311,94 @@ function AdminStudyKoreaInner() {
 
             <section className="bg-violet-50 rounded-xl border border-violet-200 p-4 shadow-sm">
               <h2 className="text-sm font-bold text-violet-900 mb-2">
-                합격 후기 자동 수집 (Naver webkr)
+                🎯 합격 후기 자동 수집 (Naver webkr)
               </h2>
-              <p className="text-sm text-violet-800 mb-3">
+              <p className="text-xs text-violet-800 mb-3">
                 디시 입시 갤러리·네이버 블로그/카페에서 합격 후기를 검색해{" "}
                 <code className="text-xs bg-white px-1 rounded">study_korea_posts</code>{" "}
-                에 저장합니다. Cron:{" "}
-                <code className="text-xs bg-white px-1 rounded">
-                  /api/cron/scrape-admissions
-                </code>{" "}
-                (매일 04:00 UTC)
+                에 저장합니다. Vercel 로그에서{" "}
+                <code className="text-xs bg-white px-1 rounded">[ADMISSION]</code>{" "}
+                로 진단하세요. Cron: 매일 04:00 UTC
               </p>
-              <button
-                type="button"
-                disabled={admissionCollectRunning}
-                onClick={() => void runAdmissionCollect()}
-                className="px-4 py-2 rounded-lg bg-violet-600 text-white text-sm font-semibold hover:bg-violet-700 disabled:opacity-50"
-              >
-                {admissionCollectRunning ? "수집 중…" : "수집 시작"}
-              </button>
+              <div className="flex gap-2 flex-wrap">
+                <button
+                  type="button"
+                  disabled={admissionCollectRunning}
+                  onClick={() => void collectAdmissionSmall(10)}
+                  className="px-3 py-1.5 rounded-lg bg-violet-600 text-white text-sm font-semibold hover:bg-violet-700 disabled:opacity-50"
+                >
+                  ▶ 10건 수집
+                </button>
+                <button
+                  type="button"
+                  disabled={admissionCollectRunning}
+                  onClick={() => void collectAdmissionSmall(50)}
+                  className="px-3 py-1.5 rounded-lg bg-violet-700 text-white text-sm font-semibold hover:bg-violet-800 disabled:opacity-50"
+                >
+                  ▶▶ 50건 수집
+                </button>
+                <button
+                  type="button"
+                  disabled={admissionCollectRunning}
+                  onClick={() => void runAdmissionCollect()}
+                  className="px-3 py-1.5 rounded-lg bg-violet-800 text-white text-sm font-semibold hover:bg-violet-900 disabled:opacity-50"
+                >
+                  ▶▶▶ 200건 수집
+                </button>
+                {admissionCollectRunning && (
+                  <button
+                    type="button"
+                    onClick={abortAdmissionCollect}
+                    className="px-3 py-1.5 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700"
+                  >
+                    ⏸ 중단
+                  </button>
+                )}
+              </div>
+              {(admissionCollectRunning || admissionCollectStatus) && (
+                <div className="mt-3 p-3 bg-white dark:bg-gray-900 rounded border border-violet-100 text-xs">
+                  {admissionCollectRunning && (
+                    <div className="text-violet-600 font-medium">
+                      ⏳ {admissionCollectStatus}
+                    </div>
+                  )}
+                  {!admissionCollectRunning && admissionCollectStatus && (
+                    <div className="text-green-700 dark:text-green-400 font-semibold">
+                      {admissionCollectStatus}
+                    </div>
+                  )}
+                  {admissionCollectStats?.queries_used != null && (
+                    <div className="text-gray-500 mt-1">
+                      쿼리 {admissionCollectStats.queries_used}개 사용
+                      {admissionCollectStats.next_start_index != null &&
+                        admissionCollectStats.next_start_index > 0 && (
+                          <>
+                            {" "}
+                            · 다음 시작 인덱스{" "}
+                            {admissionCollectStats.next_start_index}
+                          </>
+                        )}
+                    </div>
+                  )}
+                  {(admissionCollectStats?.sample_titles?.length ?? 0) > 0 && (
+                    <div className="mt-2">
+                      <div className="text-gray-500 mb-1">새로 들어온 글:</div>
+                      <ul className="space-y-1">
+                        {admissionCollectStats!.sample_titles!.map(
+                          (title, i) => (
+                            <li
+                              key={i}
+                              className="text-gray-700 dark:text-gray-300 truncate"
+                            >
+                              · {title}
+                            </li>
+                          )
+                        )}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
             </section>
 
             <section className="bg-slate-100 rounded-xl border border-slate-300 p-4 shadow-sm">
@@ -1242,6 +1422,62 @@ function AdminStudyKoreaInner() {
               >
                 검토 페이지 열기 →
               </a>
+            </section>
+
+            <section className="bg-sky-50 rounded-xl border border-sky-200 p-4 shadow-sm">
+              <h2 className="text-sm font-bold text-sky-900 mb-2">
+                한국 대학 국제처 자동 verify
+              </h2>
+              <p className="text-sm text-sky-800 mb-3">
+                <span className="font-semibold tabular-nums">
+                  country=kr
+                </span>{" "}
+                한국 대학{" "}
+                <span className="font-bold tabular-nums">
+                  {krIntlStats.total_kr}
+                </span>
+                개 중 verified:{" "}
+                <span className="font-bold tabular-nums text-green-700">
+                  {krIntlStats.verified}
+                </span>
+                개 · 미검증{" "}
+                <span className="font-bold tabular-nums text-amber-700">
+                  {krIntlStats.pending}
+                </span>
+                개. 성공 시{" "}
+                <code className="text-xs bg-white px-1 rounded">
+                  intl_url_verified=true
+                </code>{" "}
+                → University Intl 크론에 자동 포함.
+              </p>
+              <button
+                type="button"
+                disabled={krIntlRunning}
+                onClick={() => void runKrIntlAutoVerify()}
+                className="px-4 py-2 rounded-lg bg-sky-600 text-white text-sm font-semibold hover:bg-sky-700 disabled:opacity-50"
+              >
+                {krIntlRunning ? "탐색 중…" : "자동 verify 시작 (15건)"}
+              </button>
+              {krIntlLog && (
+                <p className="text-sm text-sky-900 mt-2 font-medium">{krIntlLog}</p>
+              )}
+              {krIntlFailures.length > 0 && (
+                <div className="mt-3 max-h-48 overflow-y-auto rounded-lg border border-sky-200 bg-white p-2 text-xs">
+                  <p className="font-semibold text-gray-800 mb-1">
+                    실패 — 수동 URL 입력 필요
+                  </p>
+                  <ul className="space-y-1 text-gray-700">
+                    {krIntlFailures.map((f) => (
+                      <li key={f.id}>
+                        <span className="font-medium">{f.name_kr}</span>
+                        <span className="text-gray-500"> ({f.name_en})</span>
+                        {": "}
+                        {f.reason}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </section>
 
             <section className="bg-violet-50 rounded-xl border border-violet-200 p-4 shadow-sm">
