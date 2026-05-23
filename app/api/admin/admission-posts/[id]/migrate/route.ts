@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminSecret } from "@/lib/admin/verify";
-import { extractFromStudyKoreaPost } from "@/lib/admissions/load-post-extract";
-import { loadStudyKoreaPost } from "@/lib/admissions/load-post-extract";
+import {
+  extractFromStudyKoreaPost,
+  loadStudyKoreaPost,
+} from "@/lib/admissions/load-post-extract";
+import {
+  migrateErrorPayload,
+  MigrateStepError,
+} from "@/lib/admissions/migrate-step-error";
 import {
   migrateStudyKoreaPostToAdmission,
   normalizeExtractedOverrides,
@@ -17,63 +23,95 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  if (!verifyAdminSecret(request)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { id: postId } = await params;
-  const supabase = createAdminClient();
-  const post = await loadStudyKoreaPost(supabase, postId);
-
-  if (!post) {
-    return NextResponse.json({ error: "Post not found" }, { status: 404 });
-  }
-
-  let overrides: Partial<ExtractedAdmission> | undefined;
   try {
-    const body = (await request.json()) as {
-      overrides?: Partial<ExtractedAdmission>;
-    };
-    overrides = body.overrides;
-  } catch {
-    /* empty body: Claude extract */
-  }
+    if (!verifyAdminSecret(request)) {
+      return NextResponse.json(
+        { error: "Unauthorized", step: "auth" },
+        { status: 401 }
+      );
+    }
 
-  let extracted;
-  try {
+    const { id: postId } = await params;
+    console.log("[MIGRATE] start postId:", postId);
+
+    let supabase;
+    try {
+      supabase = createAdminClient();
+    } catch (e) {
+      throw new MigrateStepError(
+        "unknown",
+        e instanceof Error ? e.message : "Supabase admin client failed",
+        e
+      );
+    }
+
+    console.log("[MIGRATE] load_post");
+    const post = await loadStudyKoreaPost(supabase, postId);
+
+    if (!post) {
+      return NextResponse.json(
+        { error: "Post not found", step: "load_post" },
+        { status: 404 }
+      );
+    }
+
+    let overrides: Partial<ExtractedAdmission> | undefined;
+    try {
+      const body = (await request.json()) as {
+        overrides?: Partial<ExtractedAdmission>;
+      };
+      overrides = body.overrides;
+      console.log("[MIGRATE] parse_body:", overrides ? "with overrides" : "empty");
+    } catch {
+      console.log("[MIGRATE] parse_body: empty body (AI extract)");
+    }
+
+    let extracted: ExtractedAdmission;
     if (overrides && Object.keys(overrides).length > 0) {
+      console.log("[MIGRATE] normalize overrides");
       extracted = normalizeExtractedOverrides(overrides);
     } else {
+      console.log("[MIGRATE] claude_extract");
       extracted = await extractFromStudyKoreaPost(supabase, post);
     }
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    return NextResponse.json({ error: msg }, { status: 500 });
-  }
 
-  const result = await migrateStudyKoreaPostToAdmission(
-    supabase,
-    postId,
-    post,
-    extracted
-  );
-
-  if (!result.success) {
-    return NextResponse.json(
-      {
-        error: result.error,
-        extracted: result.extracted,
-        suggest_forum: result.suggest_forum ?? false,
-      },
-      { status: result.status }
+    console.log("[MIGRATE] migrate_to_admissions");
+    const result = await migrateStudyKoreaPostToAdmission(
+      supabase,
+      postId,
+      post,
+      extracted
     );
-  }
 
-  return NextResponse.json({
-    success: true,
-    admission_id: result.admission_id,
-    schools_count: result.schools_count,
-    source_url: result.source_url,
-    confidence: extracted.confidence,
-  });
+    if (!result.success) {
+      console.log("[MIGRATE] business failure:", result.step, result.error);
+      return NextResponse.json(
+        {
+          error: result.error,
+          step: result.step,
+          extracted: result.extracted,
+          suggest_forum: result.suggest_forum ?? false,
+        },
+        { status: result.status }
+      );
+    }
+
+    console.log("[MIGRATE] success admission_id:", result.admission_id);
+    return NextResponse.json({
+      success: true,
+      admission_id: result.admission_id,
+      schools_count: result.schools_count,
+      source_url: result.source_url,
+      confidence: extracted.confidence,
+      step: "done",
+    });
+  } catch (error) {
+    console.error("[MIGRATE]", error);
+    if (error instanceof Error && error.stack) {
+      console.error("[MIGRATE] Stack:", error.stack);
+    }
+
+    const payload = migrateErrorPayload(error);
+    return NextResponse.json(payload, { status: 500 });
+  }
 }

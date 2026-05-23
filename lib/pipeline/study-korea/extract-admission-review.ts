@@ -162,7 +162,13 @@ ${univList}`,
     throw new Error("AI 파싱 실패");
   }
 
-  const parsed = JSON.parse(jsonMatch[0]) as ExtractedAdmission;
+  let parsed: ExtractedAdmission;
+  try {
+    parsed = JSON.parse(jsonMatch[0]) as ExtractedAdmission;
+  } catch (e) {
+    const detail = e instanceof Error ? e.message : String(e);
+    throw new Error(`AI JSON 파싱 실패: ${detail}`);
+  }
   if (!Array.isArray(parsed.schools) || parsed.schools.length === 0) {
     parsed.confidence = "low";
   }

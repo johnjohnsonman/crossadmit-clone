@@ -244,15 +244,22 @@ function AdmissionsReviewInner() {
         await loadPending();
       } else {
         let msg = apiErrorMessage(data);
+        const step =
+          typeof data.step === "string" && data.step ? `[${data.step}] ` : "";
         if (data.suggest_forum) {
           msg += "\n\n「포럼으로 이관」 버튼을 사용해 보세요.";
         }
         const extractedSnippet = data.extracted
           ? JSON.stringify(data.extracted, null, 2).slice(0, 500)
           : "";
+        const stackHint =
+          typeof data.stack === "string" && data.stack
+            ? `\n\n${data.stack}`
+            : "";
         alert(
-          `❌ 이관 실패 (${res.status}): ${msg}` +
-            (extractedSnippet ? `\n\n추출 결과:\n${extractedSnippet}` : "")
+          `❌ 이관 실패 (${res.status}) ${step}${msg}` +
+            (extractedSnippet ? `\n\n추출 결과:\n${extractedSnippet}` : "") +
+            stackHint
         );
         if (data.extracted && typeof data.extracted === "object") {
           setPreviews((p) => ({
