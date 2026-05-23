@@ -55,3 +55,11 @@ export function naverPostSourceId(
   const hash = createHash("sha256").update(url).digest("hex").slice(0, 24);
   return `${kind}-url-${hash}`;
 }
+
+/** webkr 검색 결과 URL → source_id (UNIQUE(source, source_id)) */
+export function webkrPostSourceId(rawUrl: string): string {
+  const url = normalizeNaverPostUrl(rawUrl) || rawUrl.trim();
+  if (!url) return "webkr-empty";
+  const hash = createHash("sha256").update(url).digest("hex").slice(0, 24);
+  return `webkr-${hash}`;
+}

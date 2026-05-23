@@ -159,6 +159,8 @@ function AdminStudyKoreaInner() {
     daily_last_7: [] as { date: string; views: number }[],
   });
   const [mentorViewStatsLoading, setMentorViewStatsLoading] = useState(false);
+  const [admissionPending, setAdmissionPending] = useState<number | null>(null);
+  const [admissionCollectRunning, setAdmissionCollectRunning] = useState(false);
 
   const AI_GUIDE_CATEGORIES = [
     "visa",
@@ -263,6 +265,21 @@ function AdminStudyKoreaInner() {
       setSlugBackfillRunning(false);
     }
   };
+
+  const loadAdmissionPendingCount = useCallback(async () => {
+    if (!key.trim()) return;
+    try {
+      const res = await fetch("/api/admin/admission-posts/pending-count", {
+        headers: hdrs(),
+      });
+      if (res.status === 401) return;
+      const json = await res.json();
+      if (!res.ok) return;
+      setAdmissionPending(json.count ?? 0);
+    } catch {
+      /* migration 019 미적용 시 무시 */
+    }
+  }, [key, hdrs]);
 
   const loadMentorViewStats = useCallback(async () => {
     if (!key.trim()) return;
@@ -630,13 +647,38 @@ function AdminStudyKoreaInner() {
       void loadAiGuidesStatus();
       void loadMentorTranslateStatus();
       void loadMentorViewStats();
+      void loadAdmissionPendingCount();
     } catch (e) {
       setAuthorized(false);
       setLoadErr(e instanceof Error ? e.message : "오류");
     } finally {
       setLoading(false);
     }
-  }, [hdrs, key, loadBackfillStatus, loadReclassifyStatus, loadAiGuidesStatus, loadMentorTranslateStatus, loadMentorViewStats]);
+  }, [hdrs, key, loadBackfillStatus, loadReclassifyStatus, loadAiGuidesStatus, loadMentorTranslateStatus, loadMentorViewStats, loadAdmissionPendingCount]);
+
+  const runAdmissionCollect = async () => {
+    if (!key.trim()) return;
+    setAdmissionCollectRunning(true);
+    setRunMsg(null);
+    try {
+      const res = await fetch("/api/cron/scrape-admissions", {
+        headers: { "x-admin-secret": key.trim() },
+      });
+      const parsed = await parseCronJson(res);
+      if (!parsed.ok) throw new Error(parsed.error);
+      const json = parsed.data;
+      if (!res.ok) throw new Error(String(json.error || "수집 실패"));
+      const count = Number(json.count ?? json.saved ?? 0);
+      setRunMsg(`합격 후기 수집 완료 — ${count}건 검토 대기`);
+      await loadAdmissionPendingCount();
+    } catch (e) {
+      setRunMsg(
+        `합격 후기 수집: ${e instanceof Error ? e.message : "오류"}`
+      );
+    } finally {
+      setAdmissionCollectRunning(false);
+    }
+  };
 
   useEffect(() => {
     if (keyFromUrl.trim()) void loadAll();
@@ -1154,6 +1196,52 @@ function AdminStudyKoreaInner() {
                   {redditTestResult}
                 </pre>
               )}
+            </section>
+
+            <section className="bg-violet-50 rounded-xl border border-violet-200 p-4 shadow-sm">
+              <h2 className="text-sm font-bold text-violet-900 mb-2">
+                합격 후기 자동 수집 (Naver webkr)
+              </h2>
+              <p className="text-sm text-violet-800 mb-3">
+                디시 입시 갤러리·네이버 블로그/카페에서 합격 후기를 검색해{" "}
+                <code className="text-xs bg-white px-1 rounded">study_korea_posts</code>{" "}
+                에 저장합니다. Cron:{" "}
+                <code className="text-xs bg-white px-1 rounded">
+                  /api/cron/scrape-admissions
+                </code>{" "}
+                (매일 04:00 UTC)
+              </p>
+              <button
+                type="button"
+                disabled={admissionCollectRunning}
+                onClick={() => void runAdmissionCollect()}
+                className="px-4 py-2 rounded-lg bg-violet-600 text-white text-sm font-semibold hover:bg-violet-700 disabled:opacity-50"
+              >
+                {admissionCollectRunning ? "수집 중…" : "수집 시작"}
+              </button>
+            </section>
+
+            <section className="bg-slate-100 rounded-xl border border-slate-300 p-4 shadow-sm">
+              <h2 className="text-sm font-bold text-slate-900 mb-2">
+                합격 후기 검토 대기
+              </h2>
+              <p className="text-sm text-slate-700 mb-3">
+                대기 중{" "}
+                <span className="font-bold tabular-nums">
+                  {admissionPending ?? "—"}
+                </span>
+                건 · AI 추출 후 합격DB로 이관
+              </p>
+              <a
+                href={
+                  key.trim()
+                    ? `/admin/admissions-review?key=${encodeURIComponent(key.trim())}`
+                    : "/admin/admissions-review"
+                }
+                className="inline-block px-4 py-2 rounded-lg bg-slate-800 text-white text-sm font-semibold hover:bg-slate-900"
+              >
+                검토 페이지 열기 →
+              </a>
             </section>
 
             <section className="bg-violet-50 rounded-xl border border-violet-200 p-4 shadow-sm">

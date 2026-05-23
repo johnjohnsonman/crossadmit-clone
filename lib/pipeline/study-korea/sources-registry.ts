@@ -68,6 +68,15 @@ export const STUDY_KOREA_SOURCE_META: StudyKoreaSourceMeta[] = [
     status: "active",
     requiresEnv: ["NAVER_CLIENT_ID", "NAVER_CLIENT_SECRET"],
   },
+  {
+    id: "naver_webkr_admissions",
+    label: "Naver webkr (합격 후기)",
+    cronPath: "/api/cron/scrape-admissions",
+    color: "bg-violet-100 text-violet-800",
+    status: "active",
+    requiresEnv: ["NAVER_CLIENT_ID", "NAVER_CLIENT_SECRET"],
+    note: "디시/블로그/카페 합격 후기 → 검토 대기",
+  },
 ];
 
 export type StudyKoreaSourceId = (typeof STUDY_KOREA_SOURCE_META)[number]["id"];

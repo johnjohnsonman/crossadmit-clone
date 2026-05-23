@@ -22,7 +22,8 @@ export type StudyKoreaSource =
   | "studyinkorea"
   | "university_official"
   | "naver_blog"
-  | "naver_news";
+  | "naver_news"
+  | "naver_webkr";
 
 export type StudyKoreaSubcategory =
   | "admission"
