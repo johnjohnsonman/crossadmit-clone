@@ -26,11 +26,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ departments });
     }
 
-    const autocomplete = searchParams.get("autocomplete") === "1";
+    const searchTrimmed = search?.trim() || undefined;
     const universities = await getUniversities({
       country: country?.trim() || undefined,
-      search: search?.trim() || undefined,
-      limit: autocomplete ? 500 : 80,
+      search: searchTrimmed,
+      limit: searchTrimmed ? 500 : 80,
       locale,
     });
 

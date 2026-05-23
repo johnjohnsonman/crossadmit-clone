@@ -26,6 +26,61 @@ async function loadUniversityNameMap(): Promise<
   return map;
 }
 
+function hasHangul(s: string): boolean {
+  return /[\uAC00-\uD7A3]/.test(s);
+}
+
+/** 검색어 관련도 순 정렬 (영문 검색·약어 우선) */
+function rankUniversitiesBySearch(
+  rows: University[],
+  search: string
+): University[] {
+  const q = search.trim().toLowerCase();
+  if (!q) return rows;
+
+  const isLatinQuery = /^[a-z0-9\s.&'/-]+$/i.test(search.trim());
+
+  const score = (u: University): number => {
+    const kr = String(u.name_kr ?? "").toLowerCase();
+    const en = String(u.name_en ?? "").toLowerCase();
+    let s = 0;
+
+    if (kr === q || en === q) s += 10_000;
+    else if (kr.startsWith(q) || en.startsWith(q)) s += 5_000;
+    else if (kr.includes(q) || en.includes(q)) s += 1_000;
+
+    if (isLatinQuery) {
+      if (en === q) s += 3_000;
+      else if (en.startsWith(q)) s += 2_000;
+      else if (en.includes(q)) s += 800;
+      if (kr === q) s += 2_500;
+      else if (kr.startsWith(q)) s += 1_500;
+      else if (kr.includes(q)) s += 400;
+      if (!hasHangul(String(u.name_kr ?? ""))) s += 300;
+    }
+
+    return s;
+  };
+
+  return [...rows].sort((a, b) => {
+    const diff = score(b) - score(a);
+    if (diff !== 0) return diff;
+    return String(a.name_kr ?? "").localeCompare(String(b.name_kr ?? ""), "ko");
+  });
+}
+
+export function formatUniversityAutocompleteLabel(u: {
+  name_kr: string;
+  name_en?: string | null;
+}): string {
+  const kr = String(u.name_kr ?? "").trim();
+  const en = String(u.name_en ?? "").trim();
+  if (!kr) return en;
+  if (!en || kr === en) return kr;
+  if (hasHangul(kr)) return kr;
+  return `${kr} (${en})`;
+}
+
 function resolveUnivDisplayName(
   id: number,
   fallback: string,
@@ -71,7 +126,11 @@ export async function getUniversities(params?: {
     console.error("getUniversities:", error);
     throw new Error(error.message);
   }
-  return (data ?? []) as University[];
+  const rows = (data ?? []) as University[];
+  if (params?.search?.trim()) {
+    return rankUniversitiesBySearch(rows, params.search);
+  }
+  return rows;
 }
 
 /** intl_url이 채워진 대학 (유학가이드 카드용) */

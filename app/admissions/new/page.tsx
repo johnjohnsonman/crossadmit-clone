@@ -143,6 +143,36 @@ export default function AdmissionNewPage() {
     return { ok: true as const, list };
   }, [rows]);
 
+  function formatUnivLabel(u: { name_kr: string; name_en?: string | null }): string {
+    const kr = (u.name_kr ?? "").trim();
+    const en = (u.name_en ?? "").trim();
+    if (!kr) return en;
+    if (!en || kr === en) return kr;
+    if (/[\uAC00-\uD7A3]/.test(kr)) return kr;
+    return `${kr} (${en})`;
+  }
+
+  function univSearchTerm(picked: string): string {
+    const paren = picked.indexOf("(");
+    return (paren > 0 ? picked.slice(0, paren) : picked).trim();
+  }
+
+  function matchesUnivPick(
+    u: { name_kr: string; name_en?: string | null },
+    picked: string
+  ): boolean {
+    const label = formatUnivLabel(u);
+    const kr = (u.name_kr ?? "").trim();
+    const en = (u.name_en ?? "").trim();
+    return (
+      label === picked ||
+      kr === picked ||
+      en === picked ||
+      kr === univSearchTerm(picked) ||
+      en === univSearchTerm(picked)
+    );
+  }
+
   async function loadUniversities(q: string): Promise<string[]> {
     if (!q.trim()) return uniLabels;
     try {
@@ -150,24 +180,25 @@ export default function AdmissionNewPage() {
         `/api/universities?search=${encodeURIComponent(q.trim())}`
       );
       const data = await res.json();
-      const names = (data.universities ?? []).map(
-        (u: { name_kr: string }) => u.name_kr
+      return (data.universities ?? []).map(
+        (u: { name_kr: string; name_en?: string | null }) => formatUnivLabel(u)
       );
-      return names.length > 0 ? names : uniLabels;
     } catch {
-      return uniLabels;
+      return [];
     }
   }
 
   async function onUniversityPick(rowId: string, name: string) {
     updateRow(rowId, { universityInput: name, univId: 0, deptId: 0 });
     try {
+      const term = univSearchTerm(name) || name.trim();
       const res = await fetch(
-        `/api/universities?search=${encodeURIComponent(name.trim())}`
+        `/api/universities?search=${encodeURIComponent(term)}`
       );
       const data = await res.json();
       const match = (data.universities ?? []).find(
-        (u: { name_kr: string; id: number }) => u.name_kr === name
+        (u: { name_kr: string; name_en?: string | null; id: number }) =>
+          matchesUnivPick(u, name)
       );
       if (match) {
         updateRow(rowId, { univId: match.id });
