@@ -32,10 +32,10 @@ export default function MentorIntroPanel({
         <button
           type="button"
           onClick={() => setLang("kr")}
-          className={`px-3 py-1 rounded-full text-xs font-bold border ${
+          className={`px-3 py-1 rounded-full text-xs font-bold border transition-colors ${
             lang === "kr"
-              ? "bg-[#1C1C1C] dark:bg-[#D7DADC] text-white dark:text-[#1A1A1B]"
-              : "border-[#EDEFF1] dark:border-[#343536]"
+              ? "bg-orange-500 text-white border-orange-500"
+              : "border-[#EDEFF1] dark:border-[#343536] text-[#7C7C7C] dark:text-[#818384]"
           }`}
         >
           한국어
@@ -43,10 +43,10 @@ export default function MentorIntroPanel({
         <button
           type="button"
           onClick={() => setLang("en")}
-          className={`px-3 py-1 rounded-full text-xs font-bold border ${
+          className={`px-3 py-1 rounded-full text-xs font-bold border transition-colors ${
             lang === "en"
-              ? "bg-[#1C1C1C] dark:bg-[#D7DADC] text-white dark:text-[#1A1A1B]"
-              : "border-[#EDEFF1] dark:border-[#343536]"
+              ? "bg-orange-500 text-white border-orange-500"
+              : "border-[#EDEFF1] dark:border-[#343536] text-[#7C7C7C] dark:text-[#818384]"
           }`}
         >
           English

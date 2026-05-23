@@ -108,7 +108,7 @@ export default async function MentorDetailPage({ params, searchParams }: Props) 
         <article className="bg-white dark:bg-[#1A1A1B] border border-[#EDEFF1] dark:border-[#343536] rounded-lg overflow-hidden">
           <div className="p-6 border-b border-[#EDEFF1] dark:border-[#343536]">
             <div className="flex flex-wrap items-start gap-4">
-              <div className="w-20 h-20 rounded-full bg-purple-600 flex items-center justify-center text-white text-3xl font-bold shrink-0">
+              <div className="w-20 h-20 rounded-full bg-orange-500 flex items-center justify-center text-white text-3xl font-bold shrink-0">
                 {mentor.nickname.charAt(0).toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
@@ -137,8 +137,8 @@ export default async function MentorDetailPage({ params, searchParams }: Props) 
               </div>
             </div>
 
-            <div className="mt-4 rounded-lg border-2 border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-950/30 p-4">
-              <h2 className="text-sm font-bold text-purple-900 dark:text-purple-200 mb-2">
+            <div className="mt-4 rounded-lg border-2 border-orange-200 dark:border-orange-800/50 bg-orange-50 dark:bg-orange-950/30 p-4">
+              <h2 className="text-sm font-bold text-orange-900 dark:text-orange-200 mb-2">
                 Mentoring rates
               </h2>
               <div className="flex flex-wrap gap-4 text-sm">
@@ -189,8 +189,8 @@ export default async function MentorDetailPage({ params, searchParams }: Props) 
                                 : type === 4
                                   ? "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200"
                                   : type === 2
-                                    ? "bg-amber-100 text-amber-800"
-                                    : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
+                                    ? "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200"
+                                    : "bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-200"
                             }`}
                           >
                             {locale === "en" ? t.tag_en : t.tag_kr}

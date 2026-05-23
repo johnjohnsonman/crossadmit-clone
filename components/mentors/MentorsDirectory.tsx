@@ -126,7 +126,7 @@ export default function MentorsDirectory({
                 ? "Search school or nickname…"
                 : "학교명 또는 닉네임 검색…"
             }
-            className="w-full rounded-lg bg-gray-900 border border-gray-700 px-3 py-2 text-sm text-white placeholder:text-gray-500"
+            className="w-full rounded-lg bg-gray-900 border border-gray-700 px-3 py-2 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
           />
           <div className="flex flex-wrap gap-2">
             <FilterSelect
@@ -244,7 +244,7 @@ function FilterSelect({
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="rounded bg-gray-900 border border-gray-700 text-white text-sm px-2 py-1.5"
+        className="rounded bg-gray-900 border border-gray-700 text-white text-sm px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-orange-500"
       >
         {options.map(([v, l]) => (
           <option key={v} value={v}>
@@ -274,7 +274,7 @@ function PaginationBtn({
       onClick={onClick}
       className={`min-w-[2.5rem] px-3 py-1.5 rounded text-sm font-medium ${
         active
-          ? "bg-purple-600 text-white"
+          ? "bg-orange-500 text-white"
           : "bg-gray-800 text-gray-300 hover:bg-gray-700 disabled:opacity-40"
       }`}
     >

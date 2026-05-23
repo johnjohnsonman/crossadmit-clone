@@ -15,7 +15,7 @@ export default function MentorCtaBox({ mentorCount = 141 }: Props) {
   const href = withLang("/mentors", locale);
 
   return (
-    <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg p-6 text-white mb-4">
+    <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg p-6 text-white mb-4">
       <div className="flex items-center gap-2 mb-2">
         <span className="bg-white/20 text-xs px-2 py-1 rounded">NEW</span>
         <span className="text-sm opacity-90">
@@ -34,7 +34,7 @@ export default function MentorCtaBox({ mentorCount = 141 }: Props) {
       </p>
       <Link
         href={href}
-        className="bg-white text-purple-600 px-4 py-2 rounded font-semibold inline-block hover:bg-gray-100 transition-colors"
+        className="bg-white text-orange-600 px-4 py-2 rounded font-semibold inline-block hover:bg-gray-100 transition-colors"
       >
         {locale === "en" ? "Browse Mentors →" : "멘토 둘러보기 →"}
       </Link>

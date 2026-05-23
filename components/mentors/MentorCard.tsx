@@ -25,7 +25,7 @@ export default function MentorCard({ mentor: m, locale = "ko" }: Props) {
       className="block bg-gray-900 hover:bg-gray-800 rounded-lg p-4 transition border border-gray-800"
     >
       <div className="flex items-center gap-3 mb-3">
-        <div className="w-12 h-12 rounded-full bg-purple-600 flex items-center justify-center text-white font-bold shrink-0">
+        <div className="w-12 h-12 rounded-full bg-orange-500 flex items-center justify-center text-white font-bold shrink-0">
           {m.nickname.charAt(0).toUpperCase()}
         </div>
         <div className="min-w-0">

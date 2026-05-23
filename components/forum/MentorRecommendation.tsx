@@ -23,7 +23,7 @@ export default async function MentorRecommendation({ category }: Props) {
             key={m.id}
             className="flex items-center gap-3 hover:bg-gray-800 p-2 rounded transition-colors"
           >
-            <div className="w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center text-white font-bold shrink-0">
+            <div className="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center text-white font-bold shrink-0">
               {m.nickname.charAt(0).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
@@ -36,7 +36,7 @@ export default async function MentorRecommendation({ category }: Props) {
             </div>
             <Link
               href={`/mentors/${m.id}`}
-              className="text-xs bg-purple-600 text-white px-3 py-1 rounded shrink-0 hover:bg-purple-500"
+              className="text-xs bg-orange-500 text-white px-3 py-1 rounded shrink-0 hover:bg-orange-600"
             >
               View
             </Link>
@@ -45,7 +45,7 @@ export default async function MentorRecommendation({ category }: Props) {
       </div>
       <Link
         href="/mentors"
-        className="block text-center mt-3 text-sm text-purple-400 hover:text-purple-300"
+        className="block text-center mt-3 text-sm text-orange-400 hover:text-orange-300"
       >
         See all mentors →
       </Link>
