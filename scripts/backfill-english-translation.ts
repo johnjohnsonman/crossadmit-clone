@@ -1,5 +1,5 @@
 /**
- * Backfill ai_title_en, ai_summary_en, ai_content_en for existing study_korea_posts.
+ * Backfill ai_title_en, ai_summary_en, ai_content_en for study_korea_posts.
  *
  * Usage:
  *   npm run backfill:en
@@ -14,7 +14,7 @@ import { resolve } from "path";
 import { translateStudyKoreaContent } from "../lib/pipeline/study-korea/claude";
 
 const BATCH = 10;
-const DELAY_MS = 1500;
+const DELAY_MS = 1000;
 
 function loadEnv() {
   const envPath = resolve(process.cwd(), ".env.local");
@@ -40,6 +40,10 @@ function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+function needsEnglish(row: { ai_title_en?: string | null }): boolean {
+  return !String(row.ai_title_en ?? "").trim();
+}
+
 async function main() {
   loadEnv();
 
@@ -61,19 +65,36 @@ async function main() {
 
   const supabase = createClient(url, key);
 
+  const { count: totalPending, error: countErr } = await supabase
+    .from("study_korea_posts")
+    .select("id", { count: "exact", head: true })
+    .or("ai_title_en.is.null,ai_title_en.eq.");
+
+  if (countErr) {
+    console.error("Count error:", countErr.message);
+    process.exit(1);
+  }
+
+  const total = totalPending ?? 0;
+  console.log(
+    `Backfill English fields: ${total} posts pending (batch=${BATCH}, delay=${DELAY_MS}ms)`
+  );
+
+  if (total === 0) {
+    console.log("Nothing to backfill.");
+    return;
+  }
+
   let processed = 0;
   let updated = 0;
   let failed = 0;
   let skipped = 0;
 
-  console.log(`Backfill English fields (batch=${BATCH}, delay=${DELAY_MS}ms)`);
-
   while (processed < maxTotal) {
     const take = Math.min(BATCH, maxTotal - processed);
     const { data: rows, error } = await supabase
       .from("study_korea_posts")
-      .select("id, title, content, ai_title_en")
-      .eq("is_published", true)
+      .select("id, title, content, ai_summary, ai_summary_kr, ai_title_en")
       .or("ai_title_en.is.null,ai_title_en.eq.")
       .order("created_at", { ascending: false })
       .limit(take);
@@ -88,16 +109,26 @@ async function main() {
     }
 
     for (const row of rows) {
-      processed++;
-      const title = String(row.title ?? "").trim();
-      const content = String(row.content ?? "").trim();
-      if (!title && !content) {
+      if (!needsEnglish(row)) {
         skipped++;
         continue;
       }
 
+      processed++;
+      const title = String(row.title ?? "").trim();
+      const content = String(row.content ?? "").trim();
+      const aiSummary = String(
+        row.ai_summary_kr ?? row.ai_summary ?? ""
+      ).trim();
+
+      if (!title && !content && !aiSummary) {
+        skipped++;
+        console.warn(`[${processed}/${total}] SKIP ${row.id} — no text`);
+        continue;
+      }
+
       try {
-        const en = await translateStudyKoreaContent(title, content);
+        const en = await translateStudyKoreaContent(title, aiSummary, content);
         const { error: upErr } = await supabase
           .from("study_korea_posts")
           .update({
@@ -109,11 +140,15 @@ async function main() {
 
         if (upErr) throw new Error(upErr.message);
         updated++;
-        console.log(`  OK ${row.id} — ${en.ai_title_en.slice(0, 50)}…`);
+        const krPreview = title.slice(0, 40) || aiSummary.slice(0, 40);
+        const enPreview = en.ai_title_en.slice(0, 60);
+        console.log(
+          `[${processed}/${total}] Translated: ${krPreview} → ${enPreview}`
+        );
       } catch (e) {
         failed++;
-        console.warn(
-          `  FAIL ${row.id}:`,
+        console.error(
+          `[${processed}/${total}] FAIL ${row.id}:`,
           e instanceof Error ? e.message : e
         );
       }

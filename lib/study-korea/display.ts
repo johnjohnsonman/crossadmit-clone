@@ -19,10 +19,13 @@ export function resolveStudyKoreaLang(
   return "ko";
 }
 
+function hasText(value?: string | null): boolean {
+  return Boolean(value?.trim());
+}
+
 export function postDisplayTitle(post: PostLike, lang: StudyKoreaLang): string {
   if (lang === "en") {
-    const en = post.ai_title_en?.trim();
-    if (en) return en;
+    if (hasText(post.ai_title_en)) return post.ai_title_en!.trim();
     return post.title?.trim() || "";
   }
   return post.title?.trim() || "";
@@ -33,13 +36,11 @@ export function postDisplaySummary(
   lang: StudyKoreaLang
 ): string {
   if (lang === "en") {
-    const en = post.ai_summary_en?.trim();
-    if (en) return en;
-    const kr = post.ai_summary_kr?.trim();
-    if (kr) return kr;
-    return post.ai_summary?.trim() || "";
+    if (hasText(post.ai_summary_en)) return post.ai_summary_en!.trim();
+    if (hasText(post.ai_summary)) return post.ai_summary!.trim();
+    if (hasText(post.ai_summary_kr)) return post.ai_summary_kr!.trim();
+    return "";
   }
-  const kr = post.ai_summary_kr?.trim();
-  if (kr) return kr;
+  if (hasText(post.ai_summary_kr)) return post.ai_summary_kr!.trim();
   return post.ai_summary?.trim() || "";
 }

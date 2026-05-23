@@ -26,15 +26,6 @@ Rules:
 - Keep existing Korean fields (ai_summary_kr) accurate; add natural English translations.
 No markdown fences.`;
 
-const TRANSLATE_PROMPT = `Translate the following Korean study-in-Korea content to natural English.
-Return JSON only:
-{
-  "ai_title_en": "concise SEO-friendly English title",
-  "ai_summary_en": "3-4 sentences, key points for international students",
-  "ai_content_en": "full translation if under 500 words, else empty string"
-}
-No markdown fences.`;
-
 const VALID_CATEGORIES = new Set<StudyKoreaCategory>([
   "admission",
   "scholarship",
@@ -159,16 +150,27 @@ export type EnglishTranslation = {
 
 export async function translateStudyKoreaContent(
   title: string,
+  aiSummary: string,
   content: string
 ): Promise<EnglishTranslation> {
   const client = getClient();
-  const body = [title, content].filter(Boolean).join("\n\n").slice(0, 12000);
+  const userPrompt = `Translate the following Korean content to natural English.
+Respond ONLY with valid JSON in this exact format:
+{
+  "ai_title_en": "English title",
+  "ai_summary_en": "English summary (3-4 sentences)",
+  "ai_content_en": "English content (full translation, max 500 words)"
+}
+
+Korean content:
+Title: ${title}
+Summary: ${aiSummary}
+Content: ${(content ?? "").substring(0, 2000)}`;
 
   const message = await client.messages.create({
     model: MODEL,
     max_tokens: 2048,
-    system: TRANSLATE_PROMPT,
-    messages: [{ role: "user", content: body || title }],
+    messages: [{ role: "user", content: userPrompt }],
   });
 
   const textBlock = message.content.find((b) => b.type === "text");
