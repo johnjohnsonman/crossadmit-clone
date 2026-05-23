@@ -80,14 +80,22 @@ export async function migrateStudyKoreaPostToAdmission(
   extracted: ExtractedAdmission
 ): Promise<
   | { success: true; admission_id: number; schools_count: number; source_url: string | null }
-  | { success: false; error: string; status: number; extracted?: ExtractedAdmission }
+  | {
+      success: false;
+      error: string;
+      status: number;
+      extracted?: ExtractedAdmission;
+      suggest_forum?: boolean;
+    }
 > {
   if (extracted.confidence === "skip") {
     return {
       success: false,
       status: 400,
-      error: "외국 대학 후기로 한국 대학 타겟과 맞지 않음",
+      error:
+        "외국 대학 후기로 한국 대학 타겟과 맞지 않음. 포럼으로 이관을 권장합니다.",
       extracted,
+      suggest_forum: true,
     };
   }
 

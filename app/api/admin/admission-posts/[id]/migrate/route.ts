@@ -63,6 +63,7 @@ export async function POST(
       {
         error: result.error,
         extracted: result.extracted,
+        suggest_forum: result.suggest_forum ?? false,
       },
       { status: result.status }
     );

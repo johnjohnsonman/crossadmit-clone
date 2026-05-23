@@ -10,6 +10,7 @@ type PendingPost = {
   title: string;
   content: string | null;
   url: string | null;
+  slug: string | null;
   source: string;
   created_at: string;
 };
@@ -138,6 +139,8 @@ function AdmissionsReviewInner() {
   const [previews, setPreviews] = useState<Record<string, ExtractedAdmission>>({});
   const [previewOpen, setPreviewOpen] = useState<Record<string, boolean>>({});
   const [editing, setEditing] = useState<Record<string, boolean>>({});
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkRunning, setBulkRunning] = useState(false);
 
   useEffect(() => {
     if (keyFromUrl && keyFromUrl !== key) setKey(keyFromUrl);
@@ -168,7 +171,9 @@ function AdmissionsReviewInner() {
       }
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "로드 실패");
-      setPosts(data.posts ?? []);
+      const list = (data.posts ?? []) as PendingPost[];
+      setPosts(list);
+      setSelected(new Set());
     } catch (e) {
       setLoadErr(e instanceof Error ? e.message : "오류");
     } finally {
@@ -221,7 +226,10 @@ function AdmissionsReviewInner() {
         setPreviewOpen((o) => ({ ...o, [postId]: false }));
         await loadPending();
       } else {
-        alert(`실패: ${data.error ?? "unknown"}`);
+        const msg = data.suggest_forum
+          ? `${data.error}\n\n「포럼으로 이관」 버튼을 사용해 보세요.`
+          : (data.error ?? "unknown");
+        alert(`실패: ${msg}`);
         if (data.extracted) {
           setPreviews((p) => ({ ...p, [postId]: data.extracted }));
           setPreviewOpen((o) => ({ ...o, [postId]: true }));
@@ -229,6 +237,75 @@ function AdmissionsReviewInner() {
       }
     } finally {
       setActionId(null);
+    }
+  }
+
+  async function moveToForum(postId: string) {
+    setActionId(postId);
+    try {
+      const res = await fetch(
+        `/api/admin/admission-posts/${postId}/to-forum`,
+        { method: "POST", headers: hdrs(true), body: JSON.stringify({}) }
+      );
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "포럼 이관 실패");
+      alert(
+        `포럼 이관 완료 · 카테고리: ${data.category}\n${data.forum_url ?? ""}`
+      );
+      setPreviewOpen((o) => ({ ...o, [postId]: false }));
+      setSelected((s) => {
+        const next = new Set(s);
+        next.delete(postId);
+        return next;
+      });
+      await loadPending();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "포럼 이관 오류");
+    } finally {
+      setActionId(null);
+    }
+  }
+
+  async function bulkMoveToForum() {
+    const ids = [...selected];
+    if (ids.length === 0) {
+      alert("선택한 글이 없습니다.");
+      return;
+    }
+    if (!confirm(`${ids.length}건을 포럼으로 이관할까요?`)) return;
+    setBulkRunning(true);
+    try {
+      const res = await fetch("/api/admin/admission-posts/bulk-to-forum", {
+        method: "POST",
+        headers: hdrs(true),
+        body: JSON.stringify({ ids }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "일괄 이관 실패");
+      alert(`포럼 일괄 이관: 성공 ${data.ok}건 / 실패 ${data.failed}건`);
+      setSelected(new Set());
+      await loadPending();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "일괄 이관 오류");
+    } finally {
+      setBulkRunning(false);
+    }
+  }
+
+  function toggleSelect(postId: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(postId)) next.delete(postId);
+      else next.add(postId);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    if (selected.size === posts.length) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(posts.map((p) => p.id)));
     }
   }
 
@@ -266,7 +343,7 @@ function AdmissionsReviewInner() {
           </Link>
         </div>
         <p className="max-w-4xl mx-auto mt-2 text-xs text-slate-600">
-          low/medium도 이관 가능 · skip만 자동 거부 · 미리보기 후 등록 권장
+          합격DB / 포럼 / 거부 · low도 합격DB 이관 가능 · skip은 포럼 권장
         </p>
         <div className="max-w-4xl mx-auto mt-3 flex flex-wrap gap-2">
           <input
@@ -291,6 +368,29 @@ function AdmissionsReviewInner() {
       </header>
 
       <main className="max-w-4xl mx-auto px-4 py-6 space-y-4">
+        {posts.length > 0 && (
+          <div className="flex flex-wrap items-center gap-3 rounded-lg border border-slate-200 bg-white p-3">
+            <label className="flex items-center gap-2 text-sm text-slate-700">
+              <input
+                type="checkbox"
+                checked={selected.size === posts.length && posts.length > 0}
+                onChange={toggleSelectAll}
+              />
+              전체 선택 ({selected.size}/{posts.length})
+            </label>
+            <button
+              type="button"
+              disabled={bulkRunning || selected.size === 0 || actionId !== null}
+              onClick={() => void bulkMoveToForum()}
+              className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-medium"
+            >
+              {bulkRunning
+                ? "일괄 이관 중…"
+                : `선택 ${selected.size}건 포럼으로 이관`}
+            </button>
+          </div>
+        )}
+
         {posts.map((post) => {
           const extracted = previews[post.id];
           const showPreview = previewOpen[post.id] && extracted;
@@ -302,7 +402,15 @@ function AdmissionsReviewInner() {
               className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm"
             >
               <div className="flex justify-between items-start gap-2 mb-2">
-                <h3 className="font-bold text-lg">{post.title}</h3>
+                <div className="flex items-start gap-2 min-w-0">
+                  <input
+                    type="checkbox"
+                    className="mt-1.5 shrink-0"
+                    checked={selected.has(post.id)}
+                    onChange={() => toggleSelect(post.id)}
+                  />
+                  <h3 className="font-bold text-lg">{post.title}</h3>
+                </div>
                 <span className="text-xs text-slate-500 shrink-0">
                   {post.source}
                 </span>
@@ -381,9 +489,17 @@ function AdmissionsReviewInner() {
                     disabled={actionId !== null}
                     className="bg-green-700 hover:bg-green-800 disabled:opacity-50 text-white px-3 py-2 rounded-lg text-sm"
                   >
-                    바로 이관 (AI)
+                    합격DB 이관 (AI)
                   </button>
                 )}
+                <button
+                  type="button"
+                  onClick={() => void moveToForum(post.id)}
+                  disabled={actionId !== null}
+                  className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-3 py-2 rounded-lg text-sm font-medium"
+                >
+                  {actionId === post.id ? "처리 중…" : "포럼으로 이관"}
+                </button>
                 <button
                   type="button"
                   onClick={() => void reject(post.id)}

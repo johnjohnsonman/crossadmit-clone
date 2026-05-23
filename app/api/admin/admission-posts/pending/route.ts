@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
   const { data, error } = await supabase
     .from("study_korea_posts")
     .select(
-      "id, title, content, url, source, created_at, moderation_status, is_admission_post"
+      "id, title, content, url, slug, source, created_at, moderation_status, is_admission_post"
     )
     .eq("is_admission_post", true)
     .eq("is_published", false)
