@@ -2,8 +2,12 @@ import {
   escapeIlikeForPostgrest,
   safeSearchTerm,
 } from "@/lib/admissions/university-search";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import type { CrossComparison, University, UniversityDepartment } from "@/lib/supabase/types";
+
+const CROSS_STATS_PAGE_SIZE = 1000;
+const CROSS_STATS_ADMISSION_BATCH = 150;
 
 async function loadUniversityNameMap(): Promise<
   Map<number, { name_kr: string; name_en: string }>
@@ -309,46 +313,88 @@ function numericIdFromUnivKey(key: string): number | null {
   return Number.isNaN(n) ? null : n;
 }
 
+/** published admissions 전체 (페이지네이션) */
+async function loadPublishedAdmissionMeta(): Promise<Map<number, string>> {
+  const admin = createAdminClient();
+  const createdAtById = new Map<number, string>();
+  let page = 0;
+
+  while (page < 200) {
+    const from = page * CROSS_STATS_PAGE_SIZE;
+    const { data, error } = await admin
+      .from("admissions")
+      .select("id, created_at")
+      .eq("published", true)
+      .order("id", { ascending: false })
+      .range(from, from + CROSS_STATS_PAGE_SIZE - 1);
+
+    if (error) {
+      console.error("loadPublishedAdmissionMeta:", error);
+      break;
+    }
+    if (!data?.length) break;
+
+    for (const a of data) {
+      createdAtById.set(
+        a.id as number,
+        String(a.created_at ?? new Date(0).toISOString())
+      );
+    }
+    if (data.length < CROSS_STATS_PAGE_SIZE) break;
+    page += 1;
+  }
+
+  return createdAtById;
+}
+
+/** admission_id 배치로 합격 학교 행 로드 (거대 .in() 회피) */
+async function loadAcceptedSchoolRows(
+  admissionIds: number[]
+): Promise<SchoolRow[]> {
+  if (admissionIds.length === 0) return [];
+
+  const admin = createAdminClient();
+  const schools: SchoolRow[] = [];
+
+  for (let i = 0; i < admissionIds.length; i += CROSS_STATS_ADMISSION_BATCH) {
+    const batch = admissionIds.slice(i, i + CROSS_STATS_ADMISSION_BATCH);
+    const { data, error } = await admin
+      .from("admission_schools")
+      .select(
+        "admission_id, univ_id, univ_name, dept_name, is_accept, is_regist"
+      )
+      .in("admission_id", batch)
+      .eq("is_accept", true);
+
+    if (error) {
+      console.error("loadAcceptedSchoolRows:", error);
+      continue;
+    }
+    for (const raw of data ?? []) {
+      schools.push(raw as SchoolRow);
+    }
+  }
+
+  return schools;
+}
+
 /** admission_schools 기반 실시간 크로스어드밋 집계 */
 async function getCrossComparisonStatsFromSchools(params?: {
   univ_a?: number;
   univ_b?: number;
   locale?: "ko" | "en";
 }): Promise<CrossComparisonStat[]> {
-  const supabase = await createClient();
   const nameMap = await loadUniversityNameMap();
   const locale = params?.locale;
 
-  const { data: published, error: pubErr } = await supabase
-    .from("admissions")
-    .select("id, created_at")
-    .eq("published", true);
-  if (pubErr) {
-    console.error("getCrossComparisonStatsFromSchools admissions:", pubErr);
-    return [];
-  }
-  const createdAtById = new Map<number, string>();
-  for (const a of published ?? []) {
-    createdAtById.set(
-      a.id as number,
-      String(a.created_at ?? new Date(0).toISOString())
-    );
-  }
+  const createdAtById = await loadPublishedAdmissionMeta();
   const pubIds = [...createdAtById.keys()];
   if (pubIds.length === 0) return [];
 
-  const { data: schoolRows, error: schErr } = await supabase
-    .from("admission_schools")
-    .select("admission_id, univ_id, univ_name, dept_name, is_accept, is_regist")
-    .in("admission_id", pubIds)
-    .eq("is_accept", true);
-  if (schErr) {
-    console.error("getCrossComparisonStatsFromSchools schools:", schErr);
-    return [];
-  }
+  const schoolRows = await loadAcceptedSchoolRows(pubIds);
 
   const byAdmission = new Map<number, SchoolRow[]>();
-  for (const raw of schoolRows ?? []) {
+  for (const raw of schoolRows) {
     const row = raw as SchoolRow;
     const list = byAdmission.get(row.admission_id) ?? [];
     list.push(row);
@@ -496,8 +542,10 @@ export async function getCrossComparisonStats(params?: {
   if (sort === "random") {
     return shuffleStats(stats);
   }
-  return stats.sort(
-    (a, b) =>
-      new Date(b.latest_at).getTime() - new Date(a.latest_at).getTime()
-  );
+  return stats.sort((a, b) => {
+    const atDiff =
+      new Date(b.latest_at).getTime() - new Date(a.latest_at).getTime();
+    if (atDiff !== 0) return atDiff;
+    return b.latest_id - a.latest_id;
+  });
 }
