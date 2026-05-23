@@ -9,6 +9,16 @@ export const FORUM_TABS = [
   { id: "language", label: "어학" },
 ] as const;
 
+export const FORUM_TABS_EN = [
+  { id: "all", label: "All" },
+  { id: "admission", label: "Admissions" },
+  { id: "scholarship", label: "Scholarship" },
+  { id: "dormitory", label: "Dormitory" },
+  { id: "visa", label: "Visa" },
+  { id: "life", label: "Life" },
+  { id: "language", label: "Language" },
+] as const;
+
 export const FORUM_UNIVERSITY_OPTIONS = [
   { slug: "", label: "전체 대학" },
   { slug: "snu", label: "서울대" },
@@ -47,6 +57,28 @@ export const SUBCATEGORY_LABELS: Record<string, string> = {
   language: "어학",
   general: "일반",
 };
+
+export const SUBCATEGORY_LABELS_EN: Record<string, string> = {
+  admission: "Admissions",
+  scholarship: "Scholarship",
+  dormitory: "Dormitory",
+  visa: "Visa",
+  life: "Life",
+  language: "Language",
+  general: "General",
+};
+
+export function forumTabsForLocale(locale: "ko" | "en") {
+  return locale === "en" ? FORUM_TABS_EN : FORUM_TABS;
+}
+
+export function subcategoryLabel(
+  sub: string,
+  locale: "ko" | "en"
+): string {
+  const map = locale === "en" ? SUBCATEGORY_LABELS_EN : SUBCATEGORY_LABELS;
+  return map[sub] ?? sub;
+}
 
 /** slug → DB name 검색 키워드 */
 export const SLUG_NAME_HINTS: Record<string, string[]> = {

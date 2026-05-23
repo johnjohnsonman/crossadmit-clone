@@ -9,10 +9,7 @@ import UniversityAutocomplete, {
 import SourceBadge from "@/components/ui/SourceBadge";
 import { ForumListSkeleton } from "@/components/ui/Skeleton";
 import ForumPopularSidebar from "@/components/forum/ForumPopularSidebar";
-import {
-  FORUM_TABS,
-  SUBCATEGORY_LABELS,
-} from "@/lib/forum/constants";
+import { forumTabsForLocale, subcategoryLabel } from "@/lib/forum/constants";
 import {
   postDisplaySummary,
   postDisplayTitle,
@@ -122,6 +119,8 @@ export default function StudyForumBoard({
   };
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const forumTabs = forumTabsForLocale(locale);
+  const forumBase = locale === "en" ? "/en/forum" : "/forum";
 
   const formatDate = (iso: string | null) => {
     if (!iso) return "";
@@ -139,12 +138,12 @@ export default function StudyForumBoard({
         <div className="border-b border-[#E5E5E0] bg-white">
           <div className="container mx-auto max-w-6xl px-4 py-8 sm:py-10">
             <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-[#1A1A1A]">
-              {locale === "ko" ? "유학 포럼" : "Study Forum"}
+              {locale === "ko" ? "유학 포럼" : "Study Korea Forum"}
             </h1>
             <p className="mt-2 text-sm text-[#6B7280] leading-relaxed max-w-2xl">
               {locale === "ko"
                 ? "외국인 유학생들의 한국 유학 경험과 정보를 공유합니다"
-                : "Experiences and tips for studying in Korea"}
+                : "Share Korean study abroad experiences and information"}
             </p>
           </div>
         </div>
@@ -189,7 +188,7 @@ export default function StudyForumBoard({
           <div className="lg:col-span-3 min-w-0">
             <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 mb-4">
               <div className="flex gap-1 min-w-max border-b border-[#E5E5E0]">
-                {FORUM_TABS.map((t) => (
+                {forumTabs.map((t) => (
                   <button
                     key={t.id}
                     type="button"
@@ -275,7 +274,7 @@ export default function StudyForumBoard({
               <ForumListSkeleton count={5} />
             ) : posts.length === 0 ? (
               <div className="rounded-xl border border-[#E5E5E0] bg-white py-16 text-center text-sm text-[#6B7280]">
-                {locale === "ko" ? "게시글이 없습니다." : "No posts yet."}
+                {locale === "ko" ? "게시글이 없습니다." : "No posts found."}
               </div>
             ) : (
               <ul className="space-y-3">
@@ -297,7 +296,7 @@ export default function StudyForumBoard({
                         <div className="flex flex-wrap items-center gap-2">
                           <SourceBadge source={p.source} />
                           <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-[#F5F5F4] text-[#6B7280]">
-                            {SUBCATEGORY_LABELS[sub] ?? sub}
+                            {subcategoryLabel(sub, locale)}
                           </span>
                         </div>
                         <time className="text-xs text-[#9CA3AF] tabular-nums">
@@ -316,7 +315,9 @@ export default function StudyForumBoard({
                         </h2>
                         {summary && (
                           <p className="mt-2 text-sm text-[#6B7280] leading-relaxed line-clamp-2">
-                            <span className="text-[#9CA3AF]">AI 요약: </span>
+                            <span className="text-[#9CA3AF]">
+                              {viewLang === "en" ? "AI summary: " : "AI 요약: "}
+                            </span>
                             {summary}
                           </p>
                         )}
@@ -327,7 +328,7 @@ export default function StudyForumBoard({
                           <span className="text-[#6B7280]">
                             {p.university_matched_id ? (
                               <Link
-                                href={`/forum/${p.university || "other"}`}
+                                href={`${forumBase}/${p.university || "other"}`}
                                 className="hover:text-[#2D5A27] font-medium"
                                 onClick={(e) => e.stopPropagation()}
                               >

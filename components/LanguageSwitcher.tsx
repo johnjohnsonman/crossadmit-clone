@@ -43,6 +43,8 @@ export default function LanguageSwitcher() {
       // 영어 경로를 한국어 경로로 변환
       if (newPath.startsWith("/en/study-korea")) {
         newPath = "/study-korea";
+      } else if (newPath.startsWith("/en/forum")) {
+        newPath = newPath.replace("/en/forum", "/forum");
       } else if (newPath.startsWith("/en")) {
         newPath = newPath.replace("/en", "");
         if (newPath === "") newPath = "/crossadmit";

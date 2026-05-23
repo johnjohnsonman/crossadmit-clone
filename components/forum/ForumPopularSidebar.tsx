@@ -83,12 +83,12 @@ export default function ForumPopularSidebar({
   return (
     <aside className="rounded-xl border border-[#E5E5E0] bg-white p-4 shadow-sm">
       <h2 className="text-sm font-semibold tracking-tight text-[#1A1A1A]">
-        {locale === "ko" ? "인기 대학" : "Popular universities"}
+        {locale === "ko" ? "인기 대학" : "Popular Universities"}
       </h2>
       <p className="mt-1 text-xs text-[#6B7280] leading-relaxed">
         {locale === "ko"
           ? "크로스 비교 데이터 기준"
-          : "By cross-comparison activity"}
+          : "Based on cross comparison data"}
       </p>
       {loading ? (
         <ul className="mt-4 space-y-2">
@@ -97,7 +97,9 @@ export default function ForumPopularSidebar({
           ))}
         </ul>
       ) : list.length === 0 ? (
-        <p className="mt-4 text-xs text-[#9CA3AF]">데이터 없음</p>
+        <p className="mt-4 text-xs text-[#9CA3AF]">
+          {locale === "ko" ? "데이터 없음" : "No data"}
+        </p>
       ) : (
         <ul className="mt-4 space-y-1">
           {list.map((u, i) => (
