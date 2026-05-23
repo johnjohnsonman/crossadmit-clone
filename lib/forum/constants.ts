@@ -53,8 +53,14 @@ export const SUBCATEGORY_LABELS: Record<string, string> = {
   scholarship: "장학금",
   dormitory: "기숙사",
   visa: "비자",
-  life: "생활",
+  living_cost: "생활비",
   language: "어학",
+  campus_life: "캠퍼스",
+  settlement: "정착",
+  employment: "취업",
+  culture: "문화·생활",
+  life: "생활",
+  cost: "생활비",
   general: "일반",
 };
 
@@ -63,8 +69,14 @@ export const SUBCATEGORY_LABELS_EN: Record<string, string> = {
   scholarship: "Scholarship",
   dormitory: "Dormitory",
   visa: "Visa",
-  life: "Life",
+  living_cost: "Living cost",
   language: "Language",
+  campus_life: "Campus life",
+  settlement: "Settlement",
+  employment: "Employment",
+  culture: "Culture",
+  life: "Life",
+  cost: "Cost",
   general: "General",
 };
 

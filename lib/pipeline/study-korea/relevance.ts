@@ -17,14 +17,13 @@ export function isObviouslyIrrelevant(title: string, content: string): boolean {
   return false;
 }
 
-/** 저장 여부: studyinkorea 항상 저장, 그 외는 스팸/10자 미만만 제외 */
+/** DB 저장 여부: 스팸/빈 글만 제외. 무관 콘텐츠는 is_published=false로 저장 */
 export function shouldSavePost(
-  subreddit: string | undefined,
+  _subreddit: string | undefined,
   title: string,
   content: string,
   _analysis: StudyKoreaAnalysis
 ): boolean {
-  if (isStudyInKoreaSubreddit(subreddit)) return true;
   if (isObviouslyIrrelevant(title, content)) return false;
   return true;
 }
@@ -54,6 +53,5 @@ export function fillEmptySummaries(
     ai_title_en: fallbackTitleEn,
     ai_summary_en: fallbackSummaryEn,
     ai_content_en: analysis.ai_content_en ?? "",
-    is_relevant: true,
   };
 }

@@ -83,6 +83,18 @@ function AdminStudyKoreaInner() {
   const [enBackfillAuto, setEnBackfillAuto] = useState(false);
   const [enBackfillLog, setEnBackfillLog] = useState<string | null>(null);
   const enBackfillStopRef = useRef(false);
+  const [reclassify, setReclassify] = useState({
+    total: 0,
+    reclassified: 0,
+    remaining: 0,
+    kept_published: 0,
+    hidden: 0,
+  });
+  const [reclassifyLoading, setReclassifyLoading] = useState(false);
+  const [reclassifyRunning, setReclassifyRunning] = useState(false);
+  const [reclassifyAuto, setReclassifyAuto] = useState(false);
+  const [reclassifyLog, setReclassifyLog] = useState<string | null>(null);
+  const reclassifyStopRef = useRef(false);
 
   useEffect(() => {
     if (keyFromUrl && keyFromUrl !== key) setKey(keyFromUrl);
@@ -95,6 +107,30 @@ function AdminStudyKoreaInner() {
     }),
     [key]
   );
+
+  const loadReclassifyStatus = useCallback(async () => {
+    if (!key.trim()) return;
+    setReclassifyLoading(true);
+    try {
+      const res = await fetch("/api/admin/reclassify", { headers: hdrs() });
+      if (res.status === 401) return;
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "재분류 상태 조회 실패");
+      setReclassify({
+        total: json.total ?? 0,
+        reclassified: json.reclassified ?? 0,
+        remaining: json.remaining ?? 0,
+        kept_published: json.kept_published ?? 0,
+        hidden: json.hidden ?? 0,
+      });
+    } catch (e) {
+      setReclassifyLog(
+        e instanceof Error ? e.message : "재분류 상태 조회 오류"
+      );
+    } finally {
+      setReclassifyLoading(false);
+    }
+  }, [key, hdrs]);
 
   const loadBackfillStatus = useCallback(async () => {
     if (!key.trim()) return;
@@ -155,13 +191,14 @@ function AdminStudyKoreaInner() {
       }
       setUnivEdits(edits);
       void loadBackfillStatus();
+      void loadReclassifyStatus();
     } catch (e) {
       setAuthorized(false);
       setLoadErr(e instanceof Error ? e.message : "오류");
     } finally {
       setLoading(false);
     }
-  }, [hdrs, key, loadBackfillStatus]);
+  }, [hdrs, key, loadBackfillStatus, loadReclassifyStatus]);
 
   useEffect(() => {
     if (keyFromUrl.trim()) void loadAll();
@@ -283,6 +320,103 @@ function AdminStudyKoreaInner() {
     }
   };
 
+  const runReclassifyBatch = async () => {
+    if (!key.trim() || reclassifyRunning) return;
+    setReclassifyRunning(true);
+    setReclassifyLog(null);
+    try {
+      const res = await fetch("/api/admin/reclassify", {
+        method: "POST",
+        headers: hdrs(true),
+        body: JSON.stringify({ batch: 10 }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "재분류 실패");
+      setReclassify({
+        total: json.total ?? 0,
+        reclassified: json.reclassified ?? 0,
+        remaining: json.remaining ?? 0,
+        kept_published: json.kept_published ?? 0,
+        hidden: json.hidden ?? 0,
+      });
+      const logs = (json.logs as string[] | undefined)?.join("\n") ?? "";
+      setReclassifyLog(
+        `처리 ${json.processed}건 — 유지 ${json.kept_published} · 비공개 ${json.hidden} · 실패 ${json.failed ?? 0}\n${logs}`
+      );
+      await loadAll();
+    } catch (e) {
+      setReclassifyLog(e instanceof Error ? e.message : "재분류 오류");
+    } finally {
+      setReclassifyRunning(false);
+    }
+  };
+
+  const stopReclassifyAuto = () => {
+    reclassifyStopRef.current = true;
+    setReclassifyAuto(false);
+    setReclassifyLog("재분류 자동 실행 중지됨");
+  };
+
+  const runReclassifyAuto = async () => {
+    if (!key.trim() || reclassifyAuto) return;
+    reclassifyStopRef.current = false;
+    setReclassifyAuto(true);
+    setReclassifyLog("전체 재분류 시작…");
+    try {
+      while (!reclassifyStopRef.current) {
+        const statusRes = await fetch("/api/admin/reclassify", {
+          headers: hdrs(),
+        });
+        const statusJson = await statusRes.json();
+        if (!statusRes.ok) {
+          throw new Error(statusJson.error || "상태 조회 실패");
+        }
+        setReclassify({
+          total: statusJson.total ?? 0,
+          reclassified: statusJson.reclassified ?? 0,
+          remaining: statusJson.remaining ?? 0,
+          kept_published: statusJson.kept_published ?? 0,
+          hidden: statusJson.hidden ?? 0,
+        });
+        if ((statusJson.remaining ?? 0) === 0) {
+          setReclassifyLog("재분류 완료");
+          break;
+        }
+
+        const postRes = await fetch("/api/admin/reclassify", {
+          method: "POST",
+          headers: hdrs(true),
+          body: JSON.stringify({ batch: 10 }),
+        });
+        const postJson = await postRes.json();
+        if (!postRes.ok) {
+          throw new Error(postJson.error || "재분류 실패");
+        }
+        setReclassify({
+          total: postJson.total ?? 0,
+          reclassified: postJson.reclassified ?? 0,
+          remaining: postJson.remaining ?? 0,
+          kept_published: postJson.kept_published ?? 0,
+          hidden: postJson.hidden ?? 0,
+        });
+        const logs = (postJson.logs as string[] | undefined)?.join("\n") ?? "";
+        setReclassifyLog(
+          `진행… 평가 ${postJson.reclassified}/${postJson.total} · 남음 ${postJson.remaining}\n${logs}`
+        );
+
+        if ((postJson.processed ?? 0) === 0) break;
+        if (reclassifyStopRef.current) break;
+        await new Promise((r) => setTimeout(r, 2000));
+      }
+      await loadAll();
+    } catch (e) {
+      setReclassifyLog(e instanceof Error ? e.message : "자동 재분류 오류");
+    } finally {
+      setReclassifyAuto(false);
+      reclassifyStopRef.current = false;
+    }
+  };
+
   const runCron = async (path: string, label: string) => {
     if (!key.trim()) return;
     setRunningSource(label);
@@ -395,6 +529,10 @@ function AdminStudyKoreaInner() {
   const backfillPct =
     enBackfill.total > 0
       ? Math.round((enBackfill.translated / enBackfill.total) * 100)
+      : 0;
+  const reclassifyPct =
+    reclassify.total > 0
+      ? Math.round((reclassify.reclassified / reclassify.total) * 100)
       : 0;
 
   return (
@@ -513,6 +651,74 @@ function AdminStudyKoreaInner() {
                 <p className="text-xs text-blue-800 mt-3 bg-blue-100/80 px-3 py-2 rounded-lg">
                   {enBackfillLog}
                 </p>
+              )}
+            </section>
+
+            <section className="rounded-lg border border-amber-200 bg-amber-50 p-6 shadow-sm">
+              <h2 className="text-lg font-semibold text-amber-900">
+                🎯 콘텐츠 재분류
+              </h2>
+              <p className="text-sm text-gray-600 mt-1">
+                외국인 유학생 관점에서 무관한 콘텐츠를 재평가하여 자동으로
+                비공개 처리합니다.
+              </p>
+              <div className="mt-4">
+                <div className="flex justify-between text-sm mb-1 text-amber-900">
+                  <span>진행 상태</span>
+                  <span>
+                    {reclassify.reclassified} / {reclassify.total} 평가 완료
+                    {reclassifyLoading ? " (불러오는 중…)" : ""}
+                  </span>
+                </div>
+                <div className="w-full h-2 bg-amber-100 rounded overflow-hidden">
+                  <div
+                    className="h-2 bg-amber-500 rounded transition-all duration-300"
+                    style={{ width: `${reclassifyPct}%` }}
+                  />
+                </div>
+                <p className="text-xs text-gray-600 mt-1">
+                  유지(공개): {reclassify.kept_published} · 비공개:{" "}
+                  {reclassify.hidden} · 대기: {reclassify.remaining}
+                </p>
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  disabled={
+                    reclassifyRunning ||
+                    reclassifyAuto ||
+                    reclassify.remaining === 0
+                  }
+                  onClick={() => void runReclassifyBatch()}
+                  className="px-4 py-2 bg-amber-600 text-white text-sm font-semibold rounded-lg hover:bg-amber-700 disabled:opacity-50"
+                >
+                  {reclassifyRunning ? "재분류 중…" : "▶ 10건 재분류"}
+                </button>
+                <button
+                  type="button"
+                  disabled={
+                    reclassifyRunning ||
+                    reclassifyAuto ||
+                    reclassify.remaining === 0
+                  }
+                  onClick={() => void runReclassifyAuto()}
+                  className="px-4 py-2 bg-amber-700 text-white text-sm font-semibold rounded-lg hover:bg-amber-800 disabled:opacity-50"
+                >
+                  {reclassifyAuto ? "자동 실행 중…" : "▶▶ 전체 자동 실행"}
+                </button>
+                <button
+                  type="button"
+                  disabled={!reclassifyAuto}
+                  onClick={stopReclassifyAuto}
+                  className="px-4 py-2 bg-white border border-amber-300 text-amber-900 text-sm font-medium rounded-lg hover:bg-amber-100 disabled:opacity-50"
+                >
+                  ⏹ 중지
+                </button>
+              </div>
+              {reclassifyLog && (
+                <div className="mt-3 p-2 bg-white border border-amber-200 rounded text-xs font-mono whitespace-pre-wrap max-h-48 overflow-y-auto text-gray-800">
+                  {reclassifyLog}
+                </div>
               )}
             </section>
 

@@ -3,10 +3,17 @@ export type StudyKoreaCategory =
   | "scholarship"
   | "visa"
   | "dormitory"
-  | "life"
+  | "living_cost"
   | "language"
-  | "cost"
-  | "general";
+  | "campus_life"
+  | "settlement"
+  | "employment"
+  | "culture"
+  | "general"
+  /** @deprecated use living_cost | culture */
+  | "life"
+  /** @deprecated use living_cost */
+  | "cost";
 
 /** 텍스트 콘텐츠 소스 (YouTube는 university_videos 전용) */
 export type StudyKoreaSource =

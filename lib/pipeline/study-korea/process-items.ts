@@ -80,14 +80,12 @@ export async function processAndSaveItems(
             })
           );
 
-          if (
-            !shouldSavePost(undefined, title, content, analysis)
-          ) {
+          if (!shouldSavePost(undefined, title, content, analysis)) {
             result.skipped++;
             continue;
           }
 
-          category = item.category ?? analysis.category;
+          category = analysis.category;
           university =
             item.university ||
             normalizeUniversitySlug(analysis.university, `${title} ${content}`) ||
@@ -114,7 +112,6 @@ export async function processAndSaveItems(
           comment_count: item.comment_count ?? 0,
           source_created_at: item.source_created_at ?? null,
           category,
-          subcategory: (item.category ?? category) as typeof category,
           university,
           university_id: item.university_id ?? undefined,
           language: item.language ?? (source === "naver_blog" ? "ko" : "en"),
@@ -124,7 +121,7 @@ export async function processAndSaveItems(
           ai_summary_en,
           ai_content_en,
           ai_tags,
-          is_published: true,
+          is_published: item.skipClaude ? true : analysis.is_relevant,
         });
 
         if (status === "saved") result.saved++;

@@ -3,7 +3,8 @@ import {
   naverPostSourceId,
   normalizeNaverPostUrl,
 } from "./naver-url";
-import type { StudyKoreaPostInput, StudyKoreaSubcategory } from "./types";
+import { categoryToSubcategory, normalizeStudyKoreaCategory } from "./categories";
+import type { StudyKoreaPostInput } from "./types";
 import { resolveUniversityMatch } from "./university-id";
 
 const NAVER_SOURCES = new Set(["naver_blog", "naver_news"]);
@@ -15,27 +16,15 @@ function admin() {
   return createClient(url, key);
 }
 
-function toSubcategory(row: StudyKoreaPostInput): StudyKoreaSubcategory {
-  const sub = row.subcategory ?? row.category ?? "general";
-  const allowed: StudyKoreaSubcategory[] = [
-    "admission",
-    "scholarship",
-    "visa",
-    "dormitory",
-    "life",
-    "language",
-    "general",
-  ];
-  return allowed.includes(sub as StudyKoreaSubcategory)
-    ? (sub as StudyKoreaSubcategory)
-    : "general";
-}
 
 export async function upsertStudyKoreaPost(
   row: StudyKoreaPostInput
 ): Promise<"saved" | "failed"> {
   const supabase = admin();
-  const subcategory = toSubcategory(row);
+  const category = normalizeStudyKoreaCategory(row.category);
+  const subcategory = row.subcategory
+    ? categoryToSubcategory(normalizeStudyKoreaCategory(row.subcategory))
+    : categoryToSubcategory(category);
   const slugOrText = row.university ?? "";
 
   let source_id = row.source_id;
@@ -83,7 +72,7 @@ export async function upsertStudyKoreaPost(
     content: row.content ?? "",
     url,
     author: row.author,
-    category: row.category ?? subcategory,
+    category,
     subcategory,
     university,
     university_id,

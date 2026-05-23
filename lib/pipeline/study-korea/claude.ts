@@ -1,41 +1,70 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { StudyKoreaAnalysis, StudyKoreaCategory } from "./types";
+import { normalizeStudyKoreaCategory } from "./categories";
 import { normalizeUniversitySlug } from "./university-map";
-import { isStudyInKoreaSubreddit } from "./relevance";
 
 const MODEL = "claude-haiku-4-5-20251001";
 
-const SYSTEM_PROMPT = `You are processing content about studying in Korea.
-Analyze the post and return JSON only:
+export const FOREIGN_STUDENT_CLASSIFICATION_RULES = `
+You classify content for international students who want to study IN Korea (not Koreans studying abroad).
+
+Set is_relevant=true ONLY when the post gives actionable value in ONE of these categories:
+1. visa — D-2, D-4, F-1, stay/extension, immigration for international students
+2. admission — international admissions, application documents, acceptance stories
+3. scholarship — GKS, university scholarships for foreigners, government support
+4. dormitory — dorms, on-campus housing for international students
+5. living_cost — tuition, living expenses, food, transport from a foreign student's budget view
+6. language — TOPIK, Korean classes, language institutes, language exchange
+7. campus_life — clubs, facilities, campus life for international students
+8. settlement — ARC registration, insurance, bank, phone, transit card in Korea
+9. employment — part-time work rules, post-graduation E-7 etc. for international students
+10. culture — cultural adaptation tips for foreigners studying in Korea
+
+Set is_relevant=false (exclude):
+- General Korean politics/society news with no direct impact on international students
+- Domestic tourism/industry PR (PATA, travel fairs, "감사의 정원") without student application steps
+- Study abroad to OTHER countries (US, Japan, Europe)
+- Info for general foreign residents (not students)
+- Koreans going abroad (reverse direction)
+- Ceremonies/awards/press releases without how international students can apply or benefit
+
+Strict rules:
+- Keywords like "foreign student" or "international" alone are NOT enough.
+- Event coverage ("foreign student festival held") without application/how-to → false.
+- When unsure, choose false. Prefer filtering out low-value content.
+`;
+
+const SYSTEM_PROMPT = `You analyze posts for a "Study in Korea" resource aimed at international students.
+Return JSON only:
 {
-  "category": "admission|scholarship|visa|dormitory|life|language|cost|general",
+  "category": "visa|admission|scholarship|dormitory|living_cost|language|campus_life|settlement|employment|culture|general",
   "university": "university name or empty string",
-  "ai_summary": "2-3 sentence English summary focusing on key info for prospective students",
-  "ai_summary_kr": "2-3문장 한국어 요약",
-  "ai_title_en": "English translation of the title (concise, SEO-friendly, natural English)",
-  "ai_summary_en": "3-4 sentences in English summarizing key points for international students",
-  "ai_content_en": "Full English translation of the body if under 500 words; otherwise empty string",
-  "ai_tags": ["tag1", "tag2", "tag3"],
+  "ai_summary": "2-3 sentence English summary for international students",
+  "ai_summary_kr": "2-3문장 한국어 요약 (외국인 유학생 관점)",
+  "ai_title_en": "concise natural English title",
+  "ai_summary_en": "3-4 sentences in English for international students",
+  "ai_content_en": "full English body translation if under 500 words, else empty string",
+  "ai_tags": ["tag1", "tag2"],
   "is_relevant": true
 }
-Rules:
-- Default is_relevant to true. Only set is_relevant=false for obvious spam or posts with under 10 characters of substance.
-- Posts from r/studyinkorea MUST have is_relevant=true (that subreddit is Korea study abroad only).
-- If only a title is provided (no body), still summarize from the title and set is_relevant=true.
-- For ai_content_en: if body is missing or over ~500 words, return "".
-- Keep existing Korean fields (ai_summary_kr) accurate; add natural English translations.
+${FOREIGN_STUDENT_CLASSIFICATION_RULES}
+Additional rules:
+- is_relevant=false for spam or under 10 characters of substance.
+- For ai_content_en: empty string if body missing or over ~500 words.
+- category=general only if relevant but no better fit (rare).
+If in doubt, is_relevant=false.
 No markdown fences.`;
 
-const VALID_CATEGORIES = new Set<StudyKoreaCategory>([
-  "admission",
-  "scholarship",
-  "visa",
-  "dormitory",
-  "life",
-  "language",
-  "cost",
-  "general",
-]);
+const RECLASSIFY_PROMPT = `Re-evaluate an existing post for international students studying in Korea.
+Return JSON only:
+{
+  "category": "visa|admission|scholarship|dormitory|living_cost|language|campus_life|settlement|employment|culture|general",
+  "is_relevant": true,
+  "reason": "one short sentence in English"
+}
+${FOREIGN_STUDENT_CLASSIFICATION_RULES}
+If in doubt, is_relevant=false.
+No markdown fences.`;
 
 function getClient(): Anthropic {
   const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -55,13 +84,11 @@ function parseJson(text: string): Record<string, unknown> {
 
 function toAnalysis(
   parsed: Record<string, unknown>,
-  bodyText: string,
-  subreddit?: string
+  bodyText: string
 ): StudyKoreaAnalysis {
-  const cat = String(parsed.category ?? "general");
-  const category = VALID_CATEGORIES.has(cat as StudyKoreaCategory)
-    ? (cat as StudyKoreaCategory)
-    : "general";
+  const category = normalizeStudyKoreaCategory(
+    String(parsed.category ?? "general")
+  );
 
   const uniRaw = String(parsed.university ?? "");
   const university =
@@ -72,10 +99,8 @@ function toAnalysis(
     ? parsed.ai_tags.map((t) => String(t)).filter(Boolean).slice(0, 8)
     : [];
 
-  const claudeRelevant = parsed.is_relevant !== false;
-  const is_relevant = isStudyInKoreaSubreddit(subreddit)
-    ? true
-    : claudeRelevant;
+  const is_relevant =
+    parsed.is_relevant !== false && parsed.is_relevant !== "false";
 
   return {
     category,
@@ -104,13 +129,10 @@ export async function analyzeStudyKoreaContent(
   const body = [title, content].filter(Boolean).join("\n\n").slice(0, 12000);
 
   const user = [
-    meta?.subreddit ? `Subreddit: r/${meta.subreddit}` : "",
     meta?.source ? `Source: ${meta.source}` : "",
     meta?.url ? `URL: ${meta.url}` : "",
     meta?.author ? `Author: ${meta.author}` : "",
-    meta?.subreddit?.toLowerCase() === "studyinkorea"
-      ? "Note: r/studyinkorea post — set is_relevant=true."
-      : "",
+    meta?.subreddit ? `Subreddit: r/${meta.subreddit}` : "",
     "---",
     body || title,
   ]
@@ -129,17 +151,55 @@ export async function analyzeStudyKoreaContent(
     throw new Error("Claude returned no text");
   }
 
-  const analysis = toAnalysis(
-    parseJson(textBlock.text),
-    body || title,
-    meta?.subreddit
-  );
+  const analysis = toAnalysis(parseJson(textBlock.text), body || title);
 
   console.log(
-    `[study-korea] Claude ${meta?.subreddit ?? meta?.source ?? "?"} / "${title.slice(0, 40)}…" → relevant=${analysis.is_relevant} en_title=${Boolean(analysis.ai_title_en)}`
+    `[study-korea] Claude ${meta?.subreddit ?? meta?.source ?? "?"} / "${title.slice(0, 40)}…" → relevant=${analysis.is_relevant} cat=${analysis.category}`
   );
 
   return analysis;
+}
+
+export type ReclassifyResult = {
+  category: StudyKoreaCategory;
+  is_relevant: boolean;
+  reason: string;
+};
+
+export async function reclassifyStudyKoreaPost(
+  title: string,
+  content: string,
+  aiSummary: string
+): Promise<ReclassifyResult> {
+  const client = getClient();
+  const user = [
+    `Title: ${title}`,
+    `Summary: ${aiSummary}`,
+    `Content: ${(content ?? "").slice(0, 4000)}`,
+  ].join("\n");
+
+  const message = await client.messages.create({
+    model: MODEL,
+    max_tokens: 512,
+    system: RECLASSIFY_PROMPT,
+    messages: [{ role: "user", content: user }],
+  });
+
+  const textBlock = message.content.find((b) => b.type === "text");
+  if (!textBlock || textBlock.type !== "text") {
+    throw new Error("Claude returned no text");
+  }
+
+  const parsed = parseJson(textBlock.text);
+  const category = normalizeStudyKoreaCategory(String(parsed.category ?? "general"));
+  const is_relevant =
+    parsed.is_relevant !== false && parsed.is_relevant !== "false";
+
+  return {
+    category,
+    is_relevant,
+    reason: String(parsed.reason ?? "").trim().slice(0, 300),
+  };
 }
 
 export type EnglishTranslation = {

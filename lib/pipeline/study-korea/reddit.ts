@@ -150,7 +150,7 @@ export async function scrapeRedditStudyKorea(): Promise<ScrapeRunResult> {
           continue;
         }
 
-        relevantCount++;
+        if (analysis.is_relevant) relevantCount++;
 
         const university =
           normalizeUniversitySlug(
@@ -178,7 +178,7 @@ export async function scrapeRedditStudyKorea(): Promise<ScrapeRunResult> {
           ai_summary_en: analysis.ai_summary_en,
           ai_content_en: analysis.ai_content_en,
           ai_tags: analysis.ai_tags,
-          is_published: true,
+          is_published: analysis.is_relevant,
         };
 
         const status = await upsertStudyKoreaPost(row);
