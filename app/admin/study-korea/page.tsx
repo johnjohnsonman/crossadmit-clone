@@ -611,8 +611,8 @@ function AdminStudyKoreaInner() {
                 🔍 Reddit 접근 테스트
               </h2>
               <p className="text-sm text-orange-800 mb-3">
-                Vercel 서버에서 www / old.reddit / RSS 세 방식을 시도합니다.
-                OAuth 없이 공개 API만 사용합니다.
+                www / old.reddit / RSS 진단. 수집은{" "}
+                <strong>RSS(method_c)만</strong> 사용합니다. OAuth 불필요.
               </p>
               <button
                 type="button"

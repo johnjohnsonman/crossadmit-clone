@@ -1,10 +1,5 @@
 import { analyzeStudyKoreaContent } from "./claude";
-import { passesRedditPrefilter } from "./reddit-filter";
-import {
-  fetchRedditFeed,
-  resetRedditFetchPreference,
-  type RedditPostData,
-} from "./reddit-fetch";
+import { collectRedditRssPosts } from "./reddit-rss";
 import { fillEmptySummaries, shouldSavePost } from "./relevance";
 import { finishPipelineRun, startPipelineRun } from "./runs";
 import { upsertStudyKoreaPost } from "./save";
@@ -13,53 +8,8 @@ import { normalizeUniversitySlug } from "./university-map";
 
 const CONTENT_FOR_AI_MAX = 500;
 
-const KOREA_STUDY_KEYWORDS =
-  /study|university|college|admission|scholarship|visa|dorm|exchange|international|tuition|campus|student/i;
-
-type FeedDef = {
-  url: string;
-  label: string;
-  filter?: (p: RedditPostData) => boolean;
-};
-
-function isKoreaStudyPost(p: RedditPostData): boolean {
-  const text = `${p.title} ${p.selftext ?? ""} ${p.link_flair_text ?? ""}`;
-  return KOREA_STUDY_KEYWORDS.test(text);
-}
-
-function buildSubredditFeeds(
-  subreddit: string,
-  options: { filter?: (p: RedditPostData) => boolean; sorts?: ("hot" | "new" | "top")[] } = {}
-): FeedDef[] {
-  const sorts = options.sorts ?? ["hot", "new", "top"];
-  const feeds: FeedDef[] = [];
-  for (const sort of sorts) {
-    const base = `https://www.reddit.com/r/${subreddit}/${sort}.json?limit=25`;
-    const url = sort === "top" ? `${base}&t=month` : base;
-    feeds.push({
-      url,
-      label: `r/${subreddit} ${sort}`,
-      filter: options.filter,
-    });
-  }
-  return feeds;
-}
-
-const REDDIT_FEEDS: FeedDef[] = [
-  ...buildSubredditFeeds("studyinkorea"),
-  ...buildSubredditFeeds("korea", { filter: isKoreaStudyPost }),
-  ...buildSubredditFeeds("Living_in_Korea"),
-  ...buildSubredditFeeds("KoreanAdvice"),
-  ...buildSubredditFeeds("teachinginkorea", { sorts: ["hot", "new"] }),
-];
-
 export async function scrapeRedditStudyKorea(): Promise<ScrapeRunResult> {
-  resetRedditFetchPreference();
-
-  const runId = await startPipelineRun(
-    "reddit",
-    REDDIT_FEEDS.map((f) => f.label).join(", ")
-  );
+  const runId = await startPipelineRun("reddit", "RSS feeds (5 subreddits)");
   const result: ScrapeRunResult = {
     collected: 0,
     processed: 0,
@@ -69,84 +19,49 @@ export async function scrapeRedditStudyKorea(): Promise<ScrapeRunResult> {
     errors: [],
   };
 
-  const seen = new Set<string>();
-  const posts: RedditPostData[] = [];
-
   try {
-    for (const feed of REDDIT_FEEDS) {
-      try {
-        const children = await fetchRedditFeed<RedditPostData>(
-          feed.url,
-          feed.label
-        );
-        let added = 0;
-        for (const c of children) {
-          const d = c.data;
-          if (!d?.id || seen.has(d.id)) continue;
-          if (feed.filter && !feed.filter(d)) continue;
+    const {
+      items,
+      errors: collectErrors,
+      skippedExisting,
+      skippedDuplicate,
+      skippedFilter,
+    } = await collectRedditRssPosts();
 
-          const pre = passesRedditPrefilter(d);
-          if (pre) {
-            console.log(`[Reddit] prefilter skip ${d.id}: ${pre}`);
-            continue;
-          }
+    result.errors.push(...collectErrors);
+    result.collected = items.length;
+    result.skipped = skippedExisting + skippedDuplicate + skippedFilter;
 
-          seen.add(d.id);
-          posts.push(d);
-          added++;
-        }
-        console.log(
-          `[reddit-fetch] ${feed.label}: raw=${children.length} kept=${added}`
-        );
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e);
-        result.errors.push(`${feed.label}: ${msg}`);
-        console.warn(`[reddit-fetch] ${feed.label} error:`, msg);
-      }
-    }
-
-    result.collected = posts.length;
-    console.log("[Reddit] fetched after prefilter:", posts.length);
+    console.log(
+      `[Reddit RSS] ready=${items.length} skip_db=${skippedExisting} skip_dup=${skippedDuplicate} skip_kw=${skippedFilter}`
+    );
 
     let relevantCount = 0;
 
-    for (const d of posts) {
+    for (const item of items) {
       result.processed++;
-      const fullContent = (d.selftext ?? "").trim();
+      const title = item.title.trim();
+      const fullContent = item.content.trim();
       const contentForAi = (
-        fullContent || d.title || ""
+        fullContent || title
       ).slice(0, CONTENT_FOR_AI_MAX);
-      const url = d.permalink
-        ? d.permalink.startsWith("http")
-          ? d.permalink
-          : `https://www.reddit.com${d.permalink}`
-        : d.url || "";
-      const title = (d.title ?? "").trim();
-      const subreddit = d.subreddit ?? "studyinkorea";
+      const url = item.link;
+      const subreddit = item.subreddit;
 
-      if (!title) {
-        result.skipped++;
-        continue;
-      }
+      const universityFromTitle = normalizeUniversitySlug("", title);
 
       try {
         let analysis = await analyzeStudyKoreaContent(title, contentForAi, {
           source: "reddit",
           url,
-          author: d.author,
+          author: item.author,
           subreddit,
+          language: "en",
         });
 
         analysis = fillEmptySummaries(title, fullContent, analysis);
 
-        const saveOk = shouldSavePost(
-          subreddit,
-          title,
-          fullContent,
-          analysis
-        );
-
-        if (!saveOk) {
+        if (!shouldSavePost(subreddit, title, fullContent, analysis)) {
           result.skipped++;
           continue;
         }
@@ -155,29 +70,35 @@ export async function scrapeRedditStudyKorea(): Promise<ScrapeRunResult> {
 
         const university =
           normalizeUniversitySlug(
-            analysis.university,
+            analysis.university || universityFromTitle,
             `${title} ${fullContent.slice(0, 500)}`
-          ) || analysis.university;
+          ) ||
+          analysis.university ||
+          universityFromTitle;
+
+        const sourceCreated = item.pubDate
+          ? new Date(item.pubDate).toISOString()
+          : null;
 
         const row = {
           source: "reddit" as const,
-          source_id: d.id,
+          source_id: item.id,
           title,
           content: fullContent.slice(0, 8000),
           url,
-          author: d.author || "",
-          upvotes: d.score ?? 0,
-          comment_count: d.num_comments ?? 0,
-          source_created_at: d.created_utc
-            ? new Date(d.created_utc * 1000).toISOString()
-            : null,
+          author: item.author,
+          language: "en" as const,
+          upvotes: 0,
+          comment_count: 0,
+          source_created_at: sourceCreated,
           category: analysis.category,
           university,
           ai_summary: analysis.ai_summary,
           ai_summary_kr: analysis.ai_summary_kr,
           ai_title_en: analysis.ai_title_en || title,
           ai_summary_en: analysis.ai_summary_en || analysis.ai_summary,
-          ai_content_en: analysis.ai_content_en || fullContent.slice(0, 8000),
+          ai_content_en:
+            analysis.ai_content_en || fullContent.slice(0, 8000),
           ai_tags: analysis.ai_tags,
           is_published: analysis.is_relevant,
         };
@@ -186,36 +107,38 @@ export async function scrapeRedditStudyKorea(): Promise<ScrapeRunResult> {
         if (status === "saved") result.saved++;
         else {
           result.failed++;
-          result.errors.push(`upsert failed ${d.id}`);
+          result.errors.push(`upsert failed ${item.id}`);
         }
       } catch (e) {
         result.failed++;
         const msg = e instanceof Error ? e.message : String(e);
-        result.errors.push(`reddit/${d.id}: ${msg}`);
-        console.error(`[Reddit] process error ${d.id}:`, msg);
+        result.errors.push(`reddit/${item.id}: ${msg}`);
+        console.error(`[Reddit RSS] process error ${item.id}:`, msg);
 
         const fallback = fillEmptySummaries(title, fullContent, {
           category: "general",
-          university: "",
+          university: universityFromTitle,
           ai_summary: title,
-          ai_summary_kr: title,
+          ai_summary_kr: "",
           ai_tags: [],
           is_relevant: false,
         });
 
-        const status = await upsertStudyKoreaPost({
+        await upsertStudyKoreaPost({
           source: "reddit",
-          source_id: d.id,
+          source_id: item.id,
           title,
           content: fullContent.slice(0, 8000),
           url,
-          author: d.author || "",
-          upvotes: d.score ?? 0,
-          comment_count: d.num_comments ?? 0,
-          source_created_at: d.created_utc
-            ? new Date(d.created_utc * 1000).toISOString()
+          author: item.author,
+          language: "en",
+          upvotes: 0,
+          comment_count: 0,
+          source_created_at: item.pubDate
+            ? new Date(item.pubDate).toISOString()
             : null,
           category: fallback.category,
+          university: universityFromTitle,
           ai_summary: fallback.ai_summary,
           ai_summary_kr: fallback.ai_summary_kr,
           ai_title_en: title,
@@ -223,15 +146,10 @@ export async function scrapeRedditStudyKorea(): Promise<ScrapeRunResult> {
           ai_content_en: fullContent.slice(0, 8000),
           is_published: false,
         });
-        if (status === "saved") {
-          console.log(`[Reddit] saved unpublished fallback ${d.id}`);
-        }
       }
     }
 
-    console.log("[Reddit] relevant:", relevantCount);
-    console.log("[Reddit] saved:", result.saved);
-    console.log("[Reddit] skipped:", result.skipped);
+    console.log("[Reddit RSS] relevant:", relevantCount, "saved:", result.saved);
 
     await finishPipelineRun(runId, {
       collected: result.collected,
@@ -249,7 +167,6 @@ export async function scrapeRedditStudyKorea(): Promise<ScrapeRunResult> {
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     result.errors.push(msg);
-    console.error("[Reddit] pipeline error:", msg);
     await finishPipelineRun(runId, {
       collected: result.collected,
       processed: result.processed,

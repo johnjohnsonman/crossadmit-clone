@@ -123,16 +123,22 @@ export async function analyzeStudyKoreaContent(
     url?: string;
     author?: string;
     subreddit?: string;
+    language?: string;
   }
 ): Promise<StudyKoreaAnalysis> {
   const client = getClient();
   const body = [title, content].filter(Boolean).join("\n\n").slice(0, 12000);
+  const isEnglishReddit =
+    meta?.source === "reddit" || meta?.language === "en";
 
   const user = [
     meta?.source ? `Source: ${meta.source}` : "",
     meta?.url ? `URL: ${meta.url}` : "",
     meta?.author ? `Author: ${meta.author}` : "",
     meta?.subreddit ? `Subreddit: r/${meta.subreddit}` : "",
+    isEnglishReddit
+      ? "Language: English (original). ai_summary in English; ai_summary_kr as Korean translation; ai_title_en same as title."
+      : "",
     "---",
     body || title,
   ]

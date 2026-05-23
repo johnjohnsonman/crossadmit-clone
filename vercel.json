@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/scrape-study-korea",
       "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/scrape-reddit-study-korea",
+      "schedule": "0 18 * * *"
     }
   ]
 }
