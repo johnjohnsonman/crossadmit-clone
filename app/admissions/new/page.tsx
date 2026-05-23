@@ -125,10 +125,6 @@ export default function AdmissionNewPage() {
   const [formError, setFormError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  const [deptOptions, setDeptOptions] = useState<
-    Record<string, AutocompleteItem[]>
-  >({});
-
   const schoolsPayload = useMemo(() => {
     const list: {
       univ_id: number;
@@ -223,22 +219,53 @@ export default function AdmissionNewPage() {
       );
       if (match) {
         updateRow(rowId, { univId: match.id });
-        const dRes = await fetch(`/api/universities?univ_id=${match.id}`);
-        const dData = await dRes.json();
-        const opts: AutocompleteItem[] = (dData.departments ?? []).map(
-          (d: { dept_name: string; dept_name_en?: string | null }) => {
-            const label = (d.dept_name ?? "").trim();
-            const en = (d.dept_name_en ?? "").trim();
-            return {
-              label,
-              hint: en && en !== label ? en : undefined,
-            };
-          }
-        );
-        setDeptOptions((prev) => ({ ...prev, [rowId]: opts }));
       }
     } catch {
-      /* fallback static lists */
+      /* ignore */
+    }
+  }
+
+  async function loadDepartments(q: string): Promise<AutocompleteItem[]> {
+    if (!q.trim()) return majorOptions;
+    try {
+      const res = await fetch(
+        `/api/departments/search?q=${encodeURIComponent(q.trim())}`
+      );
+      const data = await res.json();
+      return (data.departments ?? []).map(
+        (d: { dept_name: string; dept_name_en?: string | null }) => {
+          const label = (d.dept_name ?? "").trim();
+          const en = (d.dept_name_en ?? "").trim();
+          return {
+            label,
+            hint: en && en !== label ? en : undefined,
+          };
+        }
+      );
+    } catch {
+      return [];
+    }
+  }
+
+  async function onDepartmentPick(rowId: string, deptName: string) {
+    const row = rows.find((r) => r.id === rowId);
+    updateRow(rowId, { majorInput: deptName, deptId: 0 });
+
+    if (!row?.univId || row.univId <= 0) return;
+
+    try {
+      const res = await fetch(`/api/universities?univ_id=${row.univId}`);
+      const data = await res.json();
+      const normalized = deptName.trim().toLowerCase();
+      const match = (data.departments ?? []).find(
+        (d: { id: number; dept_name: string }) =>
+          (d.dept_name ?? "").trim().toLowerCase() === normalized
+      );
+      if (match?.id) {
+        updateRow(rowId, { deptId: match.id });
+      }
+    } catch {
+      /* dept_name only */
     }
   }
 
@@ -448,15 +475,13 @@ export default function AdmissionNewPage() {
                         </label>
                         <AutocompleteInput
                           id={`m-${row.id}`}
-                          options={
-                            deptOptions[row.id]?.length
-                              ? deptOptions[row.id]
-                              : majorOptions
-                          }
+                          options={majorOptions}
                           value={row.majorInput}
                           onChange={(v) =>
                             updateRow(row.id, { majorInput: v, deptId: 0 })
                           }
+                          onSelect={(v) => void onDepartmentPick(row.id, v)}
+                          loadOptions={loadDepartments}
                           placeholder="검색 또는 직접 입력"
                           className={inputClass}
                         />

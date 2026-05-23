@@ -192,6 +192,46 @@ export async function getUniversityDepartments(
   return (data ?? []) as UniversityDepartment[];
 }
 
+/** 학교 무관 전체 학과명 검색 (자동완성용) */
+export async function searchDepartmentsGlobal(
+  search: string,
+  limit = 100
+): Promise<Pick<UniversityDepartment, "id" | "univ_id" | "dept_name" | "dept_name_en">[]> {
+  const safe = escapeIlikeForPostgrest(search.trim());
+  if (!safe) return [];
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("university_departments")
+    .select("id, univ_id, dept_name, dept_name_en")
+    .or(`dept_name.ilike.%${safe}%,dept_name_en.ilike.%${safe}%`)
+    .order("dept_name", { ascending: true })
+    .limit(limit);
+
+  if (error) {
+    console.error("searchDepartmentsGlobal:", error);
+    throw new Error(error.message);
+  }
+  return (data ?? []) as Pick<
+    UniversityDepartment,
+    "id" | "univ_id" | "dept_name" | "dept_name_en"
+  >[];
+}
+
+export function dedupeDepartmentNames<
+  T extends { dept_name: string; dept_name_en?: string | null },
+>(rows: T[]): T[] {
+  const seen = new Set<string>();
+  const out: T[] = [];
+  for (const row of rows) {
+    const key = (row.dept_name ?? "").trim().toLowerCase();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    out.push(row);
+  }
+  return out;
+}
+
 export async function getCrossComparisons(params?: {
   univ_id?: number;
   univ_a?: number;
