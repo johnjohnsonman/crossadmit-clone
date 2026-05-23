@@ -10,6 +10,7 @@ import {
 } from "react";
 import { useSearchParams } from "next/navigation";
 import { CATEGORY_LABELS_KR } from "@/lib/study-korea/constants";
+import MentorUniversityRematchCard from "@/components/admin/MentorUniversityRematchCard";
 import {
   STUDY_KOREA_SOURCE_META,
   getSourceCardBorder,
@@ -1480,6 +1481,8 @@ function AdminStudyKoreaInner() {
                 </p>
               )}
             </section>
+
+            <MentorUniversityRematchCard adminKey={key} />
 
             <section className="bg-slate-100 rounded-xl border border-slate-300 p-4 shadow-sm">
               <h2 className="text-sm font-bold text-slate-800 mb-2">
