@@ -17,12 +17,10 @@ import {
   type Locale,
 } from "@/lib/i18n/dictionary";
 import { withLang } from "@/lib/i18n/locale";
-import LanguageToggle from "@/components/LanguageToggle";
 import {
   postDisplaySummary,
   postDisplayTitle,
   resolveStudyKoreaLang,
-  type StudyKoreaLang,
 } from "@/lib/study-korea/display";
 
 export interface ForumPost {
@@ -71,8 +69,7 @@ export default function StudyForumBoard({
   admissionsHref,
 }: Props) {
   const searchParams = useSearchParams();
-  const baseLang = resolveStudyKoreaLang(locale, searchParams.get("lang"));
-  const [viewLang, setViewLang] = useState<StudyKoreaLang>(baseLang);
+  const displayLang = resolveStudyKoreaLang(locale, searchParams.get("lang"));
   const [tab, setTab] = useState("all");
   const [searchInput, setSearchInput] = useState("");
   const [selectedUniv, setSelectedUniv] = useState<UniversityPick | null>(null);
@@ -109,10 +106,6 @@ export default function StudyForumBoard({
   useEffect(() => {
     void fetchPosts();
   }, [fetchPosts]);
-
-  useEffect(() => {
-    setViewLang(baseLang);
-  }, [baseLang]);
 
   useEffect(() => {
     setPage(0);
@@ -254,30 +247,9 @@ export default function StudyForumBoard({
               </div>
             )}
 
-            <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
-              <p className="text-xs text-[#6B7280]">
-                {formatDict(dict.forum_post_count, { n: total })}
-              </p>
-              <div className="flex items-center gap-2">
-                <div className="flex rounded-lg border border-[#E5E5E0] overflow-hidden bg-white text-xs">
-                  <button
-                    type="button"
-                    className={`px-3 py-1.5 ${viewLang === "en" ? "bg-[#2D5A27] text-white font-medium" : "text-[#6B7280]"}`}
-                    onClick={() => setViewLang("en")}
-                  >
-                    US
-                  </button>
-                  <button
-                    type="button"
-                    className={`px-3 py-1.5 ${viewLang === "ko" ? "bg-[#2D5A27] text-white font-medium" : "text-[#6B7280]"}`}
-                    onClick={() => setViewLang("ko")}
-                  >
-                    KR
-                  </button>
-                </div>
-                <LanguageToggle />
-              </div>
-            </div>
+            <p className="text-xs text-[#6B7280] mb-4">
+              {formatDict(dict.forum_post_count, { n: total })}
+            </p>
 
             {loading ? (
               <ForumListSkeleton count={5} />
@@ -289,8 +261,8 @@ export default function StudyForumBoard({
               <ul className="space-y-3">
                 {posts.map((p) => {
                   const sub = p.subcategory || p.category || "general";
-                  const displayTitle = postDisplayTitle(p, viewLang);
-                  const summary = postDisplaySummary(p, viewLang);
+                  const displayTitle = postDisplayTitle(p, displayLang);
+                  const summary = postDisplaySummary(p, displayLang);
                   const uni =
                     locale === "ko"
                       ? p.university_name_kr
@@ -325,7 +297,7 @@ export default function StudyForumBoard({
                         {summary && (
                           <p className="mt-2 text-sm text-[#6B7280] leading-relaxed line-clamp-2">
                             <span className="text-[#9CA3AF]">
-                              {viewLang === "en"
+                              {displayLang === "en"
                                 ? getDictionary("en").forum_summary_prefix
                                 : getDictionary("ko").forum_summary_prefix}
                             </span>
