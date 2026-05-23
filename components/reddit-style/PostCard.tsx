@@ -18,6 +18,8 @@ export type RedditPostCardData = {
   author?: string | null;
   category: string;
   subcategory?: string | null;
+  post_type?: string | null;
+  anonymous_nickname?: string | null;
   slug?: string | null;
   upvotes?: number | null;
   upvotes_count?: number | null;
@@ -38,14 +40,18 @@ type Props = {
 export default function PostCard({ post }: Props) {
   const cat = normalizePostCategory(post.category, post.subcategory);
   const href = post.slug ? postPath(cat, post.slug) : post.url;
+  const isUserAnon =
+    post.post_type === "user_anon" || post.source === "user_anon";
   const isExternal = !post.slug;
   const title = post.ai_title_en?.trim() || post.title;
   const preview =
     post.ai_summary_en?.trim() || post.ai_summary?.trim() || "";
   const score = postScore(post);
   const comments = postCommentsCount(post);
-  const sub = sourceSubredditLabel(post.source);
-  const author = post.author?.replace(/^\/u\//, "") || "anonymous";
+  const sub = isUserAnon ? cat : sourceSubredditLabel(post.source);
+  const author = isUserAnon
+    ? post.anonymous_nickname || post.author || "Anonymous"
+    : post.author?.replace(/^\/u\//, "") || "anonymous";
   const when = formatTimeAgo(post.source_created_at ?? post.created_at);
 
   const inner = (
@@ -62,7 +68,8 @@ export default function PostCard({ post }: Props) {
             r/{sub}
           </Link>
           <span className="mx-1">·</span>
-          Posted by u/{author}
+          Posted by {isUserAnon ? "" : "u/"}
+          {author}
           <span className="mx-1">·</span>
           {when}
         </p>
@@ -75,6 +82,9 @@ export default function PostCard({ post }: Props) {
           </p>
         )}
         <div className="mt-2 flex flex-wrap items-center gap-3 text-xs font-bold text-[#7C7C7C] dark:text-[#818384]">
+          {post.slug && (
+            <span className="text-[#FF4500]">Read more →</span>
+          )}
           <span>💬 {comments} Comments</span>
           <span className="cursor-pointer hover:bg-[#EDEFF1] dark:hover:bg-[#343536] px-2 py-1 rounded">
             ⤴ Share

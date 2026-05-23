@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import AdSenseSlot from "@/components/ads/AdSenseSlot";
+import CommentSection from "@/components/comments/CommentSection";
 import StructuredData from "@/components/StructuredData";
 import CommunitySidebar from "@/components/reddit-style/CommunitySidebar";
 import RedditLayout from "@/components/reddit-style/RedditLayout";
@@ -12,6 +13,7 @@ import {
   postScore,
   sourceSubredditLabel,
 } from "@/lib/forum/post-display";
+import { getCommentsForPost } from "@/lib/forum/comments";
 import {
   getCategoryMeta,
   normalizePostCategory,
@@ -59,18 +61,27 @@ export default async function PostDetailPage({ params }: Props) {
 
   const cat = normalizePostCategory(post.category, post.subcategory);
   const meta = getCategoryMeta(cat);
+  const isUserAnon =
+    post.post_type === "user_anon" || post.source === "user_anon";
   const title = post.ai_title_en?.trim() || post.title;
-  const body =
-    post.ai_content_en?.trim() ||
-    post.ai_summary_en?.trim() ||
-    post.ai_summary?.trim() ||
-    "";
+  const body = isUserAnon
+    ? post.content?.trim() ||
+      post.ai_content_en?.trim() ||
+      post.ai_summary_en?.trim() ||
+      ""
+    : post.ai_content_en?.trim() ||
+      post.ai_summary_en?.trim() ||
+      post.ai_summary?.trim() ||
+      "";
   const score = postScore(post);
   const comments = postCommentsCount(post);
-  const sub = sourceSubredditLabel(post.source);
-  const author = post.author?.replace(/^\/u\//, "") || "anonymous";
+  const sub = isUserAnon ? meta.label : sourceSubredditLabel(post.source);
+  const displayName = isUserAnon
+    ? post.anonymous_nickname || "Anonymous"
+    : post.author?.replace(/^\/u\//, "") || "anonymous";
   const when = formatTimeAgo(post.source_created_at ?? post.created_at);
   const related = await getRelatedPosts(post.id, cat);
+  const commentList = await getCommentsForPost(post.id);
   const canonical = `${BASE}${postPath(cat, slug)}`;
 
   const articleSchema = {
@@ -80,7 +91,7 @@ export default async function PostDetailPage({ params }: Props) {
     description: (post.ai_summary_en || post.ai_summary || "").slice(0, 200),
     datePublished: post.source_created_at ?? post.created_at,
     dateModified: post.created_at,
-    author: { "@type": "Person", name: author },
+    author: { "@type": "Person", name: displayName },
     publisher: {
       "@type": "Organization",
       name: "CrossAdmit",
@@ -94,7 +105,9 @@ export default async function PostDetailPage({ params }: Props) {
       ? "Reddit"
       : post.source.startsWith("naver")
         ? "Naver"
-        : post.source;
+        : post.source === "user_anon"
+          ? ""
+          : post.source;
 
   return (
     <RedditLayout
@@ -123,16 +136,35 @@ export default async function PostDetailPage({ params }: Props) {
         </div>
         <div className="flex-1 p-4 min-w-0">
           <p className="text-xs text-[#7C7C7C] mb-2">
-            <Link
-              href={`/r/${cat}`}
-              className="font-bold text-[#1C1C1C] dark:text-[#D7DADC] hover:underline"
-            >
-              r/{sub}
-            </Link>
-            <span className="mx-1">·</span>
-            Posted by u/{author}
-            <span className="mx-1">·</span>
-            {when}
+            {isUserAnon ? (
+              <>
+                <Link
+                  href={`/r/${cat}`}
+                  className="font-bold text-[#1C1C1C] dark:text-[#D7DADC] hover:underline"
+                >
+                  r/{sub}
+                </Link>
+                <span className="mx-1">·</span>
+                Posted by {displayName}
+                <span className="mx-1">·</span>
+                {when}
+              </>
+            ) : (
+              <>
+                <span className="text-[#7C7C7C]">
+                  Originally from {sourceLabel || "external source"}
+                </span>
+                <span className="mx-1">·</span>
+                <Link
+                  href={`/r/${cat}`}
+                  className="font-bold text-[#1C1C1C] dark:text-[#D7DADC] hover:underline"
+                >
+                  r/{sub}
+                </Link>
+                <span className="mx-1">·</span>
+                {when}
+              </>
+            )}
           </p>
           <h1 className="text-2xl font-bold text-[#1C1C1C] dark:text-[#D7DADC] leading-tight">
             {title}
@@ -148,7 +180,7 @@ export default async function PostDetailPage({ params }: Props) {
             )}
           </div>
 
-          {post.url && (
+          {!isUserAnon && post.url && (
             <p className="mt-4 text-sm">
               <a
                 href={post.url}
@@ -175,15 +207,7 @@ export default async function PostDetailPage({ params }: Props) {
         <AdSenseSlot />
       </div>
 
-      <section className="bg-white dark:bg-[#1A1A1B] border border-[#EDEFF1] dark:border-[#343536] rounded p-6">
-        <h2 className="text-lg font-bold text-[#1C1C1C] dark:text-[#D7DADC] mb-2">
-          Comments
-        </h2>
-        <p className="text-sm text-[#7C7C7C]">
-          Comments coming soon — sign up to be notified when discussion
-          launches (Phase 2).
-        </p>
-      </section>
+      <CommentSection postId={post.id} initialComments={commentList} />
     </RedditLayout>
   );
 }

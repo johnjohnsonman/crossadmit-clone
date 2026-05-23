@@ -52,7 +52,10 @@ export async function GET(request: NextRequest) {
         "id,source,source_id,title,url,author,category,subcategory,university,university_id,language,upvotes,comment_count,upvotes_count,downvotes_count,comments_count,views_count,slug,ai_summary,ai_summary_kr,ai_title_en,ai_summary_en,ai_content_en,source_created_at,created_at",
         { count: "exact" }
       )
-      .eq("is_published", true);
+      .eq("is_published", true)
+      .or(
+        "moderation_status.in.(approved,auto_approved),moderation_status.is.null"
+      );
 
     if (category && category !== "all") {
       q = q.or(`subcategory.eq.${category},category.eq.${category}`);

@@ -6,6 +6,7 @@ export type StudyKoreaPostRow = {
   source: string;
   source_id: string;
   title: string;
+  content?: string;
   url: string;
   author: string | null;
   category: string;
@@ -29,10 +30,12 @@ export type StudyKoreaPostRow = {
   source_created_at: string | null;
   created_at: string;
   is_published: boolean;
+  post_type?: string | null;
+  anonymous_nickname?: string | null;
 };
 
 const POST_SELECT =
-  "id,source,source_id,title,url,author,category,subcategory,university,university_id,language,upvotes,comment_count,upvotes_count,downvotes_count,comments_count,views_count,slug,ai_summary,ai_summary_kr,ai_title_en,ai_summary_en,ai_content_en,ai_tags,source_created_at,created_at,is_published";
+  "id,source,source_id,title,content,url,author,category,subcategory,university,university_id,language,upvotes,comment_count,upvotes_count,downvotes_count,comments_count,views_count,slug,post_type,anonymous_nickname,ai_summary,ai_summary_kr,ai_title_en,ai_summary_en,ai_content_en,ai_tags,source_created_at,created_at,is_published";
 
 export async function getPostBySlug(
   category: string,

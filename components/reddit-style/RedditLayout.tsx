@@ -41,6 +41,12 @@ export default function RedditLayout({
             <span className="sm:hidden">CA</span>
           </Link>
           <SearchBar />
+          <Link
+            href="/submit"
+            className="hidden sm:inline-flex shrink-0 px-3 py-1.5 bg-[#FF4500] text-white text-xs font-bold rounded-full hover:bg-[#e03d00] transition-colors"
+          >
+            + Create Post
+          </Link>
           <ThemeToggle />
         </div>
       </header>

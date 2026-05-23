@@ -49,7 +49,15 @@ export default function RedditForumHome() {
       sort={sort}
       rightSidebar={<CommunitySidebar />}
     >
-      <SortTabs sort={sort} />
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+        <SortTabs sort={sort} />
+        <a
+          href="/submit"
+          className="sm:hidden px-3 py-1.5 bg-[#FF4500] text-white text-xs font-bold rounded-full"
+        >
+          + Create Post
+        </a>
+      </div>
       <div className="bg-[#DAE0E6] dark:bg-[#030303] space-y-2 pt-2">
         {loading ? (
           <div className="p-8 text-center text-sm text-[#7C7C7C] bg-white dark:bg-[#1A1A1B] rounded border border-[#EDEFF1]">
