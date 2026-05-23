@@ -116,6 +116,7 @@ export async function POST(
       is_featured: false,
       published: true,
       source: "auto_collected",
+      source_url: post.url?.trim() || null,
       created_at: new Date().toISOString(),
     })
     .select("id")

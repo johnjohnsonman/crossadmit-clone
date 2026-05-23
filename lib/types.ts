@@ -42,6 +42,7 @@ export interface AdmissionRecord {
   isFeatured: boolean;
   published: boolean;
   source: string;
+  sourceUrl?: string;
   createdAt: Date;
   admissionSchools: AdmissionSchoolRecord[];
   crossComparisons?: CrossComparisonRecord[];

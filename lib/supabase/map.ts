@@ -64,6 +64,7 @@ export function admissionToRecord(
     isFeatured: Boolean(row.is_featured),
     published: Boolean(row.published),
     source: row.source ?? "",
+    sourceUrl: row.source_url?.trim() || undefined,
     createdAt: new Date(row.created_at),
     admissionSchools: schools,
     crossComparisons: crosses,

@@ -41,6 +41,7 @@ export type Admission = {
   is_featured: boolean;
   published: boolean;
   source: string;
+  source_url?: string | null;
   created_at: string;
   admission_schools?: AdmissionSchool[];
 };

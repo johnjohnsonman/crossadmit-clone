@@ -45,6 +45,31 @@ function SpecBlock({
 }
 
 /** input_specialty: 첫 줄=어학시험, 이후=비교과 (자동 이관 형식) */
+function sourceHostname(url: string): string {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return url;
+  }
+}
+
+function AutoCollectedSourceLink({ url }: { url: string }) {
+  return (
+    <div className="mt-4 pt-3 border-t border-gray-800 text-xs text-gray-500">
+      원본 출처:{" "}
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer nofollow"
+        className="ml-1 text-gray-400 hover:text-orange-400 underline"
+      >
+        {sourceHostname(url)}
+      </a>
+      <span className="ml-2 text-gray-600">(자동 수집)</span>
+    </div>
+  );
+}
+
 function splitInputSpecialty(raw: string | undefined): {
   testScores?: string;
   extraActivities?: string;
@@ -261,8 +286,19 @@ export default async function AdmissionDetailPage({ params }: PageProps) {
                     </div>
                   ))}
                 </div>
+                {record.source === "auto_collected" && record.sourceUrl && (
+                  <AutoCollectedSourceLink url={record.sourceUrl} />
+                )}
               </section>
             )}
+
+            {reviews.length === 0 &&
+              record.source === "auto_collected" &&
+              record.sourceUrl && (
+                <section className="rounded-xl border border-gray-800 bg-gray-900 p-5 sm:p-6">
+                  <AutoCollectedSourceLink url={record.sourceUrl} />
+                </section>
+              )}
 
             <section className="rounded-xl border border-gray-800 bg-gray-900 p-5 sm:p-6">
               <CommentSection admissionId={id} />

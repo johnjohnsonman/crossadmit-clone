@@ -390,9 +390,16 @@ export default function AdmissionsDbList() {
 
                     {/* 중앙 */}
                     <div className="min-w-0 flex-1 border-sage-100 sm:border-l sm:pl-4">
-                      <p className="text-sm font-medium text-gray-800 line-clamp-2">
-                        {record.title}
-                      </p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-sm font-medium text-gray-800 line-clamp-2">
+                          {record.title}
+                        </p>
+                        {record.source === "auto_collected" && (
+                          <span className="text-[10px] px-1.5 py-0.5 bg-gray-800 text-gray-500 rounded shrink-0">
+                            자동 수집
+                          </span>
+                        )}
+                      </div>
                       <div className="mt-2 space-y-1">
                         {lines.map((line, i) => (
                           <div key={i} className="flex flex-wrap items-center gap-2">

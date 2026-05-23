@@ -36,10 +36,39 @@ CRITICAL RULES:
    - test_scores: SAT/IELTS/TOEFL/TOPIK 점수 (예: "TOPIK 5급, IELTS 7.0")
    - extra_activities: 비교과, 활동 내역 (예: "수학경시 1등, 영재원")
 4. confidence:
-   - "high": 학교/학과/전형/점수 모두 명확
+   - "high": 학교/학과/전형/점수 모두 명확, 등록 학교도 명확
    - "medium": 일부 정보 명확
    - "low": 정보 부족, 본문이 너무 짧음
    - "skip": 외국 대학만 다루거나 합격 후기가 아님
+
+CRITICAL: is_regist (등록 여부) 추출은 매우 중요. 다음 표현이 있으면 해당 학교 is_regist=true:
+- "결국 X 갔다" / "결국 X로"
+- "X 등록함" / "X로 등록"
+- "X 최종 선택" / "X 가기로"
+- "X 입학" / "X 신입생"
+- "다 버리고 X" / "X 가게 됨"
+- "고민 끝에 X" / "그래서 X"
+- "X로 결정"
+- "X에 다닐 예정"
+- "최종 X"
+
+등록(is_regist) 규칙:
+1. is_regist=true는 schools 배열에서 ONE 학교만 가능
+2. 합격(is_accept=true)은 여러 학교 가능
+3. 등록 정보 명확하지 않으면 모든 학교 is_regist=false
+4. 등록 미상이면 confidence를 한 단계 낮춤 (high→medium, medium→low)
+
+등록 예시 1:
+"서울대, 연세대, 고려대 합격. 결국 서울대 갔습니다."
+→ 서울대: accept=true, regist=true / 연세대: accept=true, regist=false / 고려대: accept=true, regist=false
+
+등록 예시 2:
+"고려대 KMBA 합격해서 등록했습니다."
+→ 고려대 KMBA: accept=true, regist=true
+
+등록 예시 3 (등록 미상):
+"서울대 의대 합격했어요!"
+→ 서울대: accept=true, regist=false, confidence medium or low (not high)
 
 Return JSON only:
 {
@@ -154,6 +183,13 @@ ${univList}`,
       is_regist,
     };
   });
+
+  const hasAccept = parsed.schools.some((s) => s.is_accept);
+  const hasRegist = parsed.schools.some((s) => s.is_regist);
+  if (hasAccept && !hasRegist && parsed.confidence !== "skip") {
+    if (parsed.confidence === "high") parsed.confidence = "medium";
+    else if (parsed.confidence === "medium") parsed.confidence = "low";
+  }
 
   return parsed;
 }
