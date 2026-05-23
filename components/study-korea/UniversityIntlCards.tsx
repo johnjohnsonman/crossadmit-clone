@@ -54,7 +54,7 @@ export default function UniversityIntlCards({ locale }: Props) {
 
   return (
     <section className="mb-8">
-      <h2 className="text-lg font-semibold text-sage-900 mb-3">
+      <h2 className="text-lg font-semibold text-white mb-3">
         {locale === "ko"
           ? "대학 국제처 · 입학 안내"
           : "University international offices"}
@@ -66,28 +66,28 @@ export default function UniversityIntlCards({ locale }: Props) {
             href={u.intl_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-3 rounded-xl border border-sage-200 bg-white p-4 shadow-sm hover:border-tea-400 transition-colors"
+            className="flex items-center gap-3 rounded-xl border border-gray-800 bg-gray-900 p-4 hover:border-orange-500/50 transition-colors"
           >
             {u.logo ? (
               <img
                 src={u.logo}
                 alt=""
-                className="h-10 w-10 rounded object-contain shrink-0 bg-sage-50"
+                className="h-10 w-10 rounded object-contain shrink-0 bg-gray-800"
               />
             ) : (
               <span
-                className="h-10 w-10 rounded bg-sage-100 flex items-center justify-center text-sage-500 text-xs shrink-0"
+                className="h-10 w-10 rounded bg-gray-800 flex items-center justify-center text-gray-500 text-xs shrink-0"
                 aria-hidden
               >
                 🏫
               </span>
             )}
             <div className="min-w-0 flex-1">
-              <p className="font-medium text-sage-900 truncate">{u.name_kr}</p>
+              <p className="font-medium text-white truncate">{u.name_kr}</p>
               {u.name_en && (
-                <p className="text-xs text-sage-600 truncate">{u.name_en}</p>
+                <p className="text-xs text-gray-400 truncate">{u.name_en}</p>
               )}
-              <p className="text-xs text-tea-600 mt-1 font-medium">
+              <p className="text-xs text-orange-400 mt-1 font-medium">
                 {locale === "ko" ? "국제처 바로가기 →" : "Intl admissions →"}
               </p>
             </div>

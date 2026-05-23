@@ -55,6 +55,9 @@ const TABS = [
 
 type Props = { locale: "ko" | "en" };
 
+const selectClass =
+  "rounded-lg border border-gray-800 px-3 py-2 text-sm bg-gray-900 text-white focus:outline-none focus:ring-2 focus:ring-orange-500";
+
 export default function StudyKoreaGuide({ locale }: Props) {
   const searchParams = useSearchParams();
   const urlLang = searchParams.get("lang");
@@ -123,14 +126,21 @@ export default function StudyKoreaGuide({ locale }: Props) {
     }
   };
 
+  const tabClass = (active: boolean) =>
+    `px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+      active
+        ? "bg-orange-500 text-white"
+        : "bg-gray-800 text-gray-300 hover:bg-gray-700"
+    }`;
+
   return (
-    <div className="min-h-screen bg-sage-50">
+    <div className="min-h-screen bg-gray-950 text-gray-300">
       <div className="container mx-auto px-4 py-8 max-w-5xl">
         <header className="mb-8">
-          <h1 className="text-2xl md:text-3xl font-bold text-sage-900">
+          <h1 className="text-2xl md:text-3xl font-bold text-white">
             {locale === "ko" ? "한국 유학 가이드" : "Study in Korea Guide"}
           </h1>
-          <p className="text-sage-600 mt-2 text-sm md:text-base">
+          <p className="text-gray-400 mt-2 text-sm md:text-base">
             {locale === "ko"
               ? "Reddit·YouTube에서 수집한 한국 유학 정보를 AI로 요약해 제공합니다."
               : "Curated study-in-Korea tips from Reddit and YouTube, summarized by AI."}
@@ -145,11 +155,7 @@ export default function StudyKoreaGuide({ locale }: Props) {
               key={t}
               type="button"
               onClick={() => setTab(t)}
-              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                tab === t
-                  ? "bg-tea-600 text-white"
-                  : "bg-white text-sage-700 border border-sage-200 hover:border-tea-400"
-              }`}
+              className={tabClass(tab === t)}
             >
               {labels[t] ?? t}
             </button>
@@ -171,7 +177,8 @@ export default function StudyKoreaGuide({ locale }: Props) {
                 locale === "ko" ? "대학 검색 (전체)" : "Search university (all)"
               }
               locale={locale}
-              className="flex-1 px-3 py-2 text-sm border border-sage-200 rounded-lg bg-white text-gray-900 placeholder:text-gray-400"
+              variant="dark"
+              className="flex-1"
             />
             {selectedUniv && (
               <button
@@ -180,14 +187,14 @@ export default function StudyKoreaGuide({ locale }: Props) {
                   setSelectedUniv(null);
                   setUnivSearch("");
                 }}
-                className="px-3 py-2 rounded-lg border border-sage-200 bg-white text-sm text-gray-700 shrink-0"
+                className="px-3 py-2 rounded-lg border border-gray-800 bg-gray-800 text-sm text-gray-300 hover:bg-gray-700 shrink-0"
               >
                 {locale === "ko" ? "초기화" : "Clear"}
               </button>
             )}
           </div>
           <select
-            className="rounded-lg border border-sage-200 px-3 py-2 text-sm bg-white"
+            className={selectClass}
             value={language}
             onChange={(e) => setLanguage(e.target.value)}
           >
@@ -198,7 +205,7 @@ export default function StudyKoreaGuide({ locale }: Props) {
             <option value="ko">한국어</option>
           </select>
           <select
-            className="rounded-lg border border-sage-200 px-3 py-2 text-sm bg-white"
+            className={selectClass}
             value={sort}
             onChange={(e) =>
               setSort(e.target.value === "popular" ? "popular" : "latest")
@@ -211,17 +218,25 @@ export default function StudyKoreaGuide({ locale }: Props) {
               {locale === "ko" ? "인기순" : "Popular"}
             </option>
           </select>
-          <div className="flex rounded-lg border border-sage-200 overflow-hidden bg-white text-sm">
+          <div className="flex rounded-lg border border-gray-800 overflow-hidden bg-gray-900 text-sm">
             <button
               type="button"
-              className={`flex-1 py-2 ${viewLang === "en" ? "bg-tea-600 text-white" : "text-sage-700"}`}
+              className={`flex-1 py-2 font-medium transition-colors ${
+                viewLang === "en"
+                  ? "bg-orange-500 text-white"
+                  : "text-gray-400 hover:text-gray-200"
+              }`}
               onClick={() => setViewLang("en")}
             >
               US
             </button>
             <button
               type="button"
-              className={`flex-1 py-2 ${viewLang === "ko" ? "bg-tea-600 text-white" : "text-sage-700"}`}
+              className={`flex-1 py-2 font-medium transition-colors ${
+                viewLang === "ko"
+                  ? "bg-orange-500 text-white"
+                  : "text-gray-400 hover:text-gray-200"
+              }`}
               onClick={() => setViewLang("ko")}
             >
               KR
@@ -230,15 +245,15 @@ export default function StudyKoreaGuide({ locale }: Props) {
         </div>
 
         {loading && (
-          <p className="text-sage-600 text-center py-12">
+          <p className="text-gray-500 text-center py-12">
             {locale === "ko" ? "불러오는 중…" : "Loading…"}
           </p>
         )}
         {error && (
-          <p className="text-red-600 text-center py-8 text-sm">{error}</p>
+          <p className="text-red-400 text-center py-8 text-sm">{error}</p>
         )}
         {!loading && !error && posts.length === 0 && (
-          <p className="text-sage-600 text-center py-12">
+          <p className="text-gray-500 text-center py-12">
             {locale === "ko"
               ? "게시물이 없습니다. Supabase 마이그레이션 후 파이프라인을 실행해 주세요."
               : "No posts yet. Run the pipeline after applying the Supabase migration."}
@@ -260,37 +275,37 @@ export default function StudyKoreaGuide({ locale }: Props) {
             return (
               <li
                 key={p.id}
-                className="bg-white rounded-xl border border-sage-200 p-4 md:p-5 shadow-sm hover:border-tea-300 transition-colors"
+                className="bg-gray-900 rounded-xl border border-gray-800 p-4 md:p-5 hover:border-orange-500/40 transition-colors"
               >
                 <div className="flex flex-wrap items-center gap-2 mb-2">
-                  <span className="text-xs font-semibold px-2 py-0.5 rounded bg-tea-100 text-tea-800">
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded border border-orange-500/30 bg-gray-800 text-orange-300">
                     {catLabel}
                   </span>
                   {p.is_featured && (
-                    <span className="text-xs px-2 py-0.5 rounded bg-amber-100 text-amber-800">
+                    <span className="text-xs px-2 py-0.5 rounded bg-orange-500/20 text-orange-300 border border-orange-500/30">
                       Featured
                     </span>
                   )}
                   {uni && (
-                    <span className="text-xs px-2 py-0.5 rounded bg-sage-100 text-sage-800">
+                    <span className="text-xs px-2 py-0.5 rounded bg-gray-800 text-gray-400 border border-gray-700">
                       {uni}
                     </span>
                   )}
                 </div>
-                <h2 className="font-semibold text-sage-900 text-base md:text-lg leading-snug">
+                <h2 className="font-semibold text-white text-base md:text-lg leading-snug">
                   {displayTitle}
                 </h2>
                 {summary && (
-                  <p className="text-sage-600 text-sm mt-2 leading-relaxed">
+                  <p className="text-gray-300 text-sm mt-2 leading-relaxed">
                     {summary}
                   </p>
                 )}
-                <div className="flex flex-wrap items-center gap-3 mt-3 text-xs text-sage-500">
+                <div className="flex flex-wrap items-center gap-3 mt-3 text-xs text-gray-500">
                   <a
                     href={p.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-tea-600 hover:underline font-medium"
+                    className="inline-flex items-center gap-1 text-orange-400 hover:text-orange-300 font-medium"
                   >
                     {p.source === "youtube" ? (
                       <>
@@ -321,18 +336,18 @@ export default function StudyKoreaGuide({ locale }: Props) {
               type="button"
               disabled={page <= 0}
               onClick={() => setPage((p) => Math.max(0, p - 1))}
-              className="px-4 py-2 text-sm rounded border border-sage-200 disabled:opacity-40 bg-white"
+              className="px-4 py-2 text-sm rounded-lg border border-gray-700 bg-gray-800 text-white hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {locale === "ko" ? "이전" : "Prev"}
             </button>
-            <span className="px-3 py-2 text-sm text-sage-600">
+            <span className="px-3 py-2 text-sm text-gray-400">
               {page + 1} / {totalPages}
             </span>
             <button
               type="button"
               disabled={page >= totalPages - 1}
               onClick={() => setPage((p) => p + 1)}
-              className="px-4 py-2 text-sm rounded border border-sage-200 disabled:opacity-40 bg-white"
+              className="px-4 py-2 text-sm rounded-lg border border-gray-700 bg-gray-800 text-white hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {locale === "ko" ? "다음" : "Next"}
             </button>
