@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     let q = supabase
       .from("study_korea_posts")
       .select(
-        "id,source,title,url,author,category,university,language,upvotes,comment_count,ai_summary,ai_summary_kr,ai_tags,is_featured,source_created_at,created_at",
+        "id,source,title,url,author,category,university,language,upvotes,comment_count,ai_summary,ai_summary_kr,ai_title_en,ai_summary_en,ai_content_en,ai_tags,is_featured,source_created_at,created_at",
         { count: "exact" }
       )
       .eq("is_published", true);

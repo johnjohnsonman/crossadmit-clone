@@ -1,10 +1,30 @@
+import { Suspense } from "react";
 import StudyKoreaGuide from "@/components/study-korea/StudyKoreaGuide";
 
 export const metadata = {
   title: "한국 유학 가이드 | CrossAdmit",
-  description: "Study in Korea tips from Reddit and YouTube",
+  description: "Study in Korea tips from Reddit, Naver, and official sources",
 };
 
-export default function StudyKoreaPage() {
-  return <StudyKoreaGuide locale="ko" />;
+function StudyKoreaFallback() {
+  return (
+    <div className="min-h-screen bg-sage-50 flex items-center justify-center">
+      <p className="text-sage-600 text-sm">불러오는 중…</p>
+    </div>
+  );
+}
+
+type Props = {
+  searchParams: Promise<{ lang?: string }>;
+};
+
+export default async function StudyKoreaPage({ searchParams }: Props) {
+  const sp = await searchParams;
+  const locale = sp.lang === "en" ? "en" : "ko";
+
+  return (
+    <Suspense fallback={<StudyKoreaFallback />}>
+      <StudyKoreaGuide locale={locale} />
+    </Suspense>
+  );
 }

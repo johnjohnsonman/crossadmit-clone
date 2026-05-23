@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import UniversityAutocomplete, {
   type UniversityPick,
 } from "@/components/crossadmit/UniversityAutocomplete";
@@ -12,6 +13,12 @@ import {
   FORUM_TABS,
   SUBCATEGORY_LABELS,
 } from "@/lib/forum/constants";
+import {
+  postDisplaySummary,
+  postDisplayTitle,
+  resolveStudyKoreaLang,
+  type StudyKoreaLang,
+} from "@/lib/study-korea/display";
 
 export interface ForumPost {
   id: string;
@@ -26,6 +33,8 @@ export interface ForumPost {
   created_at: string;
   ai_summary?: string;
   ai_summary_kr?: string;
+  ai_title_en?: string;
+  ai_summary_en?: string;
   university_name_kr?: string;
   university_name_en?: string;
   university_logo?: string;
@@ -54,6 +63,9 @@ export default function StudyForumBoard({
   universityInfo,
   admissionsHref,
 }: Props) {
+  const searchParams = useSearchParams();
+  const baseLang = resolveStudyKoreaLang(locale, searchParams.get("lang"));
+  const [viewLang, setViewLang] = useState<StudyKoreaLang>(baseLang);
   const [tab, setTab] = useState("all");
   const [searchInput, setSearchInput] = useState("");
   const [selectedUniv, setSelectedUniv] = useState<UniversityPick | null>(null);
@@ -92,6 +104,10 @@ export default function StudyForumBoard({
   }, [fetchPosts]);
 
   useEffect(() => {
+    setViewLang(baseLang);
+  }, [baseLang]);
+
+  useEffect(() => {
     setPage(0);
   }, [tab, selectedUniv, fixedUniversity]);
 
@@ -113,13 +129,6 @@ export default function StudyForumBoard({
     return locale === "ko"
       ? `${d.getFullYear()}. ${d.getMonth() + 1}. ${d.getDate()}`
       : d.toLocaleDateString("en-US");
-  };
-
-  const postSummary = (p: ForumPost) => {
-    const kr = p.ai_summary_kr?.trim();
-    const en = p.ai_summary?.trim();
-    if (locale === "ko" && kr) return kr;
-    return en || kr || "";
   };
 
   const showMainHeader = !universityInfo;
@@ -236,13 +245,31 @@ export default function StudyForumBoard({
               </div>
             )}
 
-            <p className="text-xs text-[#6B7280] mb-4">
-              {locale === "ko" ? "총" : ""}{" "}
-              <span className="font-medium text-[#1A1A1A] tabular-nums">
-                {total}
-              </span>
-              {locale === "ko" ? "개 게시글" : " posts"}
-            </p>
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+              <p className="text-xs text-[#6B7280]">
+                {locale === "ko" ? "총" : ""}{" "}
+                <span className="font-medium text-[#1A1A1A] tabular-nums">
+                  {total}
+                </span>
+                {locale === "ko" ? "개 게시글" : " posts"}
+              </p>
+              <div className="flex rounded-lg border border-[#E5E5E0] overflow-hidden bg-white text-xs">
+                <button
+                  type="button"
+                  className={`px-3 py-1.5 ${viewLang === "en" ? "bg-[#2D5A27] text-white font-medium" : "text-[#6B7280]"}`}
+                  onClick={() => setViewLang("en")}
+                >
+                  US
+                </button>
+                <button
+                  type="button"
+                  className={`px-3 py-1.5 ${viewLang === "ko" ? "bg-[#2D5A27] text-white font-medium" : "text-[#6B7280]"}`}
+                  onClick={() => setViewLang("ko")}
+                >
+                  KR
+                </button>
+              </div>
+            </div>
 
             {loading ? (
               <ForumListSkeleton count={5} />
@@ -254,7 +281,8 @@ export default function StudyForumBoard({
               <ul className="space-y-3">
                 {posts.map((p) => {
                   const sub = p.subcategory || p.category || "general";
-                  const summary = postSummary(p);
+                  const displayTitle = postDisplayTitle(p, viewLang);
+                  const summary = postDisplaySummary(p, viewLang);
                   const uni =
                     locale === "ko"
                       ? p.university_name_kr
@@ -284,7 +312,7 @@ export default function StudyForumBoard({
                         className="block group"
                       >
                         <h2 className="font-semibold text-[#1A1A1A] text-base leading-snug group-hover:text-[#2D5A27] transition-colors">
-                          {p.title}
+                          {displayTitle}
                         </h2>
                         {summary && (
                           <p className="mt-2 text-sm text-[#6B7280] leading-relaxed line-clamp-2">

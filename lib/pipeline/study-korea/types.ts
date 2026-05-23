@@ -31,6 +31,9 @@ export interface StudyKoreaAnalysis {
   university: string;
   ai_summary: string;
   ai_summary_kr: string;
+  ai_title_en: string;
+  ai_summary_en: string;
+  ai_content_en: string;
   ai_tags: string[];
   is_relevant: boolean;
 }
@@ -52,6 +55,9 @@ export interface StudyKoreaPostInput {
   university_id?: number | null;
   ai_summary?: string;
   ai_summary_kr?: string;
+  ai_title_en?: string;
+  ai_summary_en?: string;
+  ai_content_en?: string;
   ai_tags?: string[];
   is_published?: boolean;
 }

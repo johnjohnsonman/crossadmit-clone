@@ -64,6 +64,9 @@ export async function processAndSaveItems(
         let university = item.university ?? "";
         let ai_summary = title;
         let ai_summary_kr = title;
+        let ai_title_en = "";
+        let ai_summary_en = "";
+        let ai_content_en = "";
         let ai_tags: string[] = [];
 
         if (!item.skipClaude) {
@@ -91,6 +94,9 @@ export async function processAndSaveItems(
             analysis.university;
           ai_summary = analysis.ai_summary;
           ai_summary_kr = analysis.ai_summary_kr;
+          ai_title_en = analysis.ai_title_en;
+          ai_summary_en = analysis.ai_summary_en;
+          ai_content_en = analysis.ai_content_en;
           ai_tags = analysis.ai_tags;
         } else if (!title) {
           result.skipped++;
@@ -114,6 +120,9 @@ export async function processAndSaveItems(
           language: item.language ?? (source === "naver_blog" ? "ko" : "en"),
           ai_summary,
           ai_summary_kr,
+          ai_title_en,
+          ai_summary_en,
+          ai_content_en,
           ai_tags,
           is_published: true,
         });

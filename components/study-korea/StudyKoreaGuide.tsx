@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import UniversityAutocomplete, {
   type UniversityPick,
 } from "@/components/crossadmit/UniversityAutocomplete";
@@ -10,6 +11,12 @@ import {
   CATEGORY_LABELS_KR,
   UNIVERSITY_LABELS,
 } from "@/lib/study-korea/constants";
+import {
+  postDisplaySummary,
+  postDisplayTitle,
+  resolveStudyKoreaLang,
+  type StudyKoreaLang,
+} from "@/lib/study-korea/display";
 
 export interface StudyKoreaPost {
   id: string;
@@ -24,6 +31,9 @@ export interface StudyKoreaPost {
   comment_count: number;
   ai_summary: string;
   ai_summary_kr: string;
+  ai_title_en?: string;
+  ai_summary_en?: string;
+  ai_content_en?: string;
   ai_tags: string[];
   is_featured: boolean;
   source_created_at: string | null;
@@ -46,20 +56,26 @@ const TABS = [
 type Props = { locale: "ko" | "en" };
 
 export default function StudyKoreaGuide({ locale }: Props) {
-  const labels = locale === "ko" ? CATEGORY_LABELS_KR : CATEGORY_LABELS_EN;
+  const searchParams = useSearchParams();
+  const urlLang = searchParams.get("lang");
+  const baseLang = resolveStudyKoreaLang(locale, urlLang);
+  const labels = baseLang === "ko" ? CATEGORY_LABELS_KR : CATEGORY_LABELS_EN;
+
   const [tab, setTab] = useState<string>("all");
   const [univSearch, setUnivSearch] = useState("");
   const [selectedUniv, setSelectedUniv] = useState<UniversityPick | null>(null);
   const [language, setLanguage] = useState("");
   const [sort, setSort] = useState<"latest" | "popular">("latest");
-  const [summaryLang, setSummaryLang] = useState<"en" | "kr">(
-    locale === "ko" ? "kr" : "en"
-  );
+  const [viewLang, setViewLang] = useState<StudyKoreaLang>(baseLang);
   const [page, setPage] = useState(0);
   const [posts, setPosts] = useState<StudyKoreaPost[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setViewLang(baseLang);
+  }, [baseLang]);
 
   const fetchPosts = useCallback(async () => {
     setLoading(true);
@@ -121,7 +137,7 @@ export default function StudyKoreaGuide({ locale }: Props) {
           </p>
         </header>
 
-        <UniversityIntlCards locale={locale} />
+        <UniversityIntlCards locale={baseLang} />
 
         <div className="flex flex-wrap gap-2 mb-6">
           {TABS.map((t) => (
@@ -198,15 +214,15 @@ export default function StudyKoreaGuide({ locale }: Props) {
           <div className="flex rounded-lg border border-sage-200 overflow-hidden bg-white text-sm">
             <button
               type="button"
-              className={`flex-1 py-2 ${summaryLang === "en" ? "bg-tea-600 text-white" : "text-sage-700"}`}
-              onClick={() => setSummaryLang("en")}
+              className={`flex-1 py-2 ${viewLang === "en" ? "bg-tea-600 text-white" : "text-sage-700"}`}
+              onClick={() => setViewLang("en")}
             >
-              EN
+              US
             </button>
             <button
               type="button"
-              className={`flex-1 py-2 ${summaryLang === "kr" ? "bg-tea-600 text-white" : "text-sage-700"}`}
-              onClick={() => setSummaryLang("kr")}
+              className={`flex-1 py-2 ${viewLang === "ko" ? "bg-tea-600 text-white" : "text-sage-700"}`}
+              onClick={() => setViewLang("ko")}
             >
               KR
             </button>
@@ -231,10 +247,8 @@ export default function StudyKoreaGuide({ locale }: Props) {
 
         <ul className="space-y-4">
           {posts.map((p) => {
-            const summary =
-              summaryLang === "kr" && p.ai_summary_kr
-                ? p.ai_summary_kr
-                : p.ai_summary;
+            const displayTitle = postDisplayTitle(p, viewLang);
+            const summary = postDisplaySummary(p, viewLang);
             const catLabel = labels[p.category] ?? p.category;
             const uni =
               p.university && UNIVERSITY_LABELS[p.university]
@@ -264,7 +278,7 @@ export default function StudyKoreaGuide({ locale }: Props) {
                   )}
                 </div>
                 <h2 className="font-semibold text-sage-900 text-base md:text-lg leading-snug">
-                  {p.title}
+                  {displayTitle}
                 </h2>
                 {summary && (
                   <p className="text-sage-600 text-sm mt-2 leading-relaxed">

@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
     let q = supabase
       .from("study_korea_posts")
       .select(
-        "id,source,source_id,title,url,author,category,subcategory,university,university_id,language,upvotes,comment_count,ai_summary,ai_summary_kr,source_created_at,created_at",
+        "id,source,source_id,title,url,author,category,subcategory,university,university_id,language,upvotes,comment_count,ai_summary,ai_summary_kr,ai_title_en,ai_summary_en,ai_content_en,source_created_at,created_at",
         { count: "exact" }
       )
       .eq("is_published", true);
@@ -102,14 +102,16 @@ export async function GET(request: NextRequest) {
 
     let statsBySource: Record<string, number> | undefined;
     if (withStats || offset === 0) {
-      const [naver, reddit, quora, official] = await Promise.all([
+      const [naverBlog, naverNews, reddit, quora, official] = await Promise.all([
         countBySource(supabase, "naver_blog"),
+        countBySource(supabase, "naver_news"),
         countBySource(supabase, "reddit"),
         countBySource(supabase, "quora"),
         countBySource(supabase, "studyinkorea"),
       ]);
       statsBySource = {
-        naver_blog: naver,
+        naver_blog: naverBlog,
+        naver_news: naverNews,
         reddit,
         quora,
         studyinkorea: official,

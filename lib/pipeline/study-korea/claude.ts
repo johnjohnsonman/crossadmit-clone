@@ -12,6 +12,9 @@ Analyze the post and return JSON only:
   "university": "university name or empty string",
   "ai_summary": "2-3 sentence English summary focusing on key info for prospective students",
   "ai_summary_kr": "2-3문장 한국어 요약",
+  "ai_title_en": "English translation of the title (concise, SEO-friendly, natural English)",
+  "ai_summary_en": "3-4 sentences in English summarizing key points for international students",
+  "ai_content_en": "Full English translation of the body if under 500 words; otherwise empty string",
   "ai_tags": ["tag1", "tag2", "tag3"],
   "is_relevant": true
 }
@@ -19,6 +22,17 @@ Rules:
 - Default is_relevant to true. Only set is_relevant=false for obvious spam or posts with under 10 characters of substance.
 - Posts from r/studyinkorea MUST have is_relevant=true (that subreddit is Korea study abroad only).
 - If only a title is provided (no body), still summarize from the title and set is_relevant=true.
+- For ai_content_en: if body is missing or over ~500 words, return "".
+- Keep existing Korean fields (ai_summary_kr) accurate; add natural English translations.
+No markdown fences.`;
+
+const TRANSLATE_PROMPT = `Translate the following Korean study-in-Korea content to natural English.
+Return JSON only:
+{
+  "ai_title_en": "concise SEO-friendly English title",
+  "ai_summary_en": "3-4 sentences, key points for international students",
+  "ai_content_en": "full translation if under 500 words, else empty string"
+}
 No markdown fences.`;
 
 const VALID_CATEGORIES = new Set<StudyKoreaCategory>([
@@ -77,6 +91,9 @@ function toAnalysis(
     university: university || uniRaw.slice(0, 80),
     ai_summary: String(parsed.ai_summary ?? "").trim(),
     ai_summary_kr: String(parsed.ai_summary_kr ?? "").trim(),
+    ai_title_en: String(parsed.ai_title_en ?? "").trim(),
+    ai_summary_en: String(parsed.ai_summary_en ?? "").trim(),
+    ai_content_en: String(parsed.ai_content_en ?? "").trim(),
     ai_tags: tags,
     is_relevant,
   };
@@ -111,7 +128,7 @@ export async function analyzeStudyKoreaContent(
 
   const message = await client.messages.create({
     model: MODEL,
-    max_tokens: 1024,
+    max_tokens: 2048,
     system: SYSTEM_PROMPT,
     messages: [{ role: "user", content: user }],
   });
@@ -128,8 +145,41 @@ export async function analyzeStudyKoreaContent(
   );
 
   console.log(
-    `[Reddit] Claude ${meta?.subreddit ?? "?"} / "${title.slice(0, 40)}…" → relevant=${analysis.is_relevant} cat=${analysis.category}`
+    `[study-korea] Claude ${meta?.subreddit ?? meta?.source ?? "?"} / "${title.slice(0, 40)}…" → relevant=${analysis.is_relevant} en_title=${Boolean(analysis.ai_title_en)}`
   );
 
   return analysis;
+}
+
+export type EnglishTranslation = {
+  ai_title_en: string;
+  ai_summary_en: string;
+  ai_content_en: string;
+};
+
+export async function translateStudyKoreaContent(
+  title: string,
+  content: string
+): Promise<EnglishTranslation> {
+  const client = getClient();
+  const body = [title, content].filter(Boolean).join("\n\n").slice(0, 12000);
+
+  const message = await client.messages.create({
+    model: MODEL,
+    max_tokens: 2048,
+    system: TRANSLATE_PROMPT,
+    messages: [{ role: "user", content: body || title }],
+  });
+
+  const textBlock = message.content.find((b) => b.type === "text");
+  if (!textBlock || textBlock.type !== "text") {
+    throw new Error("Claude returned no text");
+  }
+
+  const parsed = parseJson(textBlock.text);
+  return {
+    ai_title_en: String(parsed.ai_title_en ?? "").trim().slice(0, 500),
+    ai_summary_en: String(parsed.ai_summary_en ?? "").trim().slice(0, 2000),
+    ai_content_en: String(parsed.ai_content_en ?? "").trim().slice(0, 8000),
+  };
 }

@@ -44,11 +44,16 @@ export function fillEmptySummaries(
     (content.trim()
       ? content.trim().slice(0, 300)
       : `게시글: ${title}`.slice(0, 300));
+  const fallbackTitleEn = analysis.ai_title_en || title.slice(0, 200);
+  const fallbackSummaryEn = analysis.ai_summary_en || fallbackEn;
 
   return {
     ...analysis,
     ai_summary: fallbackEn,
     ai_summary_kr: fallbackKr,
+    ai_title_en: fallbackTitleEn,
+    ai_summary_en: fallbackSummaryEn,
+    ai_content_en: analysis.ai_content_en ?? "",
     is_relevant: true,
   };
 }

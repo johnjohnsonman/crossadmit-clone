@@ -32,6 +32,10 @@ type AdminPost = {
   is_featured: boolean;
   upvotes: number;
   created_at: string;
+  ai_summary?: string;
+  ai_summary_kr?: string;
+  ai_title_en?: string;
+  ai_summary_en?: string;
 };
 
 type AdminUniv = {
@@ -61,6 +65,7 @@ function AdminStudyKoreaInner() {
   const [runMsg, setRunMsg] = useState<string | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
   const [sourceFilter, setSourceFilter] = useState<string>("all");
+  const [enRows, setEnRows] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (keyFromUrl && keyFromUrl !== key) setKey(keyFromUrl);
@@ -220,6 +225,29 @@ function AdminStudyKoreaInner() {
     if (sourceFilter === "all") return posts;
     return posts.filter((p) => p.source === sourceFilter);
   }, [posts, sourceFilter]);
+
+  const togglePostEn = (id: string) => {
+    setEnRows((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const postTitleDisplay = (p: AdminPost) => {
+    if (enRows.has(p.id)) {
+      return p.ai_title_en?.trim() || p.title;
+    }
+    return p.title;
+  };
+
+  const postSummaryDisplay = (p: AdminPost) => {
+    if (enRows.has(p.id)) {
+      return p.ai_summary_en?.trim() || p.ai_summary || "";
+    }
+    return p.ai_summary_kr?.trim() || p.ai_summary || "";
+  };
 
   const totalPosts = posts.length;
 
@@ -437,6 +465,7 @@ function AdminStudyKoreaInner() {
                 <table className="w-full text-xs text-gray-900">
                   <thead className="sticky top-0 bg-white">
                     <tr className="border-b text-left">
+                      <th className="p-2 w-12">EN</th>
                       <th className="p-2">Title</th>
                       <th className="p-2">Cat</th>
                       <th className="p-2">Pub</th>
@@ -446,9 +475,29 @@ function AdminStudyKoreaInner() {
                   <tbody>
                     {filteredPosts.map((p) => (
                       <tr key={p.id} className="border-b border-slate-50">
+                        <td className="p-2">
+                          <button
+                            type="button"
+                            onClick={() => togglePostEn(p.id)}
+                            className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
+                              enRows.has(p.id)
+                                ? "bg-tea-600 text-white"
+                                : "bg-slate-200 text-gray-700"
+                            }`}
+                          >
+                            EN
+                          </button>
+                        </td>
                         <td className="p-2 max-w-[280px]">
                           <span className="text-gray-500">[{p.source}] </span>
-                          <span className="truncate block">{p.title}</span>
+                          <span className="truncate block font-medium">
+                            {postTitleDisplay(p)}
+                          </span>
+                          {postSummaryDisplay(p) && (
+                            <span className="text-gray-500 line-clamp-2 block mt-0.5">
+                              {postSummaryDisplay(p)}
+                            </span>
+                          )}
                         </td>
                         <td className="p-2 text-gray-900">
                           {CATEGORY_LABELS_KR[p.category] ?? p.category}

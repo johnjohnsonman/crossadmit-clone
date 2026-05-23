@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     const { data: posts, error: postsErr } = await admin
       .from("study_korea_posts")
       .select(
-        "id,source,title,category,university,is_published,is_featured,upvotes,created_at,source_created_at"
+        "id,source,title,category,university,is_published,is_featured,upvotes,created_at,source_created_at,ai_summary,ai_summary_kr,ai_title_en,ai_summary_en"
       )
       .order("created_at", { ascending: false })
       .limit(200);

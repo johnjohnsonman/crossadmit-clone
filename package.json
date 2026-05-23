@@ -17,6 +17,7 @@
     "migrate": "tsx scripts/migrate-to-supabase.ts",
     "scrape:studyinkorea": "tsx scripts/sources/reddit-studyinkorea.ts",
     "scrape:youtube": "tsx scripts/sources/youtube-studyinkorea-cli.ts",
+    "backfill:en": "tsx scripts/backfill-english-translation.ts",
     "postinstall": "echo 'Build completed'"
   },
   "keywords": [],

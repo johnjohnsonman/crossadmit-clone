@@ -174,6 +174,9 @@ export async function scrapeRedditStudyKorea(): Promise<ScrapeRunResult> {
           university,
           ai_summary: analysis.ai_summary,
           ai_summary_kr: analysis.ai_summary_kr,
+          ai_title_en: analysis.ai_title_en,
+          ai_summary_en: analysis.ai_summary_en,
+          ai_content_en: analysis.ai_content_en,
           ai_tags: analysis.ai_tags,
           is_published: true,
         };
@@ -214,6 +217,9 @@ export async function scrapeRedditStudyKorea(): Promise<ScrapeRunResult> {
           category: fallback.category,
           ai_summary: fallback.ai_summary,
           ai_summary_kr: fallback.ai_summary_kr,
+          ai_title_en: fallback.ai_title_en,
+          ai_summary_en: fallback.ai_summary_en,
+          ai_content_en: fallback.ai_content_en,
           is_published: false,
         });
         if (status === "saved") {
