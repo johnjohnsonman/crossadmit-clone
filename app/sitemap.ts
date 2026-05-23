@@ -4,6 +4,7 @@ import path from "path";
 import { REDDIT_CATEGORIES } from "@/lib/forum/reddit-categories";
 import { normalizePostCategory, postPath } from "@/lib/forum/reddit-categories";
 import { getPublishedPostsForSitemap } from "@/lib/forum/queries";
+import { getMentorIdsForSitemap } from "@/lib/mentors/queries";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = "https://crossadmit.com";
@@ -33,7 +34,26 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "daily",
       priority: 0.9,
     },
+    {
+      url: `${baseUrl}/mentors`,
+      lastModified: new Date(),
+      changeFrequency: "daily",
+      priority: 0.9,
+    },
   ];
+
+  let mentorPages: MetadataRoute.Sitemap = [];
+  try {
+    const mentors = await getMentorIdsForSitemap(500);
+    mentorPages = mentors.map((m) => ({
+      url: `${baseUrl}/mentors/${m.id}`,
+      lastModified: new Date(m.updated_at),
+      changeFrequency: "weekly" as const,
+      priority: 0.7,
+    }));
+  } catch (e) {
+    console.error("[sitemap] mentors:", e);
+  }
 
   const categoryHubs: MetadataRoute.Sitemap = REDDIT_CATEGORIES.map((c) => ({
     url: `${baseUrl}/r/${c.id}`,
@@ -139,6 +159,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...postPages,
     ...crossAdmitPages,
     ...admissionPages,
+    ...mentorPages,
     ...forumPages,
   ];
 }

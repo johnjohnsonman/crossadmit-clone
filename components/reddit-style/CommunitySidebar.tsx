@@ -1,5 +1,7 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import AdSenseSlot from "@/components/ads/AdSenseSlot";
+import MentorCtaBox from "@/components/mentors/MentorCtaBox";
 import { getCategoryMeta, REDDIT_CATEGORIES } from "@/lib/forum/reddit-categories";
 import type { StudyKoreaPostRow } from "@/lib/forum/queries";
 type Props = {
@@ -12,6 +14,9 @@ export default function CommunitySidebar({ category, relatedPosts = [] }: Props)
 
   return (
     <aside className="space-y-4">
+      <Suspense fallback={null}>
+        <MentorCtaBox />
+      </Suspense>
       <AdSenseSlot format="rectangle" className="mb-4" />
 
       <div className="bg-white dark:bg-[#1A1A1B] border border-[#EDEFF1] dark:border-[#343536] rounded overflow-hidden">

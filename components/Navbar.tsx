@@ -48,6 +48,12 @@ function NavbarInner() {
                 {t.nav_admissions}
               </Link>
               <Link
+                href={href("/mentors")}
+                className="text-sm text-sage-700 hover:text-tea-600 transition-colors"
+              >
+                {t.nav_mentors}
+              </Link>
+              <Link
                 href={href("/study-korea")}
                 className="text-sm text-sage-700 hover:text-tea-600 transition-colors"
               >
@@ -121,6 +127,13 @@ function NavbarInner() {
               onClick={() => setIsMenuOpen(false)}
             >
               {t.nav_admissions}
+            </Link>
+            <Link
+              href={href("/mentors")}
+              className="block px-4 py-2 text-sm text-sage-700 hover:bg-sage-50"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              {t.nav_mentors}
             </Link>
             <Link
               href={href("/study-korea")}

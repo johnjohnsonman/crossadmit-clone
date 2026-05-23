@@ -140,6 +140,17 @@ function AdminStudyKoreaInner() {
     priority: 5,
   });
   const [aiTopicSaving, setAiTopicSaving] = useState(false);
+  const [mentorTranslate, setMentorTranslate] = useState({
+    total: 141,
+    translated: 0,
+    remaining: 141,
+    inactive: 9,
+  });
+  const [mentorTranslateLoading, setMentorTranslateLoading] = useState(false);
+  const [mentorTranslateRunning, setMentorTranslateRunning] = useState(false);
+  const [mentorTranslateAuto, setMentorTranslateAuto] = useState(false);
+  const [mentorTranslateLog, setMentorTranslateLog] = useState<string | null>(null);
+  const mentorTranslateStopRef = useRef(false);
 
   const AI_GUIDE_CATEGORIES = [
     "visa",
@@ -242,6 +253,92 @@ function AdminStudyKoreaInner() {
       setSlugBackfillLog(e instanceof Error ? e.message : "Slug 백필 오류");
     } finally {
       setSlugBackfillRunning(false);
+    }
+  };
+
+  const loadMentorTranslateStatus = useCallback(async () => {
+    if (!key.trim()) return;
+    setMentorTranslateLoading(true);
+    try {
+      const res = await fetch("/api/admin/mentors/translate", { headers: hdrs() });
+      if (res.status === 401) return;
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "멘토 번역 상태 조회 실패");
+      setMentorTranslate({
+        total: json.total ?? 0,
+        translated: json.translated ?? 0,
+        remaining: json.remaining ?? 0,
+        inactive: json.inactive ?? 0,
+      });
+    } catch (e) {
+      setMentorTranslateLog(
+        e instanceof Error ? e.message : "멘토 번역 상태 오류"
+      );
+    } finally {
+      setMentorTranslateLoading(false);
+    }
+  }, [key, hdrs]);
+
+  const runMentorTranslateBatch = async () => {
+    if (!key.trim()) return;
+    setMentorTranslateRunning(true);
+    setMentorTranslateLog(null);
+    try {
+      const res = await fetch("/api/admin/mentors/translate", {
+        method: "POST",
+        headers: hdrs(true),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "번역 실패");
+      setMentorTranslate({
+        total: json.total ?? 0,
+        translated: json.translated ?? 0,
+        remaining: json.remaining ?? 0,
+        inactive: json.inactive ?? 0,
+      });
+      const b = json.batch;
+      setMentorTranslateLog(
+        `10건 처리 — 성공 ${b?.updated ?? 0} · 실패 ${b?.failed ?? 0} · 남은 ${json.remaining ?? 0}`
+      );
+    } catch (e) {
+      setMentorTranslateLog(e instanceof Error ? e.message : "오류");
+    } finally {
+      setMentorTranslateRunning(false);
+    }
+  };
+
+  const runMentorTranslateAuto = async () => {
+    if (!key.trim() || mentorTranslateAuto) return;
+    setMentorTranslateAuto(true);
+    mentorTranslateStopRef.current = false;
+    setMentorTranslateLog("멘토 전체 번역 시작…");
+    try {
+      while (!mentorTranslateStopRef.current && mentorTranslate.remaining > 0) {
+        setMentorTranslateRunning(true);
+        const res = await fetch("/api/admin/mentors/translate", {
+          method: "POST",
+          headers: hdrs(true),
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || "번역 실패");
+        setMentorTranslate({
+          total: json.total ?? 0,
+          translated: json.translated ?? 0,
+          remaining: json.remaining ?? 0,
+          inactive: json.inactive ?? 0,
+        });
+        if ((json.batch?.processed ?? 0) === 0) break;
+        setMentorTranslateLog(
+          `진행: ${json.translated}/${json.total} (남은 ${json.remaining})`
+        );
+        await new Promise((r) => setTimeout(r, 2000));
+      }
+      setMentorTranslateLog((p) => `${p ?? ""}\n완료`);
+    } catch (e) {
+      setMentorTranslateLog(e instanceof Error ? e.message : "자동 번역 오류");
+    } finally {
+      setMentorTranslateRunning(false);
+      setMentorTranslateAuto(false);
     }
   };
 
@@ -500,13 +597,14 @@ function AdminStudyKoreaInner() {
       void loadSlugBackfillStatus();
       void loadReclassifyStatus();
       void loadAiGuidesStatus();
+      void loadMentorTranslateStatus();
     } catch (e) {
       setAuthorized(false);
       setLoadErr(e instanceof Error ? e.message : "오류");
     } finally {
       setLoading(false);
     }
-  }, [hdrs, key, loadBackfillStatus, loadReclassifyStatus, loadAiGuidesStatus]);
+  }, [hdrs, key, loadBackfillStatus, loadReclassifyStatus, loadAiGuidesStatus, loadMentorTranslateStatus]);
 
   useEffect(() => {
     if (keyFromUrl.trim()) void loadAll();
@@ -940,6 +1038,10 @@ function AdminStudyKoreaInner() {
     aiGuides.total > 0
       ? Math.round((aiGuides.completed / aiGuides.total) * 100)
       : 0;
+  const mentorTranslatePct =
+    mentorTranslate.total > 0
+      ? Math.round((mentorTranslate.translated / mentorTranslate.total) * 100)
+      : 0;
 
   const postPathByTopicId = (topicId: string) => {
     const t = aiGuides.topics.find((x) => x.id === topicId);
@@ -1275,6 +1377,96 @@ function AdminStudyKoreaInner() {
                 </div>
               </div>
             )}
+
+            <section className="bg-sky-50 rounded-xl border border-sky-200 p-4 shadow-sm">
+              <h2 className="text-sm font-bold text-sky-900 mb-2">
+                🌐 멘토 자기소개 영어 번역 백필
+              </h2>
+              <p className="text-sm text-sky-800 mb-3">
+                <span className="font-semibold tabular-nums">
+                  {mentorTranslate.translated}
+                </span>
+                {" / "}
+                <span className="font-semibold tabular-nums">
+                  {mentorTranslate.total}
+                </span>
+                {mentorTranslateLoading ? (
+                  <span className="text-sky-600 ml-2">(불러오는 중…)</span>
+                ) : (
+                  <span className="text-sky-700 ml-2">
+                    (남은 {mentorTranslate.remaining}건)
+                  </span>
+                )}
+              </p>
+              <div className="h-3 w-full rounded-full bg-sky-100 overflow-hidden mb-3">
+                <div
+                  className="h-full bg-sky-600 transition-all duration-300"
+                  style={{ width: `${mentorTranslatePct}%` }}
+                />
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  disabled={
+                    mentorTranslateRunning ||
+                    mentorTranslateAuto ||
+                    mentorTranslate.remaining === 0
+                  }
+                  onClick={() => void runMentorTranslateBatch()}
+                  className="px-4 py-2 rounded-lg bg-sky-600 text-white text-sm font-semibold hover:bg-sky-700 disabled:opacity-50"
+                >
+                  {mentorTranslateRunning && !mentorTranslateAuto
+                    ? "번역 중…"
+                    : "▶ 10개 번역"}
+                </button>
+                <button
+                  type="button"
+                  disabled={
+                    mentorTranslateRunning ||
+                    mentorTranslateAuto ||
+                    mentorTranslate.remaining === 0
+                  }
+                  onClick={() => void runMentorTranslateAuto()}
+                  className="px-4 py-2 rounded-lg bg-sky-700 text-white text-sm font-semibold disabled:opacity-50"
+                >
+                  {mentorTranslateAuto ? "자동 실행 중…" : "▶▶ 전체 번역"}
+                </button>
+                <button
+                  type="button"
+                  disabled={!mentorTranslateAuto}
+                  onClick={() => {
+                    mentorTranslateStopRef.current = true;
+                    setMentorTranslateAuto(false);
+                  }}
+                  className="px-4 py-2 rounded-lg bg-white border border-sky-300 text-sky-900 text-sm disabled:opacity-50"
+                >
+                  ⏹ 중지
+                </button>
+              </div>
+              {mentorTranslateLog && (
+                <p className="text-xs text-sky-800 mt-3 bg-sky-100/80 px-3 py-2 rounded-lg whitespace-pre-wrap">
+                  {mentorTranslateLog}
+                </p>
+              )}
+            </section>
+
+            <section className="bg-slate-100 rounded-xl border border-slate-300 p-4 shadow-sm">
+              <h2 className="text-sm font-bold text-slate-800 mb-2">
+                🎯 비활성 멘토 검토
+              </h2>
+              <p className="text-sm text-slate-600 mb-3">
+                <span className="font-semibold tabular-nums">
+                  {mentorTranslate.inactive}
+                </span>
+                명 검토 대기 중
+              </p>
+              <a
+                href={`/admin/mentors-inactive?key=${encodeURIComponent(key)}`}
+                className="inline-block px-4 py-2 rounded-lg bg-slate-700 text-white text-sm font-semibold hover:bg-slate-800"
+              >
+                검토하기 →
+              </a>
+            </section>
 
             {/* English backfill */}
             <section className="bg-blue-50 rounded-xl border border-blue-200 p-4 shadow-sm">

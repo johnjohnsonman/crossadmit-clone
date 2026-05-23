@@ -5,6 +5,7 @@ import AdSenseSlot from "@/components/ads/AdSenseSlot";
 import CommentSection from "@/components/comments/CommentSection";
 import StructuredData from "@/components/StructuredData";
 import CommunitySidebar from "@/components/reddit-style/CommunitySidebar";
+import MentorRecommendation from "@/components/forum/MentorRecommendation";
 import RedditLayout from "@/components/reddit-style/RedditLayout";
 import VoteColumn from "@/components/reddit-style/VoteColumn";
 import AIGuideBanner from "@/components/reddit-style/AIGuideBanner";
@@ -129,7 +130,10 @@ export default async function PostDetailPage({ params }: Props) {
     <RedditLayout
       currentCategory={cat}
       rightSidebar={
-        <CommunitySidebar category={cat} relatedPosts={related} />
+        <>
+          <MentorRecommendation category={cat} />
+          <CommunitySidebar category={cat} relatedPosts={related} />
+        </>
       }
     >
       <StructuredData data={articleSchema} />

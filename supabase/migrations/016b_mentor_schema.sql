@@ -1,0 +1,2 @@
+-- Mentor schema: apply `016b_mentor_schema.sql` at repo root, then `017c_mentor_data_full.sql`.
+-- (Files kept at project root for large seed SQL.)
