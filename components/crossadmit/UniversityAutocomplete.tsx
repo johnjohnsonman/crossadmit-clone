@@ -19,6 +19,7 @@ type Props = {
   className?: string;
   /** en: prefer English name in input and dropdown */
   locale?: "ko" | "en";
+  variant?: "light" | "dark";
 };
 
 function displayName(u: UniversityPick, locale: "ko" | "en"): string {
@@ -35,6 +36,7 @@ export default function UniversityAutocomplete({
   placeholder,
   className = "",
   locale = "ko",
+  variant = "light",
 }: Props) {
   const [open, setOpen] = useState(false);
   const [highlight, setHighlight] = useState(0);
@@ -102,7 +104,18 @@ export default function UniversityAutocomplete({
 
   const inputClass =
     className ||
-    "w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400";
+    (variant === "dark"
+      ? "w-full px-3 py-2 text-sm bg-gray-900 border border-gray-800 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 text-white placeholder:text-gray-500"
+      : "w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400");
+
+  const dropdownClass =
+    variant === "dark"
+      ? "absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-gray-800 bg-gray-900 py-1 text-sm shadow-lg shadow-black/40"
+      : "absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-gray-200 bg-white py-1 text-sm shadow-lg";
+
+  const optionHover =
+    variant === "dark" ? "hover:bg-gray-800" : "hover:bg-blue-50";
+  const optionActive = variant === "dark" ? "bg-gray-800" : "bg-blue-50";
 
   return (
     <div ref={wrapRef} className="relative flex-1 min-w-0">
@@ -139,21 +152,22 @@ export default function UniversityAutocomplete({
         }}
       />
       {univId !== null && value.trim() && (
-        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-green-600 font-medium">
+        <span
+          className={`absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-medium ${
+            variant === "dark" ? "text-orange-400" : "text-green-600"
+          }`}
+        >
           ✓
         </span>
       )}
       {open && options.length > 0 && (
-        <ul
-          className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-gray-200 bg-white py-1 text-sm shadow-lg"
-          role="listbox"
-        >
+        <ul className={dropdownClass} role="listbox">
           {options.map((u, i) => (
             <li key={u.id}>
               <button
                 type="button"
-                className={`flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-blue-50 ${
-                  i === highlight ? "bg-blue-50" : ""
+                className={`flex w-full items-center gap-2 px-3 py-2 text-left ${optionHover} ${
+                  i === highlight ? optionActive : ""
                 }`}
                 onMouseDown={(ev) => {
                   ev.preventDefault();
@@ -164,18 +178,28 @@ export default function UniversityAutocomplete({
                   <img
                     src={u.logo}
                     alt=""
-                    className="h-8 w-8 rounded object-contain shrink-0 bg-gray-50"
+                    className={`h-8 w-8 rounded object-contain shrink-0 ${
+                      variant === "dark" ? "bg-gray-800" : "bg-gray-50"
+                    }`}
                   />
                 ) : (
                   <span
-                    className="h-8 w-8 rounded bg-gray-100 flex items-center justify-center text-gray-400 text-xs shrink-0"
+                    className={`h-8 w-8 rounded flex items-center justify-center text-xs shrink-0 ${
+                      variant === "dark"
+                        ? "bg-gray-800 text-gray-500"
+                        : "bg-gray-100 text-gray-400"
+                    }`}
                     aria-hidden
                   >
                     🏫
                   </span>
                 )}
                 <span className="min-w-0 flex-1 flex flex-col">
-                  <span className="font-medium text-gray-900 truncate">
+                  <span
+                    className={`font-medium truncate ${
+                      variant === "dark" ? "text-white" : "text-gray-900"
+                    }`}
+                  >
                     {locale === "en" ? displayName(u, "en") : u.name_kr}
                   </span>
                   {locale === "en" && u.name_kr ? (

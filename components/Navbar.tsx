@@ -15,8 +15,14 @@ function NavbarInner() {
 
   const href = (path: string) => withLang(path, locale);
 
+  const navLink =
+    "text-sm text-gray-300 hover:text-orange-400 transition-colors";
+  const navLinkBold = `${navLink} font-semibold`;
+  const mobileLink =
+    "block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-orange-400";
+
   return (
-    <nav className="bg-white border-b border-sage-200 sticky top-0 z-50 relative shadow-sm">
+    <nav className="bg-gray-950 border-b border-gray-800 sticky top-0 z-50 relative">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-14 md:h-16 py-2 md:py-3">
           <div className="flex items-center space-x-2 md:space-x-8">
@@ -24,45 +30,27 @@ function NavbarInner() {
               href={href("/")}
               className="flex items-center hover:opacity-80 transition-opacity"
             >
-              <span className="text-base md:text-2xl font-bold text-[#8B6F47] tracking-wide whitespace-nowrap">
+              <span className="text-base md:text-2xl font-bold text-orange-500 tracking-wide whitespace-nowrap">
                 CROSSADMIT
               </span>
             </Link>
             <div className="hidden md:flex items-center space-x-6">
-              <Link
-                href={href("/crossadmit")}
-                className="text-sm text-sage-700 hover:text-tea-600 transition-colors font-semibold"
-              >
+              <Link href={href("/crossadmit")} className={navLinkBold}>
                 {t.nav_crossadmit}
               </Link>
-              <Link
-                href={href("/forum")}
-                className="text-sm text-sage-700 hover:text-tea-600 transition-colors"
-              >
+              <Link href={href("/forum")} className={navLink}>
                 {t.nav_forum}
               </Link>
-              <Link
-                href={href("/admissions")}
-                className="text-sm text-sage-700 hover:text-tea-600 transition-colors"
-              >
+              <Link href={href("/admissions")} className={navLink}>
                 {t.nav_admissions}
               </Link>
-              <Link
-                href={href("/mentors")}
-                className="text-sm text-sage-700 hover:text-tea-600 transition-colors"
-              >
+              <Link href={href("/mentors")} className={navLink}>
                 {t.nav_mentors}
               </Link>
-              <Link
-                href={href("/study-korea")}
-                className="text-sm text-sage-700 hover:text-tea-600 transition-colors"
-              >
+              <Link href={href("/study-korea")} className={navLink}>
                 {t.nav_guide}
               </Link>
-              <Link
-                href={href("/videos")}
-                className="text-sm text-sage-700 hover:text-tea-600 transition-colors"
-              >
+              <Link href={href("/videos")} className={navLink}>
                 {t.nav_videos}
               </Link>
             </div>
@@ -73,19 +61,19 @@ function NavbarInner() {
             </div>
             <Link
               href={href("/login")}
-              className="hidden md:block px-3 md:px-4 py-1.5 md:py-2 text-xs md:text-sm text-sage-700 hover:text-tea-600 transition-colors"
+              className="hidden md:block px-3 md:px-4 py-1.5 md:py-2 text-xs md:text-sm text-gray-300 hover:text-orange-400 transition-colors"
             >
               {t.nav_login}
             </Link>
             <Link
               href={href("/signup")}
-              className="hidden md:block px-3 md:px-4 py-1.5 md:py-2 text-xs md:text-sm bg-tea-600 text-white rounded-md hover:bg-tea-700 transition-colors"
+              className="hidden md:block px-3 md:px-4 py-1.5 md:py-2 text-xs md:text-sm bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors"
             >
               {t.nav_signup}
             </Link>
             <button
               type="button"
-              className="md:hidden p-1.5 text-sage-700"
+              className="md:hidden p-1.5 text-gray-300"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               aria-label="Menu"
             >
@@ -106,62 +94,62 @@ function NavbarInner() {
           </div>
         </div>
         {isMenuOpen && (
-          <div className="md:hidden py-3 space-y-1 border-t border-sage-200">
+          <div className="md:hidden py-3 space-y-1 border-t border-gray-800">
             <Link
               href={href("/crossadmit")}
-              className="block px-4 py-2 text-sm text-sage-700 hover:bg-sage-50 font-semibold"
+              className={`${mobileLink} font-semibold`}
               onClick={() => setIsMenuOpen(false)}
             >
               {t.nav_crossadmit}
             </Link>
             <Link
               href={href("/forum")}
-              className="block px-4 py-2 text-sm text-sage-700 hover:bg-sage-50"
+              className={mobileLink}
               onClick={() => setIsMenuOpen(false)}
             >
               {t.nav_forum}
             </Link>
             <Link
               href={href("/admissions")}
-              className="block px-4 py-2 text-sm text-sage-700 hover:bg-sage-50"
+              className={mobileLink}
               onClick={() => setIsMenuOpen(false)}
             >
               {t.nav_admissions}
             </Link>
             <Link
               href={href("/mentors")}
-              className="block px-4 py-2 text-sm text-sage-700 hover:bg-sage-50"
+              className={mobileLink}
               onClick={() => setIsMenuOpen(false)}
             >
               {t.nav_mentors}
             </Link>
             <Link
               href={href("/study-korea")}
-              className="block px-4 py-2 text-sm text-sage-700 hover:bg-sage-50"
+              className={mobileLink}
               onClick={() => setIsMenuOpen(false)}
             >
               {t.nav_guide}
             </Link>
             <Link
               href={href("/videos")}
-              className="block px-4 py-2 text-sm text-sage-700 hover:bg-sage-50"
+              className={mobileLink}
               onClick={() => setIsMenuOpen(false)}
             >
               {t.nav_videos}
             </Link>
-            <div className="px-4 py-2 border-t border-sage-200 pt-3">
+            <div className="px-4 py-2 border-t border-gray-800 pt-3">
               <LanguageToggle />
             </div>
             <Link
               href={href("/login")}
-              className="block px-4 py-2 text-sm text-sage-700 hover:bg-sage-50"
+              className={mobileLink}
               onClick={() => setIsMenuOpen(false)}
             >
               {t.nav_login}
             </Link>
             <Link
               href={href("/signup")}
-              className="block px-4 py-2 text-sm bg-tea-600 text-white rounded-md hover:bg-tea-700 mx-4"
+              className="block mx-4 mt-2 px-4 py-2 text-sm text-center bg-orange-500 text-white rounded-md hover:bg-orange-600"
               onClick={() => setIsMenuOpen(false)}
             >
               {t.nav_signup}
@@ -177,7 +165,7 @@ export default function Navbar() {
   return (
     <Suspense
       fallback={
-        <nav className="bg-white border-b border-sage-200 h-14 md:h-16" />
+        <nav className="bg-gray-950 border-b border-gray-800 h-14 md:h-16" />
       }
     >
       <NavbarInner />

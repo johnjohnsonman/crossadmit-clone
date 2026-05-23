@@ -61,8 +61,8 @@ export default function Home() {
   return (
     <Suspense
       fallback={
-        <main className="min-h-screen bg-[#f5f3f0] flex items-center justify-center">
-          <p className="text-gray-600">Loading…</p>
+        <main className="min-h-screen bg-gray-950 flex items-center justify-center">
+          <p className="text-gray-400">Loading…</p>
         </main>
       }
     >

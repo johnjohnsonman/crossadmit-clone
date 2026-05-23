@@ -24,18 +24,18 @@ function TickerStrip({
             href={`/admissions/${item.admissionId}`}
             className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap px-10 transition-opacity hover:opacity-80"
           >
-            <span className="text-xs font-semibold text-emerald-800 md:text-sm">
+            <span className="text-xs font-semibold text-orange-400 md:text-sm">
               [등록]
             </span>
-            <span className="text-xs font-medium text-sage-800 md:text-sm">
+            <span className="text-xs font-medium text-gray-200 md:text-sm">
               {item.univName}
             </span>
-            <span className="text-xs text-sage-700 md:text-sm">
+            <span className="text-xs text-gray-400 md:text-sm">
               {item.deptName}
             </span>
           </Link>
           <span
-            className="inline-flex shrink-0 select-none items-center justify-center text-sm text-sage-400"
+            className="inline-flex shrink-0 select-none items-center justify-center text-sm text-gray-600"
             aria-hidden
           >
             ·
@@ -62,7 +62,7 @@ export default function FloatingAdmissions() {
   if (items.length === 0) return null;
 
   return (
-    <div className="relative z-40 mt-0 h-9 overflow-hidden border-b border-tea-200 bg-tea-100 py-1.5 md:h-11 md:py-2.5">
+    <div className="relative z-40 mt-0 h-9 overflow-hidden border-b border-gray-800 bg-gray-900 py-1.5 md:h-11 md:py-2.5">
       <div className="flex overflow-hidden">
         <div className="flex w-max animate-ticker items-center">
           <div className="flex shrink-0 flex-row items-center gap-[60px] pr-[60px]">

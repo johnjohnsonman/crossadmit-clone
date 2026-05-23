@@ -23,12 +23,12 @@ function LanguageToggleInner() {
   const btnClass = (active: boolean) =>
     `px-2 md:px-3 py-1 md:py-1.5 text-xs md:text-sm font-medium transition-all ${
       active
-        ? "bg-blue-500 text-white"
-        : "bg-white text-gray-700 hover:bg-gray-50"
+        ? "bg-orange-500 text-white"
+        : "bg-gray-800 text-gray-300 hover:bg-gray-700"
     }`;
 
   return (
-    <div className="flex items-center gap-0.5 border border-gray-300 rounded-md overflow-hidden">
+    <div className="flex items-center gap-0.5 border border-gray-700 rounded-md overflow-hidden bg-gray-900">
       <button
         type="button"
         onClick={() => switchLang("ko")}
@@ -37,7 +37,7 @@ function LanguageToggleInner() {
       >
         KR
       </button>
-      <div className="w-px bg-gray-300" />
+      <div className="w-px bg-gray-700" />
       <button
         type="button"
         onClick={() => switchLang("en")}
@@ -52,7 +52,11 @@ function LanguageToggleInner() {
 
 export default function LanguageToggle() {
   return (
-    <Suspense fallback={<div className="h-8 w-20 rounded-md bg-gray-100 animate-pulse" />}>
+    <Suspense
+      fallback={
+        <div className="h-8 w-20 rounded-md bg-gray-800 animate-pulse" />
+      }
+    >
       <LanguageToggleInner />
     </Suspense>
   );
