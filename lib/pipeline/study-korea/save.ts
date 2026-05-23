@@ -6,6 +6,7 @@ import {
 import { categoryToSubcategory, normalizeStudyKoreaCategory } from "./categories";
 import type { StudyKoreaPostInput } from "./types";
 import { resolveUniversityMatch } from "./university-id";
+import { generateSlug } from "@/lib/utils/slug";
 
 const NAVER_SOURCES = new Set(["naver_blog", "naver_news"]);
 
@@ -65,9 +66,13 @@ export async function upsertStudyKoreaPost(
     university = match.slug || university;
   }
 
+  const slugSource = (row.ai_title_en || row.title || "post").trim();
+  const slug = generateSlug(slugSource, source_id);
+
   const payload = {
     source: row.source,
     source_id,
+    slug,
     title: row.title,
     content: row.content ?? "",
     url,

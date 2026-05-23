@@ -31,7 +31,15 @@ export async function GET(request: NextRequest) {
   const universityIdParam = searchParams.get("university_id");
   const universityText = searchParams.get("university_text");
   const source = searchParams.get("source");
-  const sort = searchParams.get("sort") === "popular" ? "popular" : "latest";
+  const sortParam = searchParams.get("sort") || "hot";
+  const sort =
+    sortParam === "popular"
+      ? "popular"
+      : sortParam === "new" || sortParam === "latest"
+        ? "new"
+        : sortParam === "top"
+          ? "top"
+          : "hot";
   const limit = Math.min(parseInt(searchParams.get("limit") || "20", 10), 50);
   const offset = parseInt(searchParams.get("offset") || "0", 10);
   const withStats = searchParams.get("stats") === "1";
@@ -41,7 +49,7 @@ export async function GET(request: NextRequest) {
     let q = supabase
       .from("study_korea_posts")
       .select(
-        "id,source,source_id,title,url,author,category,subcategory,university,university_id,language,upvotes,comment_count,ai_summary,ai_summary_kr,ai_title_en,ai_summary_en,ai_content_en,source_created_at,created_at",
+        "id,source,source_id,title,url,author,category,subcategory,university,university_id,language,upvotes,comment_count,upvotes_count,downvotes_count,comments_count,views_count,slug,ai_summary,ai_summary_kr,ai_title_en,ai_summary_en,ai_content_en,source_created_at,created_at",
         { count: "exact" }
       )
       .eq("is_published", true);
@@ -86,8 +94,10 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    if (sort === "popular") {
-      q = q.order("upvotes", { ascending: false });
+    if (sort === "hot" || sort === "popular" || sort === "top") {
+      q = q
+        .order("upvotes_count", { ascending: false, nullsFirst: false })
+        .order("upvotes", { ascending: false });
     } else {
       q = q.order("source_created_at", { ascending: false, nullsFirst: false });
     }

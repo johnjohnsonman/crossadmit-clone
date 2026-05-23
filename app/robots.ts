@@ -8,38 +8,44 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/",
+        allow: ["/forum", "/r/"],
         disallow: [
           "/api/",
           "/admin/",
           "/_next/",
           "/private/",
+          "/search",
         ],
       },
       {
         userAgent: "Googlebot",
         allow: "/",
+        allow: ["/forum", "/r/"],
         disallow: [
           "/api/",
           "/admin/",
           "/private/",
+          "/search",
         ],
       },
       {
         userAgent: "Baiduspider",
-        allow: "/",
+        allow: ["/forum", "/r/"],
         disallow: [
           "/api/",
           "/admin/",
           "/private/",
+          "/search",
         ],
       },
       {
         userAgent: "Yandex",
-        allow: "/",
+        allow: ["/forum", "/r/"],
         disallow: [
           "/api/",
           "/admin/",
           "/private/",
+          "/search",
         ],
       },
     ],

@@ -35,6 +35,19 @@ main {
   background: var(--beige-bg);
 }
 
+/* Reddit-style forum (light + .reddit-dark on html) */
+.reddit-forum {
+  font-family: var(--font-reddit, Inter, system-ui, sans-serif);
+}
+
+html.reddit-dark .reddit-forum {
+  color-scheme: dark;
+}
+
+html.reddit-dark body {
+  background: #030303;
+}
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;

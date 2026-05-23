@@ -99,6 +99,14 @@ function AdminStudyKoreaInner() {
   const [redditTestResult, setRedditTestResult] = useState<string | null>(null);
   const [isRedditRunning, setIsRedditRunning] = useState(false);
   const [redditRunLog, setRedditRunLog] = useState<string | null>(null);
+  const [slugBackfill, setSlugBackfill] = useState({
+    total: 0,
+    with_slug: 0,
+    remaining: 0,
+  });
+  const [slugBackfillLoading, setSlugBackfillLoading] = useState(false);
+  const [slugBackfillRunning, setSlugBackfillRunning] = useState(false);
+  const [slugBackfillLog, setSlugBackfillLog] = useState<string | null>(null);
 
   const REDDIT_SUBREDDITS = [
     "studyinkorea",
@@ -143,6 +151,54 @@ function AdminStudyKoreaInner() {
       setReclassifyLoading(false);
     }
   }, [key, hdrs]);
+
+  const loadSlugBackfillStatus = useCallback(async () => {
+    if (!key.trim()) return;
+    setSlugBackfillLoading(true);
+    try {
+      const res = await fetch("/api/admin/backfill-slug", { headers: hdrs() });
+      if (res.status === 401) return;
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Slug 상태 조회 실패");
+      setSlugBackfill({
+        total: json.total ?? 0,
+        with_slug: json.with_slug ?? 0,
+        remaining: json.remaining ?? 0,
+      });
+    } catch (e) {
+      setSlugBackfillLog(
+        e instanceof Error ? e.message : "Slug 백필 상태 조회 오류"
+      );
+    } finally {
+      setSlugBackfillLoading(false);
+    }
+  }, [key, hdrs]);
+
+  const runSlugBackfillBatch = async () => {
+    if (!key.trim()) return;
+    setSlugBackfillRunning(true);
+    setSlugBackfillLog(null);
+    try {
+      const res = await fetch("/api/admin/backfill-slug", {
+        method: "POST",
+        headers: hdrs(true),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Slug 백필 실패");
+      setSlugBackfill({
+        total: json.total ?? 0,
+        with_slug: json.with_slug ?? 0,
+        remaining: json.remaining ?? 0,
+      });
+      setSlugBackfillLog(
+        `처리 ${json.batch?.processed ?? 0}건 · 업데이트 ${json.batch?.updated ?? 0}건 · 실패 ${json.batch?.failed ?? 0}건`
+      );
+    } catch (e) {
+      setSlugBackfillLog(e instanceof Error ? e.message : "Slug 백필 오류");
+    } finally {
+      setSlugBackfillRunning(false);
+    }
+  };
 
   const loadBackfillStatus = useCallback(async () => {
     if (!key.trim()) return;
@@ -203,6 +259,7 @@ function AdminStudyKoreaInner() {
       }
       setUnivEdits(edits);
       void loadBackfillStatus();
+      void loadSlugBackfillStatus();
       void loadReclassifyStatus();
     } catch (e) {
       setAuthorized(false);
@@ -636,6 +693,10 @@ function AdminStudyKoreaInner() {
     reclassify.total > 0
       ? Math.round((reclassify.reclassified / reclassify.total) * 100)
       : 0;
+  const slugPct =
+    slugBackfill.total > 0
+      ? Math.round((slugBackfill.with_slug / slugBackfill.total) * 100)
+      : 0;
 
   return (
     <div className="min-h-screen bg-slate-100 text-gray-900">
@@ -708,6 +769,49 @@ function AdminStudyKoreaInner() {
                 <pre className="mt-3 p-2 bg-white border border-orange-200 rounded text-xs font-mono whitespace-pre-wrap max-h-64 overflow-y-auto text-gray-800">
                   {redditTestResult}
                 </pre>
+              )}
+            </section>
+
+            <section className="bg-violet-50 rounded-xl border border-violet-200 p-4 shadow-sm">
+              <h2 className="text-sm font-bold text-violet-900 mb-2">
+                🔗 Slug 백필 (SEO URL)
+              </h2>
+              <p className="text-sm text-violet-800 mb-3">
+                <span className="font-semibold tabular-nums">
+                  {slugBackfill.with_slug}
+                </span>
+                {" / "}
+                <span className="font-semibold tabular-nums">
+                  {slugBackfill.total}
+                </span>
+                {slugBackfillLoading ? (
+                  <span className="text-violet-600 ml-2">(불러오는 중…)</span>
+                ) : (
+                  <span className="text-violet-700 ml-2">
+                    (남은 {slugBackfill.remaining}건)
+                  </span>
+                )}
+              </p>
+              <div className="h-3 w-full rounded-full bg-violet-100 overflow-hidden mb-3">
+                <div
+                  className="h-full bg-violet-600 transition-all duration-300"
+                  style={{ width: `${slugPct}%` }}
+                />
+              </div>
+              <button
+                type="button"
+                disabled={
+                  slugBackfillRunning || slugBackfill.remaining === 0
+                }
+                onClick={() => void runSlugBackfillBatch()}
+                className="px-4 py-2 rounded-lg bg-violet-600 text-white text-sm font-semibold hover:bg-violet-700 disabled:opacity-50"
+              >
+                {slugBackfillRunning ? "생성 중…" : "▶ 50건 Slug 생성"}
+              </button>
+              {slugBackfillLog && (
+                <p className="text-xs text-violet-800 mt-3 bg-violet-100/80 px-3 py-2 rounded-lg">
+                  {slugBackfillLog}
+                </p>
               )}
             </section>
 

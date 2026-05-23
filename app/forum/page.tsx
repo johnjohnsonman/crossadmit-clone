@@ -1,33 +1,35 @@
 import { Suspense } from "react";
-import StudyForumBoard from "@/components/forum/StudyForumBoard";
-import { getDictionary } from "@/lib/i18n/dictionary";
-import { resolveLocale } from "@/lib/i18n/locale";
+import type { Metadata } from "next";
+import RedditForumHome from "@/components/reddit-style/RedditForumHome";
 
-export const metadata = {
-  title: "유학 포럼 | CrossAdmit",
-  description: "Study in Korea forum — Naver, Reddit, Quora, official sources",
+export const metadata: Metadata = {
+  title: "Study in Korea Forum for International Students | CrossAdmit",
+  description:
+    "Reddit-style forum for foreigners studying in Korea — visa, admissions, scholarships, dorm life, TOPIK, and campus tips curated from trusted sources.",
+  openGraph: {
+    title: "Study in Korea Forum | CrossAdmit",
+    description:
+      "Visa, admissions, scholarships & campus life for international students in Korea.",
+    type: "website",
+    url: "https://crossadmit.com/forum",
+  },
+  alternates: {
+    canonical: "https://crossadmit.com/forum",
+  },
 };
 
 function ForumFallback() {
   return (
-    <div className="min-h-screen bg-[#FAFAF8] flex items-center justify-center">
-      <p className="text-[#6B7280] text-sm">불러오는 중…</p>
+    <div className="min-h-screen bg-[#DAE0E6] flex items-center justify-center">
+      <p className="text-[#7C7C7C] text-sm">Loading forum…</p>
     </div>
   );
 }
 
-type Props = {
-  searchParams: Promise<{ lang?: string }>;
-};
-
-export default async function ForumPage({ searchParams }: Props) {
-  const sp = await searchParams;
-  const locale = resolveLocale(sp.lang);
-  const dict = getDictionary(locale);
-
+export default function ForumPage() {
   return (
     <Suspense fallback={<ForumFallback />}>
-      <StudyForumBoard locale={locale} dict={dict} />
+      <RedditForumHome />
     </Suspense>
   );
 }
