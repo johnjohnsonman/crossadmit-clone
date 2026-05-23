@@ -5,7 +5,7 @@
       "schedule": "0 6 * * *"
     },
     {
-      "path": "/api/cron/scrape-reddit-study-korea",
+      "path": "/api/cron/scrape-reddit-all",
       "schedule": "0 18 * * *"
     }
   ]

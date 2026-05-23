@@ -4,7 +4,6 @@ import { isNaverConfigured } from "@/lib/pipeline/study-korea/naver-api";
 import { scrapeNaverNewsStudyKorea } from "@/lib/pipeline/study-korea/naver-news";
 import { scrapeNaverStudyKorea } from "@/lib/pipeline/study-korea/naver";
 import { scrapeUniversitiesIntl } from "@/lib/pipeline/study-korea/universities-intl";
-import { scrapeRedditStudyKorea } from "@/lib/pipeline/study-korea/reddit";
 import { scrapeYoutubeStudyKorea } from "@/lib/pipeline/study-korea/youtube";
 import type { ScrapeRunResult } from "@/lib/pipeline/study-korea/types";
 
@@ -41,7 +40,6 @@ export async function GET(request: NextRequest) {
   console.log("[master] scrape-study-korea started (active sources only)");
 
   const youtube = await safeRun("youtube", scrapeYoutubeStudyKorea);
-  const reddit = await safeRun("reddit", scrapeRedditStudyKorea);
   const university_official = await safeRun(
     "university_official",
     scrapeUniversitiesIntl
@@ -56,7 +54,6 @@ export async function GET(request: NextRequest) {
 
   const totalSaved =
     youtube.saved +
-    reddit.saved +
     university_official.saved +
     naver_blog.saved +
     naver_news.saved;
@@ -66,9 +63,8 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     success: true,
     totalSaved,
-    skipped: ["quora", "studyinkorea"],
+    skipped: ["reddit", "quora", "studyinkorea"],
     youtube,
-    reddit,
     university_official,
     naver_blog,
     naver_news,

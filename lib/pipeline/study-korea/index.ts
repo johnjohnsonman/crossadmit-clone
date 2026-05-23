@@ -37,5 +37,9 @@ export const STUDY_KOREA_PIPELINE_RUNNERS: Record<
   naver_news: scrapeNaverNewsStudyKorea,
 };
 
-export { scrapeRedditStudyKorea } from "./reddit";
-export { collectRedditRssPosts } from "./reddit-rss";
+export {
+  scrapeRedditStudyKorea,
+  scrapeRedditSubredditBatch,
+  scrapeRedditAllSubreddits,
+} from "./reddit";
+export { collectRedditRssForSubreddit, getSubredditNames } from "./reddit-rss";

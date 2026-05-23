@@ -6,6 +6,8 @@ export const REDDIT_RSS_USER_AGENT =
 
 export const BETWEEN_RSS_REQUESTS_MS = 2000;
 const MIN_BODY_CHARS = 250;
+const RSS_FETCH_TIMEOUT_MS = 10_000;
+const RSS_MAX_BYTES = 100 * 1024;
 
 export type SubredditConfig = {
   name: string;
@@ -25,11 +27,14 @@ export const SUBREDDITS: SubredditConfig[] = [
   { name: "teachinginkorea", priority: 3 },
 ];
 
-export const RSS_FEEDS_PER_SUBREDDIT = [
-  "/hot.rss",
-  "/new.rss",
-  "/top.rss?t=month",
-] as const;
+/** 기본은 hot만 (타임아웃 방지). new/top은 feed 파라미터로 */
+export const RSS_FEED_PATHS: Record<string, string> = {
+  hot: "/hot.rss",
+  new: "/new.rss",
+  top: "/top.rss?t=month",
+};
+
+export const DEFAULT_RSS_FEED = "hot";
 
 export type RedditRssItem = {
   id: string;
@@ -44,10 +49,6 @@ export type RedditRssItem = {
 };
 
 const parser = new Parser({
-  headers: {
-    "User-Agent": REDDIT_RSS_USER_AGENT,
-    Accept: "application/rss+xml, application/xml, text/xml, */*",
-  },
   customFields: {
     item: [
       ["content:encoded", "contentEncoded"],
@@ -59,8 +60,13 @@ const parser = new Parser({
 const MEGATHREAD_RE =
   /weekly\s+thread|megathread|daily\s+thread|question\s+thread|simple\s+questions/i;
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((r) => setTimeout(r, ms));
+function matchesKeywordFilter(
+  item: { title: string; content: string },
+  keywords?: string[]
+): boolean {
+  if (!keywords?.length) return true;
+  const text = `${item.title} ${item.content}`.toLowerCase();
+  return keywords.some((k) => text.includes(k.toLowerCase()));
 }
 
 /** HTML 태그 제거 */
@@ -118,15 +124,6 @@ function itemRawContent(item: Parser.Item & { contentEncoded?: string }): string
   return enc || content || item.summary || "";
 }
 
-function matchesKeywordFilter(
-  item: { title: string; content: string },
-  keywords?: string[]
-): boolean {
-  if (!keywords?.length) return true;
-  const text = `${item.title} ${item.content}`.toLowerCase();
-  return keywords.some((k) => text.includes(k.toLowerCase()));
-}
-
 export function shouldSkipRssItem(
   title: string,
   content: string
@@ -176,6 +173,53 @@ function parseItem(
   };
 }
 
+export function resolveFeedPath(feed: string): string {
+  const key = feed.toLowerCase();
+  return RSS_FEED_PATHS[key] ?? RSS_FEED_PATHS[DEFAULT_RSS_FEED]!;
+}
+
+export function getSubredditNames(): string[] {
+  return [...SUBREDDITS]
+    .sort((a, b) => a.priority - b.priority)
+    .map((s) => s.name);
+}
+
+export function getSubredditConfig(name: string): SubredditConfig | undefined {
+  return SUBREDDITS.find(
+    (s) => s.name.toLowerCase() === name.toLowerCase()
+  );
+}
+
+export function getRemainingSubreddits(current: string): string[] {
+  const names = getSubredditNames();
+  const idx = names.findIndex((n) => n.toLowerCase() === current.toLowerCase());
+  if (idx < 0) return names.filter((n) => n.toLowerCase() !== current.toLowerCase());
+  return names.slice(idx + 1);
+}
+
+async function fetchRssXml(url: string): Promise<string> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), RSS_FETCH_TIMEOUT_MS);
+  try {
+    const res = await fetch(url, {
+      headers: {
+        "User-Agent": REDDIT_RSS_USER_AGENT,
+        Accept: "application/rss+xml, application/xml, text/xml, */*",
+      },
+      signal: controller.signal,
+      cache: "no-store",
+    });
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status} ${res.statusText}`);
+    }
+    const buf = await res.arrayBuffer();
+    const slice = buf.byteLength > RSS_MAX_BYTES ? buf.slice(0, RSS_MAX_BYTES) : buf;
+    return new TextDecoder("utf-8", { fatal: false }).decode(slice);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export async function fetchSubredditRssFeed(
   subreddit: string,
   feedPath: string
@@ -184,7 +228,8 @@ export async function fetchSubredditRssFeed(
   const label = `r/${subreddit}${feedPath}`;
 
   try {
-    const feed = await parser.parseURL(url);
+    const xml = await fetchRssXml(url);
+    const feed = await parser.parseString(xml);
     const items: RedditRssItem[] = [];
     for (const raw of feed.items ?? []) {
       const parsed = parseItem(
@@ -224,62 +269,63 @@ export async function loadExistingRedditSourceIds(): Promise<Set<string>> {
 }
 
 /**
- * 모든 서브레딧 × RSS 피드 수집 (중복·DB·키워드 필터 적용).
+ * 단일 서브레딧 × 단일 RSS 피드 수집 (배치 API용).
  */
-export async function collectRedditRssPosts(): Promise<{
+export async function collectRedditRssForSubreddit(
+  subreddit: string,
+  feed = DEFAULT_RSS_FEED
+): Promise<{
   items: RedditRssItem[];
-  errors: string[];
+  feedPath: string;
   skippedExisting: number;
   skippedDuplicate: number;
   skippedFilter: number;
 }> {
-  const errors: string[] = [];
+  const config = getSubredditConfig(subreddit);
+  if (!config) {
+    throw new Error(`Unknown subreddit: ${subreddit}`);
+  }
+
+  const feedPath = resolveFeedPath(feed);
+  const existingIds = await loadExistingRedditSourceIds();
   const seenLinks = new Set<string>();
   const seenIds = new Set<string>();
-  const existingIds = await loadExistingRedditSourceIds();
   const items: RedditRssItem[] = [];
   let skippedExisting = 0;
   let skippedDuplicate = 0;
   let skippedFilter = 0;
 
-  const sorted = [...SUBREDDITS].sort((a, b) => a.priority - b.priority);
+  const batch = await fetchSubredditRssFeed(config.name, feedPath);
 
-  for (const sub of sorted) {
-    for (const feedPath of RSS_FEEDS_PER_SUBREDDIT) {
-      const batch = await fetchSubredditRssFeed(sub.name, feedPath);
-      await sleep(BETWEEN_RSS_REQUESTS_MS);
-
-      for (const item of batch) {
-        if (seenLinks.has(item.link) || seenIds.has(item.id)) {
-          skippedDuplicate++;
-          continue;
-        }
-        if (existingIds.has(item.id)) {
-          skippedExisting++;
-          continue;
-        }
-        if (
-          sub.keyword_filter &&
-          !matchesKeywordFilter(item, sub.keyword_filter)
-        ) {
-          skippedFilter++;
-          continue;
-        }
-
-        seenLinks.add(item.link);
-        seenIds.add(item.id);
-        items.push(item);
-      }
+  for (const item of batch) {
+    if (seenLinks.has(item.link) || seenIds.has(item.id)) {
+      skippedDuplicate++;
+      continue;
     }
+    if (existingIds.has(item.id)) {
+      skippedExisting++;
+      continue;
+    }
+    if (
+      config.keyword_filter &&
+      !matchesKeywordFilter(item, config.keyword_filter)
+    ) {
+      skippedFilter++;
+      continue;
+    }
+
+    seenLinks.add(item.link);
+    seenIds.add(item.id);
+    items.push(item);
   }
 
   console.log(
-    `[reddit-rss] collected=${items.length} skip_db=${skippedExisting} skip_dup=${skippedDuplicate} skip_kw=${skippedFilter}`
+    `[reddit-rss] ${config.name}/${feed}: collected=${items.length} skip_db=${skippedExisting} skip_kw=${skippedFilter}`
   );
 
   return {
     items,
-    errors,
+    feedPath,
     skippedExisting,
     skippedDuplicate,
     skippedFilter,

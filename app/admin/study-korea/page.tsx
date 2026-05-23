@@ -97,6 +97,16 @@ function AdminStudyKoreaInner() {
   const reclassifyStopRef = useRef(false);
   const [redditTestLoading, setRedditTestLoading] = useState(false);
   const [redditTestResult, setRedditTestResult] = useState<string | null>(null);
+  const [isRedditRunning, setIsRedditRunning] = useState(false);
+  const [redditRunLog, setRedditRunLog] = useState<string | null>(null);
+
+  const REDDIT_SUBREDDITS = [
+    "studyinkorea",
+    "korea",
+    "Living_in_Korea",
+    "KoreanAdvice",
+    "teachinginkorea",
+  ] as const;
 
   useEffect(() => {
     if (keyFromUrl && keyFromUrl !== key) setKey(keyFromUrl);
@@ -437,18 +447,90 @@ function AdminStudyKoreaInner() {
     }
   };
 
+  const parseCronJson = async (
+    res: Response
+  ): Promise<{ ok: true; data: Record<string, unknown> } | { ok: false; error: string }> => {
+    const text = await res.text();
+    try {
+      return { ok: true, data: JSON.parse(text) as Record<string, unknown> };
+    } catch {
+      return {
+        ok: false,
+        error: `Invalid response (${res.status}): ${text.substring(0, 120)}`,
+      };
+    }
+  };
+
+  const runRedditBatched = async () => {
+    if (!key.trim()) return;
+    setIsRedditRunning(true);
+    setRunningSource("Reddit");
+    setRunMsg(null);
+    setRedditRunLog("Reddit 배치 수집 시작…\n");
+    const lines: string[] = [];
+    let totalSaved = 0;
+
+    try {
+      for (const sub of REDDIT_SUBREDDITS) {
+        const url = `/api/cron/scrape-reddit-study-korea?subreddit=${encodeURIComponent(sub)}&feed=hot&limit=10`;
+        const res = await fetch(url, {
+          headers: { "x-admin-secret": key.trim() },
+        });
+        const parsed = await parseCronJson(res);
+
+        if (!parsed.ok) {
+          lines.push(`${sub}: 오류 — ${parsed.error}`);
+          setRedditRunLog(lines.join("\n"));
+          setRunMsg(`Reddit 중단: ${parsed.error}`);
+          break;
+        }
+
+        const data = parsed.data;
+        if (!res.ok || data.error) {
+          const err = String(data.error ?? `HTTP ${res.status}`);
+          lines.push(`${sub}: 오류 — ${err}`);
+          setRedditRunLog(lines.join("\n"));
+          setRunMsg(`Reddit 중단: ${err}`);
+          break;
+        }
+
+        const fetched = Number(data.fetched ?? 0);
+        const saved = Number(data.saved ?? 0);
+        totalSaved += saved;
+        lines.push(`${sub}: ${fetched}건 수집, ${saved}건 저장`);
+        setRedditRunLog(lines.join("\n"));
+
+        await new Promise((r) => setTimeout(r, 2000));
+      }
+
+      if (lines.length === REDDIT_SUBREDDITS.length) {
+        setRunMsg(`Reddit 완료 — 총 저장 ${totalSaved}건`);
+      }
+      await loadAll();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "오류";
+      setRunMsg(`Reddit: ${msg}`);
+      setRedditRunLog((prev) => `${prev ?? ""}\n${msg}`);
+    } finally {
+      setIsRedditRunning(false);
+      setRunningSource(null);
+    }
+  };
+
   const runCron = async (path: string, label: string) => {
     if (!key.trim()) return;
     setRunningSource(label);
     setRunMsg(null);
     try {
       const res = await fetch(path, { headers: { "x-admin-secret": key.trim() } });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "실행 실패");
+      const parsed = await parseCronJson(res);
+      if (!parsed.ok) throw new Error(parsed.error);
+      const json = parsed.data;
+      if (!res.ok) throw new Error(String(json.error || "실행 실패"));
       const saved =
-        json.saved ??
-        json.totalSaved ??
-        json.reddit?.saved ??
+        Number(json.saved) ||
+        Number(json.totalSaved) ||
+        Number((json.reddit as { saved?: number } | undefined)?.saved) ||
         0;
       setRunMsg(`${label} 완료 — 저장 ${saved}건`);
       await loadAll();
@@ -583,7 +665,7 @@ function AdminStudyKoreaInner() {
             </button>
             <button
               type="button"
-              disabled={!authorized || runningSource !== null}
+              disabled={!authorized || runningSource !== null || isRedditRunning}
               onClick={() =>
                 void runCron("/api/cron/scrape-study-korea", "전체")
               }
@@ -806,15 +888,24 @@ function AdminStudyKoreaInner() {
                       {showRun ? (
                         <button
                           type="button"
-                          disabled={runningSource !== null}
+                          disabled={runningSource !== null || isRedditRunning}
                           onClick={() =>
-                            void runCron(src.cronPath!, src.label)
+                            void (src.id === "reddit"
+                              ? runRedditBatched()
+                              : runCron(src.cronPath!, src.label))
                           }
                           className="w-full py-2 rounded-md bg-slate-100 hover:bg-slate-200 text-gray-900 text-sm font-medium disabled:opacity-50"
                         >
-                          {runningSource === src.label ? "Running…" : "Run"}
+                          {runningSource === src.label || (src.id === "reddit" && isRedditRunning)
+                            ? "Running…"
+                            : "Run"}
                         </button>
                       ) : null}
+                      {src.id === "reddit" && redditRunLog && (
+                        <pre className="text-[10px] font-mono whitespace-pre-wrap bg-orange-50 border border-orange-100 rounded p-2 max-h-32 overflow-y-auto text-gray-800">
+                          {redditRunLog}
+                        </pre>
+                      )}
                     </div>
                   );
                 })}
