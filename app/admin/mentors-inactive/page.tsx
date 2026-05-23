@@ -63,7 +63,7 @@ function InactiveMentorsInner() {
       <div className="max-w-4xl mx-auto">
         <Link
           href={`/admin/study-korea?key=${encodeURIComponent(key)}`}
-          className="text-sm text-tea-700 hover:underline"
+          className="text-sm text-orange-400 hover:text-orange-300 hover:underline"
         >
           ← Study Korea Admin
         </Link>

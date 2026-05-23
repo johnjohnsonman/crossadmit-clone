@@ -138,15 +138,15 @@ export default function AutocompleteInput({
       />
       {open && filtered.length > 0 && (
         <ul
-          className="absolute z-50 mt-1 max-h-52 w-full overflow-auto rounded-lg border border-gray-200 bg-white py-1 text-sm shadow-lg"
+          className="absolute z-50 mt-1 max-h-52 w-full overflow-auto rounded-lg border border-gray-800 bg-gray-900 py-1 text-sm shadow-lg shadow-black/40"
           role="listbox"
         >
           {filtered.map((item, i) => (
             <li key={`${item.label}-${item.index}`}>
               <button
                 type="button"
-                className={`flex w-full px-3 py-2 text-left hover:bg-tea-50 ${
-                  i === highlight ? "bg-tea-50" : ""
+                className={`flex w-full px-3 py-2 text-left text-white hover:bg-gray-800 ${
+                  i === highlight ? "bg-gray-800" : ""
                 }`}
                 onMouseDown={(ev) => {
                   ev.preventDefault();

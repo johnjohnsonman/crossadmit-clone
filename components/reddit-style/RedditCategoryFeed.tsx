@@ -114,7 +114,7 @@ export default function RedditCategoryFeed({
         </div>
         <button
           type="button"
-          className="mt-3 px-4 py-1 rounded-full border-2 border-[#FF4500] text-[#FF4500] text-sm font-bold"
+          className="mt-3 px-4 py-1 rounded-full bg-orange-500 text-white text-sm font-bold hover:bg-orange-600 transition-colors"
         >
           Subscribe (Phase 2)
         </button>
@@ -134,9 +134,9 @@ export default function RedditCategoryFeed({
           <>
             {(guides.length > 0 || guidesTotal > 0) && (
               <section className="mb-4">
-                <h2 className="text-sm font-bold text-purple-900 dark:text-purple-200 px-1 mb-2 flex items-center gap-2">
+                <h2 className="text-sm font-bold text-orange-900 dark:text-orange-200 px-1 mb-2 flex items-center gap-2">
                   📚 Guides
-                  <span className="text-xs font-normal text-purple-700 dark:text-purple-400">
+                  <span className="text-xs font-normal text-orange-700 dark:text-orange-400">
                     AI-generated · factual
                   </span>
                 </h2>
@@ -146,7 +146,7 @@ export default function RedditCategoryFeed({
                   ))}
                 </div>
                 {guidesTotal > guides.length && (
-                  <p className="text-xs text-purple-700 px-1 mt-2">
+                  <p className="text-xs text-orange-700 dark:text-orange-400 px-1 mt-2">
                     Showing {guides.length} of {guidesTotal} guides in this
                     category
                   </p>

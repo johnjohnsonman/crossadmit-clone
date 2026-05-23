@@ -84,21 +84,21 @@ export default function ForumPopularSidebar({
   }, []);
 
   return (
-    <aside className="rounded-xl border border-[#E5E5E0] bg-white p-4 shadow-sm">
-      <h2 className="text-sm font-semibold tracking-tight text-[#1A1A1A]">
+    <aside className="rounded-xl border border-gray-800 bg-gray-900 p-4">
+      <h2 className="text-sm font-semibold tracking-tight text-white">
         {dict.forum_popular_univ}
       </h2>
-      <p className="mt-1 text-xs text-[#6B7280] leading-relaxed">
+      <p className="mt-1 text-xs text-gray-400 leading-relaxed">
         {dict.forum_popular_subtitle}
       </p>
       {loading ? (
         <ul className="mt-4 space-y-2">
           {Array.from({ length: 6 }).map((_, i) => (
-            <li key={i} className="h-10 rounded-lg bg-[#F5F5F4] animate-pulse" />
+            <li key={i} className="h-10 rounded-lg bg-gray-800 animate-pulse" />
           ))}
         </ul>
       ) : list.length === 0 ? (
-        <p className="mt-4 text-xs text-[#9CA3AF]">{dict.forum_popular_empty}</p>
+        <p className="mt-4 text-xs text-gray-500">{dict.forum_popular_empty}</p>
       ) : (
         <ul className="mt-4 space-y-1">
           {list.map((u, i) => (
@@ -108,21 +108,21 @@ export default function ForumPopularSidebar({
                 onClick={() => onSelect(u)}
                 className={`flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left transition-colors ${
                   activeId === u.id
-                    ? "bg-[#EBF5EB] text-[#2D5A27]"
-                    : "hover:bg-[#FAFAF8] text-[#1A1A1A]"
+                    ? "bg-orange-500/20 text-orange-400"
+                    : "hover:bg-gray-800 text-gray-200"
                 }`}
               >
-                <span className="w-5 text-xs font-medium text-[#9CA3AF] tabular-nums">
+                <span className="w-5 text-xs font-medium text-gray-500 tabular-nums">
                   {i + 1}
                 </span>
                 {u.logo ? (
                   <img
                     src={u.logo}
                     alt=""
-                    className="h-7 w-7 rounded object-contain bg-[#FAFAF8] shrink-0"
+                    className="h-7 w-7 rounded object-contain bg-gray-800 shrink-0"
                   />
                 ) : (
-                  <span className="h-7 w-7 rounded bg-[#F5F5F4] flex items-center justify-center text-[10px] shrink-0">
+                  <span className="h-7 w-7 rounded bg-gray-800 flex items-center justify-center text-[10px] shrink-0">
                     🏫
                   </span>
                 )}

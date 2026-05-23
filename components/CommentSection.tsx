@@ -149,11 +149,11 @@ export default function CommentSection({ admissionId: admissionIdProp }: Props) 
 
   return (
     <section>
-      <h2 className="text-sm font-semibold tracking-tight text-[#1A1A1A]">
+      <h2 className="text-sm font-semibold tracking-tight text-white">
         댓글
       </h2>
 
-      <div className="mt-3 rounded-lg border border-[#E5E5E0] bg-[#FAFAF8] p-4">
+      <div className="mt-3 rounded-lg border border-gray-800 bg-gray-900/50 p-4">
         {loading ? (
           <p className="text-sm text-gray-500">불러오는 중…</p>
         ) : loadErr ? (
@@ -161,12 +161,12 @@ export default function CommentSection({ admissionId: admissionIdProp }: Props) 
         ) : comments.length === 0 ? (
           <p className="text-sm text-gray-500">첫 댓글을 남겨보세요.</p>
         ) : (
-          <ul className="divide-y divide-gray-200">
+          <ul className="divide-y divide-gray-800">
             {comments.map((c) => (
               <li key={c.id} className="py-3 first:pt-0 last:pb-0">
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <div className="flex items-baseline gap-2">
-                    <span className="text-sm font-bold text-gray-900">
+                    <span className="text-sm font-bold text-white">
                       {c.nickname}
                     </span>
                     <span className="text-xs text-gray-500">
@@ -178,7 +178,7 @@ export default function CommentSection({ admissionId: admissionIdProp }: Props) 
                       <div className="flex flex-wrap items-center gap-1">
                         <input
                           type="password"
-                          className="w-28 rounded border border-gray-300 px-2 py-1 text-xs"
+                          className="w-28 rounded border border-gray-700 bg-gray-800 text-white px-2 py-1 text-xs"
                           placeholder="비밀번호"
                           value={delPw}
                           onChange={(e) => setDelPw(e.target.value)}
@@ -221,7 +221,7 @@ export default function CommentSection({ admissionId: admissionIdProp }: Props) 
                 {openDeleteId === c.id && delErr ? (
                   <p className="mt-1 text-xs text-red-600">{delErr}</p>
                 ) : null}
-                <p className="mt-1 whitespace-pre-wrap text-sm text-gray-800">
+                <p className="mt-1 whitespace-pre-wrap text-sm text-gray-300">
                   {c.content}
                 </p>
               </li>
@@ -232,7 +232,7 @@ export default function CommentSection({ admissionId: admissionIdProp }: Props) 
 
       <form
         onSubmit={submit}
-        className="mt-4 space-y-2 rounded-lg border border-[#E5E5E0] bg-white p-4"
+        className="mt-4 space-y-2 rounded-lg border border-gray-800 bg-gray-900 p-4"
       >
         {postErr ? (
           <p className="text-sm text-red-600">{postErr}</p>
@@ -240,14 +240,14 @@ export default function CommentSection({ admissionId: admissionIdProp }: Props) 
         <div className="flex flex-col gap-2 sm:flex-row">
           <input
             type="text"
-            className="flex-1 rounded border border-gray-300 px-3 py-2 text-sm"
+            className="flex-1 rounded border border-gray-700 bg-gray-800 text-white placeholder:text-gray-500 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
             placeholder="익명"
             value={nick}
             onChange={(e) => setNick(e.target.value)}
           />
           <input
             type="password"
-            className="flex-1 rounded border border-gray-300 px-3 py-2 text-sm"
+            className="flex-1 rounded border border-gray-700 bg-gray-800 text-white placeholder:text-gray-500 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
             placeholder="삭제용 비밀번호"
             value={pw}
             onChange={(e) => setPw(e.target.value)}
@@ -255,7 +255,7 @@ export default function CommentSection({ admissionId: admissionIdProp }: Props) 
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
           <textarea
-            className="min-h-[88px] flex-1 rounded border border-gray-300 px-3 py-2 text-sm"
+            className="min-h-[88px] flex-1 rounded border border-gray-700 bg-gray-800 text-white placeholder:text-gray-500 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
             placeholder="댓글을 입력하세요...  Ctrl+Enter로 등록"
             value={body}
             onChange={(e) => setBody(e.target.value)}
@@ -264,7 +264,7 @@ export default function CommentSection({ admissionId: admissionIdProp }: Props) 
           <button
             type="submit"
             disabled={posting}
-            className="shrink-0 rounded-lg bg-[#2D5A27] px-4 py-2 text-sm font-medium text-white hover:bg-[#244a20] disabled:opacity-50"
+            className="shrink-0 rounded-lg bg-orange-500 px-4 py-2 text-sm font-medium text-white hover:bg-orange-600 disabled:opacity-50"
           >
             {posting ? "등록 중…" : "등록"}
           </button>

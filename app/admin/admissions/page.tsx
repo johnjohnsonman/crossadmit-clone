@@ -214,7 +214,7 @@ function AdminInner() {
           />
           <button
             type="button"
-            className="rounded bg-tea-700 px-4 py-2 text-sm font-medium text-white hover:bg-tea-800"
+            className="rounded bg-orange-500 px-4 py-2 text-sm font-medium text-white hover:bg-orange-600"
             onClick={() => void loadAll()}
           >
             불러오기
@@ -273,7 +273,7 @@ function AdminInner() {
                           <label className="inline-flex cursor-pointer items-center gap-2">
                             <input
                               type="checkbox"
-                              className="h-4 w-4 accent-tea-700"
+                              className="h-4 w-4 accent-orange-500"
                               checked={Boolean(r.published)}
                               disabled={savingFor === `${r.id}:published`}
                               onChange={(e) =>
@@ -304,7 +304,7 @@ function AdminInner() {
                             />
                             <button
                               type="button"
-                              className="rounded border border-tea-600 px-2 py-1 text-xs text-tea-900 hover:bg-tea-50"
+                              className="rounded border border-orange-500 px-2 py-1 text-xs text-orange-900 hover:bg-orange-50"
                               disabled={savingFor === `${r.id}:likes_count`}
                               onClick={() => onSaveLikes(r.id)}
                             >
@@ -334,7 +334,7 @@ function AdminInner() {
                         <td className="p-3">
                           <button
                             type="button"
-                            className="text-xs text-tea-800 underline"
+                            className="text-xs text-orange-600 underline"
                             onClick={() => void toggleOpen(r.id)}
                           >
                             {isOpen ? "접기" : "댓글"}

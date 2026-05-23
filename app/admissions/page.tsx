@@ -5,8 +5,8 @@ import { resolveLocale } from "@/lib/i18n/locale";
 
 function AdmissionsFallback() {
   return (
-    <main className="min-h-screen bg-[#FAFAF8] flex items-center justify-center">
-      <p className="text-sm text-[#6B7280]">불러오는 중…</p>
+    <main className="min-h-screen bg-gray-950 flex items-center justify-center">
+      <p className="text-sm text-gray-400">불러오는 중…</p>
     </main>
   );
 }

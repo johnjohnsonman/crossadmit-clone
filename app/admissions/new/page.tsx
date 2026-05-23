@@ -71,10 +71,10 @@ const uniLabels = KOREAN_UNIVERSITIES.map((u) => u.nameKo);
 const uniHints = KOREAN_UNIVERSITIES.map((u) => u.nameEn);
 
 const inputBase =
-  "block w-full rounded-lg border border-[#ddd] bg-white px-3 py-2 text-sm text-gray-900 shadow-sm " +
-  "focus:border-tea-600 focus:outline-none focus:ring-2 focus:ring-tea-500/30";
+  "block w-full rounded-lg border border-gray-800 bg-gray-900 px-3 py-2 text-sm text-white shadow-sm " +
+  "placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500";
 const inputClass = `mt-1 ${inputBase}`;
-const labelClass = "block text-sm font-medium text-gray-800";
+const labelClass = "block text-sm font-medium text-gray-300";
 
 function statusSelectClass(s: SchoolStatus): string {
   switch (s) {
@@ -259,15 +259,15 @@ export default function AdmissionNewPage() {
 
   if (success) {
     return (
-      <main className="min-h-screen bg-[#f5f4f0] py-12">
+      <main className="min-h-screen bg-gray-950 py-12">
         <div className="container mx-auto max-w-lg px-4 text-center">
-          <div className="rounded-xl border border-tea-200 bg-white p-8 shadow-sm">
-            <p className="text-lg font-semibold text-gray-900">
+          <div className="rounded-xl border border-orange-200 bg-gray-900 p-8 shadow-sm">
+            <p className="text-lg font-semibold text-white">
               후기가 등록되었습니다! 검토 후 게시됩니다. 감사합니다 🎉
             </p>
             <Link
               href="/admissions"
-              className="mt-6 inline-flex rounded-lg bg-tea-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-tea-700"
+              className="mt-6 inline-flex rounded-lg bg-orange-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-orange-700"
             >
               목록으로 돌아가기
             </Link>
@@ -281,17 +281,17 @@ export default function AdmissionNewPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f5f4f0] pb-20 pt-10">
+    <main className="min-h-screen bg-gray-950 pb-20 pt-10">
       <div className="container mx-auto max-w-3xl px-4">
         <Link
           href="/admissions"
-          className="text-sm font-medium text-tea-700 hover:text-tea-900 hover:underline"
+          className="text-sm font-medium text-orange-700 hover:text-orange-900 hover:underline"
         >
           ← 합격DB 목록
         </Link>
 
-        <div className="mt-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm md:p-8">
-          <h1 className="text-2xl font-bold text-gray-900">합격 후기 등록</h1>
+        <div className="mt-6 rounded-xl border border-gray-800 bg-gray-900 p-6 shadow-sm md:p-8">
+          <h1 className="text-2xl font-bold text-white">합격 후기 등록</h1>
           <p className="mt-2 text-sm text-gray-600">
             로그인 없이 등록 가능합니다. 허위 정보는 삭제될 수 있습니다.
           </p>
@@ -305,7 +305,7 @@ export default function AdmissionNewPage() {
 
             {/* 지원 학교 */}
             <section>
-              <h2 className="text-lg font-semibold text-gray-900">
+              <h2 className="text-lg font-semibold text-white">
                 지원 학교 및 결과
               </h2>
               <p className="mt-1 text-sm text-gray-600">
@@ -317,7 +317,7 @@ export default function AdmissionNewPage() {
                 {rows.map((row, idx) => (
                   <div
                     key={row.id}
-                    className="rounded-lg border border-gray-200 bg-white p-3 shadow-sm"
+                    className="rounded-lg border border-gray-800 bg-gray-900 p-3 shadow-sm"
                   >
                     <div className="flex flex-wrap items-end gap-2 md:flex-nowrap md:gap-3">
                       <div className="min-w-0 flex-1">
@@ -384,7 +384,7 @@ export default function AdmissionNewPage() {
                         type="button"
                         onClick={() => removeRow(row.id)}
                         disabled={rows.length <= 1}
-                        className="mb-0.5 rounded-md border border-gray-200 px-2 py-2 text-sm text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                        className="mb-0.5 rounded-md border border-gray-800 px-2 py-2 text-sm text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
                         title="행 삭제"
                       >
                         ×
@@ -399,7 +399,7 @@ export default function AdmissionNewPage() {
                 type="button"
                 onClick={addRow}
                 disabled={rows.length >= MAX_SCHOOLS}
-                className="mt-2 w-full rounded-lg border-2 border-dashed border-gray-400 py-3 text-sm font-medium text-gray-500 transition-colors hover:border-tea-400 hover:text-tea-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className="mt-2 w-full rounded-lg border-2 border-dashed border-gray-400 py-3 text-sm font-medium text-gray-500 transition-colors hover:border-orange-400 hover:text-orange-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 + 학교 추가
                 {rows.length >= MAX_SCHOOLS
@@ -410,7 +410,7 @@ export default function AdmissionNewPage() {
 
             {/* 필수: 입학 연도 · 전형 (항상 표시) */}
             <section>
-              <h2 className="text-lg font-semibold text-gray-900">
+              <h2 className="text-lg font-semibold text-white">
                 입학 정보 <span className="text-sm font-normal text-red-600">(필수)</span>
               </h2>
               <div className="mt-3 grid gap-4 sm:grid-cols-2">
@@ -460,10 +460,10 @@ export default function AdmissionNewPage() {
                 className="flex w-full items-center justify-between text-left"
                 onClick={() => setSpecOpen((o) => !o)}
               >
-                <span className="text-lg font-semibold text-gray-900">
+                <span className="text-lg font-semibold text-white">
                   공통 스펙 정보 (선택사항)
                 </span>
-                <span className="text-tea-600">
+                <span className="text-orange-600">
                   {specOpen ? "접기" : "펼치기"}
                 </span>
               </button>
@@ -647,7 +647,7 @@ export default function AdmissionNewPage() {
             <button
               type="submit"
               disabled={submitting}
-              className="w-full rounded-lg bg-tea-600 py-3.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-tea-700 disabled:cursor-not-allowed disabled:opacity-60"
+              className="w-full rounded-lg bg-orange-600 py-3.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {submitting ? "등록 중..." : "합격 후기 등록하기"}
             </button>

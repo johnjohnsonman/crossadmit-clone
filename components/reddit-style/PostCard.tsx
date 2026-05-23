@@ -76,7 +76,7 @@ export default function PostCard({ post }: Props) {
           </Link>
           <span>·</span>
           {isAiGuide ? (
-            <span className="text-purple-700 dark:text-purple-300 font-medium">
+            <span className="text-orange-600 dark:text-orange-400 font-medium">
               AI Generated Guide
             </span>
           ) : (
@@ -114,7 +114,7 @@ export default function PostCard({ post }: Props) {
   );
 
   const cardClass = isAiGuide
-    ? "flex bg-purple-50/80 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800 rounded hover:border-purple-400 dark:hover:border-purple-600 transition-colors overflow-hidden"
+    ? "flex bg-orange-50/80 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded hover:border-orange-400 dark:hover:border-orange-600 transition-colors overflow-hidden"
     : "flex bg-white dark:bg-[#1A1A1B] border border-[#EDEFF1] dark:border-[#343536] rounded hover:border-[#898989] dark:hover:border-[#818384] transition-colors overflow-hidden";
 
   if (isExternal) {

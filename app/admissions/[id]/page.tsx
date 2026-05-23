@@ -32,15 +32,15 @@ function SpecBlock({
   const has =
     content?.trim() && formatText(content) !== "-";
   return (
-    <div className="rounded-lg bg-[#F9F9F7] p-4 sm:p-5">
-      <h3 className="text-xs font-medium text-[#6B7280] tracking-wide">
+    <div className="rounded-lg bg-gray-800/50 border border-gray-800 p-4 sm:p-5">
+      <h3 className="text-xs font-medium text-gray-400 tracking-wide">
         {title}
       </h3>
-      <div className="mt-3 text-sm leading-relaxed text-[#1A1A1A]">
+      <div className="mt-3 text-sm leading-relaxed text-white">
         {has ? (
           formatTextWithLineBreaks(content)
         ) : (
-          <span className="text-[#9CA3AF]">정보 없음</span>
+          <span className="text-gray-500">정보 없음</span>
         )}
       </div>
     </div>
@@ -52,15 +52,15 @@ function ResultRow({ school }: { school: AdmissionSchoolRecord }) {
   const symbol =
     status === "enroll" ? "●" : status === "accept" ? "○" : "✕";
   return (
-    <li className="flex flex-wrap items-baseline gap-x-3 gap-y-1 py-2.5 border-b border-[#E5E5E0]/80 last:border-0">
+    <li className="flex flex-wrap items-baseline gap-x-3 gap-y-1 py-2.5 border-b border-gray-800 last:border-0">
       <span className="w-16 shrink-0 flex items-center gap-1.5">
         <span
           className={
             status === "enroll"
-              ? "text-[#2D5A27]"
+              ? "text-green-400"
               : status === "accept"
-                ? "text-blue-600"
-                : "text-[#9CA3AF]"
+                ? "text-blue-400"
+                : "text-gray-500"
           }
           aria-hidden
         >
@@ -69,12 +69,12 @@ function ResultRow({ school }: { school: AdmissionSchoolRecord }) {
         <StatusBadge status={status} variant="pill" />
       </span>
       <span
-        className={`font-semibold ${status === "reject" ? "text-[#9CA3AF] line-through" : "text-[#1A1A1A]"}`}
+        className={`font-semibold ${status === "reject" ? "text-gray-500 line-through" : "text-white"}`}
       >
         {school.univName}
       </span>
       <span
-        className={`text-sm ${status === "reject" ? "text-[#9CA3AF] line-through" : "text-[#6B7280]"}`}
+        className={`text-sm ${status === "reject" ? "text-gray-500 line-through" : "text-gray-400"}`}
       >
         {school.deptName}
       </span>
@@ -160,30 +160,30 @@ export default async function AdmissionDetailPage({ params }: PageProps) {
   const reviews = record.admissionSchools.filter((s) => s.review?.trim());
 
   return (
-    <main className="min-h-screen bg-[#FAFAF8]">
+    <main className="min-h-screen bg-gray-950 text-gray-300">
       <StructuredData data={structuredData} />
 
       <div className="container mx-auto max-w-6xl px-4 py-6 sm:py-8">
         <Link
           href="/admissions"
-          className="inline-flex items-center gap-1 text-sm font-medium text-[#6B7280] hover:text-[#2D5A27] transition-colors"
+          className="inline-flex items-center gap-1 text-sm font-medium text-gray-400 hover:text-orange-400 transition-colors"
         >
           ← 목록으로
         </Link>
 
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
-            <header className="rounded-xl border border-[#E5E5E0] bg-white p-5 sm:p-6 shadow-sm">
+            <header className="rounded-xl border border-gray-800 bg-gray-900 p-5 sm:p-6">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <p className="text-lg sm:text-xl font-semibold tracking-tight text-[#1A1A1A]">
+                  <p className="text-lg sm:text-xl font-semibold tracking-tight text-white">
                     {record.year}년 {primaryType}
                   </p>
-                  <p className="mt-1 text-sm text-[#6B7280]">
+                  <p className="mt-1 text-sm text-gray-400">
                     {record.userHandle?.trim() || "익명"}
                   </p>
                   {record.isFeatured && (
-                    <span className="mt-2 inline-block text-xs font-medium text-[#2D5A27] bg-[#EBF5EB] px-2 py-0.5 rounded">
+                    <span className="mt-2 inline-block text-xs font-medium text-orange-300 bg-orange-500/20 border border-orange-500/30 px-2 py-0.5 rounded">
                       추천 후기
                     </span>
                   )}
@@ -199,8 +199,8 @@ export default async function AdmissionDetailPage({ params }: PageProps) {
               </div>
             </header>
 
-            <section className="rounded-xl border border-[#E5E5E0] bg-white p-5 sm:p-6 shadow-sm">
-              <h2 className="text-sm font-semibold tracking-tight text-[#1A1A1A]">
+            <section className="rounded-xl border border-gray-800 bg-gray-900 p-5 sm:p-6">
+              <h2 className="text-sm font-semibold tracking-tight text-white">
                 지원 결과
               </h2>
               <ul className="mt-3">
@@ -211,7 +211,7 @@ export default async function AdmissionDetailPage({ params }: PageProps) {
             </section>
 
             <section>
-              <h2 className="text-sm font-semibold tracking-tight text-[#1A1A1A] mb-3">
+              <h2 className="text-sm font-semibold tracking-tight text-white mb-3">
                 스펙
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -225,17 +225,17 @@ export default async function AdmissionDetailPage({ params }: PageProps) {
             </section>
 
             {reviews.length > 0 && (
-              <section className="rounded-xl border border-[#E5E5E0] bg-white p-5 sm:p-6 shadow-sm">
-                <h2 className="text-sm font-semibold tracking-tight text-[#1A1A1A]">
+              <section className="rounded-xl border border-gray-800 bg-gray-900 p-5 sm:p-6">
+                <h2 className="text-sm font-semibold tracking-tight text-white">
                   후기
                 </h2>
                 <div className="mt-4 space-y-5">
                   {reviews.map((s) => (
                     <div key={s.id}>
-                      <h3 className="text-xs font-medium text-[#6B7280]">
+                      <h3 className="text-xs font-medium text-gray-400">
                         {s.univName} · {s.deptName}
                       </h3>
-                      <div className="mt-2 text-sm leading-relaxed text-[#1A1A1A]">
+                      <div className="mt-2 text-sm leading-relaxed text-white">
                         {formatTextWithLineBreaks(s.review)}
                       </div>
                     </div>
@@ -244,7 +244,7 @@ export default async function AdmissionDetailPage({ params }: PageProps) {
               </section>
             )}
 
-            <section className="rounded-xl border border-[#E5E5E0] bg-white p-5 sm:p-6 shadow-sm">
+            <section className="rounded-xl border border-gray-800 bg-gray-900 p-5 sm:p-6">
               <CommentSection admissionId={id} />
             </section>
           </div>

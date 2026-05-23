@@ -20,15 +20,15 @@ const PAGE_SIZE = 20;
 const SEARCH_DEBOUNCE_MS = 300;
 
 const selectBaseClass =
-  "w-full rounded-lg bg-white text-gray-900 text-sm " +
-  "border border-[#ddd] px-3 py-2 " +
+  "w-full rounded-lg bg-gray-900 text-white text-sm " +
+  "border border-gray-800 px-3 py-2 " +
   "appearance-none bg-[length:12px] bg-[right_12px_center] bg-no-repeat " +
   "pr-10 " +
-  "hover:border-tea-600 focus:border-tea-600 focus:outline-none focus:ring-2 focus:ring-tea-500/30 " +
+  "hover:border-orange-500 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/30 " +
   "transition-colors cursor-pointer";
 
 const selectArrowStyle = {
-  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7c5a' d='M6 8L1 3h10z'/%3E%3C/svg%3E")`,
+  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23f97316' d='M6 8L1 3h10z'/%3E%3C/svg%3E")`,
 } as const;
 
 function shortUniversityLabel(tag: string): string {
@@ -148,9 +148,9 @@ export default function VideosPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#f5f3f0] py-8">
+    <main className="min-h-screen bg-gray-950 py-8">
       <div className="container mx-auto px-4 max-w-6xl">
-        <h1 className="text-3xl font-bold text-gray-900 mb-6">유학영상</h1>
+        <h1 className="text-3xl font-bold text-white mb-6">유학영상</h1>
 
         <div className="mb-4">
           <label htmlFor="video-school-search" className="sr-only">
@@ -162,16 +162,16 @@ export default function VideosPage() {
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             placeholder="학교 이름으로 검색... (예: Seoul National, Yonsei, KAIST)"
-            className="w-full px-4 py-3 text-sm md:text-base border border-[#ddd] rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-tea-500 focus:border-tea-600 text-gray-900 placeholder:text-gray-400 bg-white"
+            className="w-full px-4 py-3 text-sm md:text-base border border-gray-800 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-white placeholder:text-gray-500 bg-gray-900"
             autoComplete="off"
           />
         </div>
 
-        <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
+        <div className="bg-gray-900 rounded-lg border border-gray-800 p-4 mb-6">
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between md:gap-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-1">
               <div>
-                <label className="block text-xs font-semibold text-sage-700 mb-1.5">
+                <label className="block text-xs font-semibold text-gray-400 mb-1.5">
                   대학
                 </label>
                 <select
@@ -199,7 +199,7 @@ export default function VideosPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-sage-700 mb-1.5">
+                <label className="block text-xs font-semibold text-gray-400 mb-1.5">
                   언어
                 </label>
                 <select
@@ -215,7 +215,7 @@ export default function VideosPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-sage-700 mb-1.5">
+                <label className="block text-xs font-semibold text-gray-400 mb-1.5">
                   콘텐츠
                 </label>
                 <select
@@ -237,7 +237,7 @@ export default function VideosPage() {
               <button
                 type="button"
                 onClick={resetFilters}
-                className="text-sm text-gray-500 hover:text-sage-700 underline-offset-2 hover:underline transition-colors"
+                className="text-sm text-gray-500 hover:text-orange-400 underline-offset-2 hover:underline transition-colors"
               >
                 필터 초기화
               </button>
@@ -246,7 +246,7 @@ export default function VideosPage() {
         </div>
 
         {videos.length === 0 && !loading ? (
-          <div className="bg-white rounded-lg border border-gray-200 p-12 text-center text-gray-500">
+          <div className="bg-gray-900 rounded-lg border border-gray-800 p-12 text-center text-gray-400">
             아직 영상이 없습니다
           </div>
         ) : (
@@ -258,7 +258,7 @@ export default function VideosPage() {
                   href={video.source_url}
                   target="_blank"
                   rel="noreferrer"
-                  className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
+                  className="bg-gray-900 rounded-lg border border-gray-800 overflow-hidden hover:border-orange-500/50 transition-colors"
                 >
                   <img
                     src={video.thumbnail_url || "https://picsum.photos/640/360"}
@@ -273,24 +273,24 @@ export default function VideosPage() {
                         {(video.university_tags ?? []).map((tag) => (
                           <span
                             key={tag}
-                            className="inline-block rounded-full border border-sage-200 bg-sage-50 px-2 py-0.5 text-[11px] font-medium text-sage-800"
+                            className="inline-block rounded-full border border-gray-700 bg-gray-800 px-2 py-0.5 text-[11px] font-medium text-gray-300"
                           >
                             {shortUniversityLabel(tag)}
                           </span>
                         ))}
                         {video.language ? (
-                          <span className="inline-block rounded-full border border-tea-200 bg-tea-50 px-2 py-0.5 text-[11px] font-medium text-tea-800">
+                          <span className="inline-block rounded-full border border-orange-500/30 bg-orange-500/10 px-2 py-0.5 text-[11px] font-medium text-orange-300">
                             {languageBadge(video.language)}
                           </span>
                         ) : null}
                         {video.content_type ? (
-                          <span className="inline-block rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-[11px] font-medium text-gray-700">
+                          <span className="inline-block rounded-full border border-gray-700 bg-gray-800 px-2 py-0.5 text-[11px] font-medium text-gray-400">
                             {contentBadge(video.content_type)}
                           </span>
                         ) : null}
                       </div>
                     )}
-                    <h3 className="text-sm font-semibold text-gray-900 line-clamp-2 min-h-[2.75rem]">
+                    <h3 className="text-sm font-semibold text-white line-clamp-2 min-h-[2.75rem]">
                       {video.title}
                     </h3>
                     <p className="text-xs text-gray-500 mt-2">
@@ -310,7 +310,7 @@ export default function VideosPage() {
                   type="button"
                   onClick={loadMore}
                   disabled={loading}
-                  className="px-5 py-2 rounded-md bg-tea-600 text-white hover:bg-tea-700 disabled:opacity-60"
+                  className="px-5 py-2 rounded-md bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-60"
                 >
                   {loading ? "불러오는 중..." : "더보기"}
                 </button>

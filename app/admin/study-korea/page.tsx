@@ -1114,7 +1114,7 @@ function AdminStudyKoreaInner() {
               onClick={() =>
                 void runCron("/api/cron/scrape-study-korea", "전체")
               }
-              className="px-4 py-2 rounded-lg bg-tea-600 text-white text-sm font-semibold disabled:opacity-50"
+              className="px-4 py-2 rounded-lg bg-orange-500 text-white text-sm font-semibold disabled:opacity-50"
             >
               {runningSource === "전체" ? "실행 중…" : "▶ Run All"}
             </button>
@@ -1842,7 +1842,7 @@ function AdminStudyKoreaInner() {
                   <button
                     type="button"
                     onClick={() => setSourceFilter("all")}
-                    className={`text-xs px-2 py-1 rounded-full ${sourceFilter === "all" ? "bg-tea-600 text-white" : "bg-slate-200 text-gray-900"}`}
+                    className={`text-xs px-2 py-1 rounded-full ${sourceFilter === "all" ? "bg-orange-500 text-white" : "bg-slate-200 text-gray-900"}`}
                   >
                     all
                   </button>
@@ -1851,7 +1851,7 @@ function AdminStudyKoreaInner() {
                       key={s.id}
                       type="button"
                       onClick={() => setSourceFilter(s.id)}
-                      className={`text-xs px-2 py-1 rounded-full ${sourceFilter === s.id ? "bg-tea-600 text-white" : "bg-slate-200 text-gray-900"}`}
+                      className={`text-xs px-2 py-1 rounded-full ${sourceFilter === s.id ? "bg-orange-500 text-white" : "bg-slate-200 text-gray-900"}`}
                     >
                       {s.id}
                     </button>
@@ -1878,7 +1878,7 @@ function AdminStudyKoreaInner() {
                             onClick={() => togglePostEn(p.id)}
                             className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
                               enRows.has(p.id)
-                                ? "bg-tea-600 text-white"
+                                ? "bg-orange-500 text-white"
                                 : "bg-slate-200 text-gray-700"
                             }`}
                           >
@@ -1991,7 +1991,7 @@ function AdminStudyKoreaInner() {
                         type="button"
                         disabled={saving === `univ-${u.id}`}
                         onClick={() => void saveUniversityIntl(u)}
-                        className="mt-2 px-3 py-1 rounded bg-tea-600 text-white text-xs font-medium disabled:opacity-50"
+                        className="mt-2 px-3 py-1 rounded bg-orange-500 text-white text-xs font-medium disabled:opacity-50"
                       >
                         {saving === `univ-${u.id}` ? "저장 중…" : "저장"}
                       </button>

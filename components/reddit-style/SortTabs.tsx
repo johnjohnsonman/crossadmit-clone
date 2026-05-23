@@ -30,7 +30,7 @@ export default function SortTabs({ sort, basePath = "/forum" }: Props) {
             href={href}
             className={`px-4 py-3 text-sm font-bold whitespace-nowrap border-b-2 -mb-px ${
               active
-                ? "border-[#FF4500] text-[#1C1C1C] dark:text-white"
+                ? "border-orange-500 text-orange-400 dark:text-orange-400"
                 : "border-transparent text-[#7C7C7C] hover:bg-[#F6F7F8] dark:hover:bg-[#272729]"
             }`}
           >

@@ -35,7 +35,7 @@ export default function CommunitySidebar({ category, relatedPosts = [] }: Props)
           </div>
           <button
             type="button"
-            className="mt-3 w-full py-1.5 rounded-full bg-[#FF4500] text-white text-sm font-bold hover:bg-[#e03d00]"
+            className="mt-3 w-full py-1.5 rounded-full bg-orange-500 text-white text-sm font-bold hover:bg-orange-600"
           >
             Join (soon)
           </button>

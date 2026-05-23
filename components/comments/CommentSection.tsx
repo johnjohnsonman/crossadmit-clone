@@ -218,7 +218,7 @@ export default function CommentSection({ postId, initialComments }: Props) {
         <button
           type="submit"
           disabled={submitting}
-          className="px-4 py-2 bg-[#FF4500] text-white text-sm font-bold rounded-full hover:bg-[#e03d00] disabled:opacity-50"
+          className="px-4 py-2 bg-orange-500 text-white text-sm font-bold rounded-full hover:bg-orange-600 disabled:opacity-50"
         >
           {submitting ? "Posting…" : "Post Comment"}
         </button>

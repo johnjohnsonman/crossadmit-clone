@@ -63,10 +63,10 @@ export default function AdmissionLikeButton({
         type="button"
         disabled={liked || busy}
         onClick={() => void onClick()}
-        className="inline-flex items-center gap-2 rounded-lg border border-[#E5E5E0] bg-white px-4 py-2 text-sm font-medium text-[#1A1A1A] hover:border-[#2D5A27]/40 hover:bg-[#FAFAF8] disabled:opacity-60 transition-colors"
+        className="inline-flex items-center gap-2 rounded-lg border border-gray-800 bg-gray-900 px-4 py-2 text-sm font-medium text-gray-200 hover:border-orange-500/40 hover:bg-gray-800 disabled:opacity-60 transition-colors"
       >
         <span aria-hidden>👍</span>
-        공감하기 {count > 0 && <span className="text-[#6B7280]">({count})</span>}
+        공감하기 {count > 0 && <span className="text-gray-400">({count})</span>}
       </button>
     );
   }
@@ -76,7 +76,7 @@ export default function AdmissionLikeButton({
       type="button"
       disabled={liked || busy}
       onClick={() => void onClick()}
-      className="text-sm text-[#6B7280] hover:text-[#2D5A27] disabled:opacity-60 tabular-nums"
+      className="text-sm text-gray-400 hover:text-orange-400 disabled:opacity-60 tabular-nums"
       title="공감"
     >
       👍 {count}
