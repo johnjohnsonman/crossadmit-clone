@@ -15,6 +15,21 @@ type PendingPost = {
   created_at: string;
 };
 
+type ApiJson = Record<string, unknown>;
+
+async function parseApiJson(res: Response): Promise<ApiJson> {
+  try {
+    return (await res.json()) as ApiJson;
+  } catch {
+    return { error: "응답 파싱 실패" };
+  }
+}
+
+function apiErrorMessage(data: ApiJson, fallback = "알 수 없는 오류"): string {
+  const err = data.error;
+  return typeof err === "string" && err.trim() ? err : fallback;
+}
+
 function confidenceBadgeClass(c: string) {
   switch (c) {
     case "high":
@@ -218,23 +233,39 @@ function AdmissionsReviewInner() {
         headers: hdrs(true),
         body: JSON.stringify(overrides ? { overrides } : {}),
       });
-      const data = await res.json();
-      if (data.success) {
+      const data = await parseApiJson(res);
+
+      if (res.ok && data.success) {
         alert(
-          `합격DB 이관 완료 (id: ${data.admission_id}, confidence: ${data.confidence ?? "—"})`
+          `✅ 합격DB로 이관 완료! admission_id: ${String(data.admission_id ?? "—")}` +
+            (data.confidence ? ` (confidence: ${data.confidence})` : "")
         );
         setPreviewOpen((o) => ({ ...o, [postId]: false }));
         await loadPending();
       } else {
-        const msg = data.suggest_forum
-          ? `${data.error}\n\n「포럼으로 이관」 버튼을 사용해 보세요.`
-          : (data.error ?? "unknown");
-        alert(`실패: ${msg}`);
-        if (data.extracted) {
-          setPreviews((p) => ({ ...p, [postId]: data.extracted }));
+        let msg = apiErrorMessage(data);
+        if (data.suggest_forum) {
+          msg += "\n\n「포럼으로 이관」 버튼을 사용해 보세요.";
+        }
+        const extractedSnippet = data.extracted
+          ? JSON.stringify(data.extracted, null, 2).slice(0, 500)
+          : "";
+        alert(
+          `❌ 이관 실패 (${res.status}): ${msg}` +
+            (extractedSnippet ? `\n\n추출 결과:\n${extractedSnippet}` : "")
+        );
+        if (data.extracted && typeof data.extracted === "object") {
+          setPreviews((p) => ({
+            ...p,
+            [postId]: data.extracted as ExtractedAdmission,
+          }));
           setPreviewOpen((o) => ({ ...o, [postId]: true }));
         }
       }
+    } catch (e) {
+      alert(
+        `❌ 네트워크 에러: ${e instanceof Error ? e.message : "오류"}`
+      );
     } finally {
       setActionId(null);
     }
@@ -247,20 +278,28 @@ function AdmissionsReviewInner() {
         `/api/admin/admission-posts/${postId}/to-forum`,
         { method: "POST", headers: hdrs(true), body: JSON.stringify({}) }
       );
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "포럼 이관 실패");
-      alert(
-        `포럼 이관 완료 · 카테고리: ${data.category}\n${data.forum_url ?? ""}`
-      );
-      setPreviewOpen((o) => ({ ...o, [postId]: false }));
-      setSelected((s) => {
-        const next = new Set(s);
-        next.delete(postId);
-        return next;
-      });
-      await loadPending();
+      const data = await parseApiJson(res);
+
+      if (res.ok && data.success) {
+        alert(
+          `✅ 포럼 이관 완료 · 카테고리: ${String(data.category ?? "—")}\n${String(data.forum_url ?? "")}`
+        );
+        setPreviewOpen((o) => ({ ...o, [postId]: false }));
+        setSelected((s) => {
+          const next = new Set(s);
+          next.delete(postId);
+          return next;
+        });
+        await loadPending();
+      } else {
+        alert(
+          `❌ 포럼 이관 실패 (${res.status}): ${apiErrorMessage(data, "포럼 이관 실패")}`
+        );
+      }
     } catch (e) {
-      alert(e instanceof Error ? e.message : "포럼 이관 오류");
+      alert(
+        `❌ 네트워크 에러: ${e instanceof Error ? e.message : "오류"}`
+      );
     } finally {
       setActionId(null);
     }
@@ -280,13 +319,23 @@ function AdmissionsReviewInner() {
         headers: hdrs(true),
         body: JSON.stringify({ ids }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "일괄 이관 실패");
-      alert(`포럼 일괄 이관: 성공 ${data.ok}건 / 실패 ${data.failed}건`);
-      setSelected(new Set());
-      await loadPending();
+      const data = await parseApiJson(res);
+
+      if (res.ok) {
+        alert(
+          `✅ 포럼 일괄 이관: 성공 ${String(data.ok ?? 0)}건 / 실패 ${String(data.failed ?? 0)}건`
+        );
+        setSelected(new Set());
+        await loadPending();
+      } else {
+        alert(
+          `❌ 일괄 이관 실패 (${res.status}): ${apiErrorMessage(data, "일괄 이관 실패")}`
+        );
+      }
     } catch (e) {
-      alert(e instanceof Error ? e.message : "일괄 이관 오류");
+      alert(
+        `❌ 네트워크 에러: ${e instanceof Error ? e.message : "오류"}`
+      );
     } finally {
       setBulkRunning(false);
     }
@@ -313,12 +362,25 @@ function AdmissionsReviewInner() {
     if (!confirm("이 글을 합격DB 이관 후보에서 제외할까요?")) return;
     setActionId(postId);
     try {
-      await fetch(`/api/admin/admission-posts/${postId}/reject`, {
+      const res = await fetch(`/api/admin/admission-posts/${postId}/reject`, {
         method: "POST",
         headers: hdrs(),
       });
-      setPreviewOpen((o) => ({ ...o, [postId]: false }));
-      await loadPending();
+      const data = await parseApiJson(res);
+
+      if (res.ok && data.success) {
+        alert("✅ 후보에서 제외했습니다.");
+        setPreviewOpen((o) => ({ ...o, [postId]: false }));
+        await loadPending();
+      } else {
+        alert(
+          `❌ 거부 실패 (${res.status}): ${apiErrorMessage(data, "거부 실패")}`
+        );
+      }
+    } catch (e) {
+      alert(
+        `❌ 네트워크 에러: ${e instanceof Error ? e.message : "오류"}`
+      );
     } finally {
       setActionId(null);
     }
