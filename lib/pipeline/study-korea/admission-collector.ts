@@ -1,7 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { generateSlug } from "@/lib/utils/slug";
 import { ADMISSION_QUERIES } from "./admission-queries";
-import { fetchFullContent } from "./fetch-full-content";
 import { searchNaverWebkr } from "./naver-webkr";
 import { normalizeNaverPostUrl, webkrPostSourceId } from "./naver-url";
 
@@ -40,14 +39,9 @@ export async function collectAdmissionPosts(): Promise<
 
       if (existing) continue;
 
-      const fullContent = await fetchFullContent(url);
-      const finalContent =
-        fullContent.length > 200 ? fullContent : item.description;
-
-      console.log(`[ADMISSION] ${url}: ${finalContent.length} chars`);
-
       const source_id = webkrPostSourceId(url);
       const slug = generateSlug(item.title || "합격후기", source_id);
+      const description = item.description;
 
       const { data, error } = await supabase
         .from("study_korea_posts")
@@ -56,7 +50,7 @@ export async function collectAdmissionPosts(): Promise<
           source_id,
           slug,
           title: item.title.slice(0, 500),
-          content: finalContent,
+          content: description,
           url,
           author: "",
           category: "admission",
@@ -67,8 +61,8 @@ export async function collectAdmissionPosts(): Promise<
           moderation_status: "pending",
           is_admission_post: true,
           post_type: "scraped",
-          ai_summary: finalContent.slice(0, 500),
-          ai_summary_kr: finalContent.slice(0, 500),
+          ai_summary: description.slice(0, 500),
+          ai_summary_kr: description.slice(0, 500),
         })
         .select("id, title, url")
         .single();
@@ -79,7 +73,7 @@ export async function collectAdmissionPosts(): Promise<
         console.warn("[ADMISSION] insert failed:", error.message);
       }
 
-      await new Promise((r) => setTimeout(r, 200));
+      await new Promise((r) => setTimeout(r, 100));
     }
 
     await new Promise((r) => setTimeout(r, 500));

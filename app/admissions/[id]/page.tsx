@@ -56,7 +56,7 @@ function sourceHostname(url: string): string {
 function AutoCollectedSourceLink({ url }: { url: string }) {
   return (
     <div className="mt-4 pt-3 border-t border-gray-800 text-xs text-gray-500">
-      원본 출처:{" "}
+      🔗 원본 출처:{" "}
       <a
         href={url}
         target="_blank"
