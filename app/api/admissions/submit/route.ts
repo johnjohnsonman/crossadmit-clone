@@ -91,8 +91,9 @@ export async function POST(request: NextRequest) {
 
     const errors: string[] = [];
     if (schools.length === 0) errors.push("지원 학교를 1개 이상 입력해주세요.");
-    if (Number.isNaN(year) || year < 1990 || year > 2030) {
-      errors.push("입학 연도가 올바르지 않습니다.");
+    const maxYear = new Date().getFullYear();
+    if (Number.isNaN(year) || year < 2000 || year > maxYear) {
+      errors.push(`입학 연도는 2000년~${maxYear}년 사이로 선택해주세요.`);
     }
     if (!admission_type) errors.push("전형 종류를 선택해주세요.");
 

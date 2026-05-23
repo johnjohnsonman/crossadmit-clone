@@ -40,16 +40,16 @@ function newRow(): SchoolRow {
 }
 
 const MAX_SCHOOLS = 10;
-const YEAR_OPTIONS = [
-  { value: "2025", label: "2025" },
-  { value: "2024", label: "2024" },
-  { value: "2023", label: "2023" },
-  { value: "2022", label: "2022" },
-  { value: "2021", label: "2021" },
-  { value: "2020", label: "2020" },
-  { value: "2019", label: "2019" },
-  { value: "2018", label: "2019 이전" },
-];
+const MIN_ADMISSION_YEAR = 2000;
+const CURRENT_ADMISSION_YEAR = new Date().getFullYear();
+
+const YEAR_OPTIONS = Array.from(
+  { length: CURRENT_ADMISSION_YEAR - MIN_ADMISSION_YEAR + 1 },
+  (_, i) => {
+    const y = CURRENT_ADMISSION_YEAR - i;
+    return { value: String(y), label: `${y}년` };
+  }
+);
 
 const ADMISSION_TYPES = [
   "수시",
