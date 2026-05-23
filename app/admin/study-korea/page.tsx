@@ -1,6 +1,13 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import {
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useSearchParams } from "next/navigation";
 import { CATEGORY_LABELS_KR } from "@/lib/study-korea/constants";
 import {
@@ -66,6 +73,16 @@ function AdminStudyKoreaInner() {
   const [saving, setSaving] = useState<string | null>(null);
   const [sourceFilter, setSourceFilter] = useState<string>("all");
   const [enRows, setEnRows] = useState<Set<string>>(new Set());
+  const [enBackfill, setEnBackfill] = useState({
+    total: 0,
+    translated: 0,
+    remaining: 0,
+  });
+  const [enBackfillLoading, setEnBackfillLoading] = useState(false);
+  const [enBackfillRunning, setEnBackfillRunning] = useState(false);
+  const [enBackfillAuto, setEnBackfillAuto] = useState(false);
+  const [enBackfillLog, setEnBackfillLog] = useState<string | null>(null);
+  const enBackfillStopRef = useRef(false);
 
   useEffect(() => {
     if (keyFromUrl && keyFromUrl !== key) setKey(keyFromUrl);
@@ -78,6 +95,30 @@ function AdminStudyKoreaInner() {
     }),
     [key]
   );
+
+  const loadBackfillStatus = useCallback(async () => {
+    if (!key.trim()) return;
+    setEnBackfillLoading(true);
+    try {
+      const res = await fetch("/api/admin/backfill-english", {
+        headers: hdrs(),
+      });
+      if (res.status === 401) return;
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "상태 조회 실패");
+      setEnBackfill({
+        total: json.total ?? 0,
+        translated: json.translated ?? 0,
+        remaining: json.remaining ?? 0,
+      });
+    } catch (e) {
+      setEnBackfillLog(
+        e instanceof Error ? e.message : "영어 백필 상태 조회 오류"
+      );
+    } finally {
+      setEnBackfillLoading(false);
+    }
+  }, [key, hdrs]);
 
   const loadAll = useCallback(async () => {
     if (!key.trim()) {
@@ -113,13 +154,14 @@ function AdminStudyKoreaInner() {
         };
       }
       setUnivEdits(edits);
+      void loadBackfillStatus();
     } catch (e) {
       setAuthorized(false);
       setLoadErr(e instanceof Error ? e.message : "오류");
     } finally {
       setLoading(false);
     }
-  }, [hdrs, key]);
+  }, [hdrs, key, loadBackfillStatus]);
 
   useEffect(() => {
     if (keyFromUrl.trim()) void loadAll();
@@ -139,6 +181,106 @@ function AdminStudyKoreaInner() {
         {text}
       </span>
     );
+  };
+
+  const runBackfillBatch = async () => {
+    if (!key.trim() || enBackfillRunning) return;
+    setEnBackfillRunning(true);
+    setEnBackfillLog(null);
+    try {
+      const res = await fetch("/api/admin/backfill-english", {
+        method: "POST",
+        headers: hdrs(),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "번역 실패");
+      setEnBackfill({
+        total: json.total ?? 0,
+        translated: json.translated ?? 0,
+        remaining: json.remaining ?? 0,
+      });
+      const batch = json.batch;
+      if (batch?.updated) {
+        setEnBackfillLog(
+          `10건 처리 — 성공 ${batch.updated}건, 실패 ${batch.failed ?? 0}건`
+        );
+      } else if (batch?.processed === 0) {
+        setEnBackfillLog("번역할 게시물이 없습니다.");
+      } else {
+        setEnBackfillLog("배치 완료");
+      }
+      await loadAll();
+    } catch (e) {
+      setEnBackfillLog(e instanceof Error ? e.message : "번역 오류");
+    } finally {
+      setEnBackfillRunning(false);
+    }
+  };
+
+  const stopBackfillAuto = () => {
+    enBackfillStopRef.current = true;
+    setEnBackfillAuto(false);
+    setEnBackfillLog("자동 실행 중지됨");
+  };
+
+  const runBackfillAuto = async () => {
+    if (!key.trim() || enBackfillAuto) return;
+    enBackfillStopRef.current = false;
+    setEnBackfillAuto(true);
+    setEnBackfillLog("전체 자동 실행 시작…");
+    try {
+      while (!enBackfillStopRef.current) {
+        const statusRes = await fetch("/api/admin/backfill-english", {
+          headers: hdrs(),
+        });
+        const statusJson = await statusRes.json();
+        if (!statusRes.ok) {
+          throw new Error(statusJson.error || "상태 조회 실패");
+        }
+        setEnBackfill({
+          total: statusJson.total ?? 0,
+          translated: statusJson.translated ?? 0,
+          remaining: statusJson.remaining ?? 0,
+        });
+        if ((statusJson.remaining ?? 0) === 0) {
+          setEnBackfillLog("전체 번역 완료");
+          break;
+        }
+
+        const postRes = await fetch("/api/admin/backfill-english", {
+          method: "POST",
+          headers: hdrs(),
+        });
+        const postJson = await postRes.json();
+        if (!postRes.ok) {
+          throw new Error(postJson.error || "번역 실패");
+        }
+        setEnBackfill({
+          total: postJson.total ?? 0,
+          translated: postJson.translated ?? 0,
+          remaining: postJson.remaining ?? 0,
+        });
+        const u = postJson.batch?.updated ?? 0;
+        const f = postJson.batch?.failed ?? 0;
+        setEnBackfillLog(
+          `진행 중… ${postJson.translated}/${postJson.total} (이번 배치 +${u}, 실패 ${f})`
+        );
+
+        if ((postJson.batch?.processed ?? 0) === 0) {
+          setEnBackfillLog("더 이상 처리할 항목이 없습니다.");
+          break;
+        }
+
+        if (enBackfillStopRef.current) break;
+        await new Promise((r) => setTimeout(r, 2000));
+      }
+      await loadAll();
+    } catch (e) {
+      setEnBackfillLog(e instanceof Error ? e.message : "자동 실행 오류");
+    } finally {
+      setEnBackfillAuto(false);
+      enBackfillStopRef.current = false;
+    }
   };
 
   const runCron = async (path: string, label: string) => {
@@ -250,6 +392,10 @@ function AdminStudyKoreaInner() {
   };
 
   const totalPosts = posts.length;
+  const backfillPct =
+    enBackfill.total > 0
+      ? Math.round((enBackfill.translated / enBackfill.total) * 100)
+      : 0;
 
   return (
     <div className="min-h-screen bg-slate-100 text-gray-900">
@@ -302,6 +448,74 @@ function AdminStudyKoreaInner() {
       <main className="max-w-6xl mx-auto px-4 py-6 space-y-6">
         {authorized && (
           <>
+            {/* English backfill */}
+            <section className="bg-blue-50 rounded-xl border border-blue-200 p-4 shadow-sm">
+              <h2 className="text-sm font-bold text-blue-900 mb-2">
+                🌐 영어 번역 백필
+              </h2>
+              <p className="text-sm text-blue-800 mb-3">
+                <span className="font-semibold tabular-nums">
+                  {enBackfill.translated}
+                </span>
+                {" / "}
+                <span className="font-semibold tabular-nums">
+                  {enBackfill.total}
+                </span>
+                {enBackfillLoading ? (
+                  <span className="text-blue-600 ml-2">(불러오는 중…)</span>
+                ) : (
+                  <span className="text-blue-700 ml-2">
+                    (남은 {enBackfill.remaining}건)
+                  </span>
+                )}
+              </p>
+              <div className="h-3 w-full rounded-full bg-blue-100 overflow-hidden mb-3">
+                <div
+                  className="h-full bg-blue-600 transition-all duration-300"
+                  style={{ width: `${backfillPct}%` }}
+                />
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  disabled={
+                    enBackfillRunning ||
+                    enBackfillAuto ||
+                    enBackfill.remaining === 0
+                  }
+                  onClick={() => void runBackfillBatch()}
+                  className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {enBackfillRunning ? "번역 중…" : "▶ 10건 번역"}
+                </button>
+                <button
+                  type="button"
+                  disabled={
+                    enBackfillRunning ||
+                    enBackfillAuto ||
+                    enBackfill.remaining === 0
+                  }
+                  onClick={() => void runBackfillAuto()}
+                  className="px-4 py-2 rounded-lg bg-blue-700 text-white text-sm font-semibold hover:bg-blue-800 disabled:opacity-50"
+                >
+                  {enBackfillAuto ? "자동 실행 중…" : "▶▶ 전체 자동 실행"}
+                </button>
+                <button
+                  type="button"
+                  disabled={!enBackfillAuto}
+                  onClick={stopBackfillAuto}
+                  className="px-4 py-2 rounded-lg bg-white border border-blue-300 text-blue-900 text-sm font-medium hover:bg-blue-100 disabled:opacity-50"
+                >
+                  ⏹ 중지
+                </button>
+              </div>
+              {enBackfillLog && (
+                <p className="text-xs text-blue-800 mt-3 bg-blue-100/80 px-3 py-2 rounded-lg">
+                  {enBackfillLog}
+                </p>
+              )}
+            </section>
+
             {/* Run for specific source */}
             <section className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
               <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-3">
