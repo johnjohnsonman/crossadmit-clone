@@ -1,9 +1,11 @@
 import { analyzeStudyKoreaContent } from "./claude";
-import { fetchRedditFeed, type RedditPostData } from "./reddit-fetch";
+import { passesRedditPrefilter } from "./reddit-filter";
 import {
-  fillEmptySummaries,
-  shouldSavePost,
-} from "./relevance";
+  fetchRedditFeed,
+  resetRedditFetchPreference,
+  type RedditPostData,
+} from "./reddit-fetch";
+import { fillEmptySummaries, shouldSavePost } from "./relevance";
 import { finishPipelineRun, startPipelineRun } from "./runs";
 import { upsertStudyKoreaPost } from "./save";
 import type { ScrapeRunResult } from "./types";
@@ -11,54 +13,49 @@ import { normalizeUniversitySlug } from "./university-map";
 
 const CONTENT_FOR_AI_MAX = 500;
 
-/** Furniblog-style feeds + study-korea subreddits */
-const REDDIT_FEEDS: {
+const KOREA_STUDY_KEYWORDS =
+  /study|university|college|admission|scholarship|visa|dorm|exchange|international|tuition|campus|student/i;
+
+type FeedDef = {
   url: string;
   label: string;
   filter?: (p: RedditPostData) => boolean;
-}[] = [
-  {
-    url: "https://www.reddit.com/r/studyinkorea/hot.json?limit=25&t=week",
-    label: "r/studyinkorea hot",
-  },
-  {
-    url: "https://www.reddit.com/r/studyinkorea/new.json?limit=25",
-    label: "r/studyinkorea new",
-  },
-  {
-    url: "https://www.reddit.com/r/korea/search.json?q=university+study&sort=new&limit=25&t=month",
-    label: "r/korea search",
-    filter: isKoreaStudyPost,
-  },
-  {
-    url: "https://www.reddit.com/r/Korean/hot.json?limit=25",
-    label: "r/Korean hot",
-    filter: isKoreanLanguagePost,
-  },
-  {
-    url: "https://www.reddit.com/r/Korean/new.json?limit=25",
-    label: "r/Korean new",
-    filter: isKoreanLanguagePost,
-  },
-];
-
-const KOREA_STUDY_KEYWORDS =
-  /study|university|college|admission|scholarship|visa|dorm|exchange|international|tuition|campus/i;
-
-const KOREAN_LANG_KEYWORDS =
-  /topik|korean|hangul|language|grammar|vocab|study|learn|class|lesson|exam/i;
-
-function isKoreanLanguagePost(p: RedditPostData): boolean {
-  const text = `${p.title} ${p.selftext ?? ""}`;
-  return KOREAN_LANG_KEYWORDS.test(text);
-}
+};
 
 function isKoreaStudyPost(p: RedditPostData): boolean {
-  const text = `${p.title} ${p.selftext ?? ""}`;
+  const text = `${p.title} ${p.selftext ?? ""} ${p.link_flair_text ?? ""}`;
   return KOREA_STUDY_KEYWORDS.test(text);
 }
 
+function buildSubredditFeeds(
+  subreddit: string,
+  options: { filter?: (p: RedditPostData) => boolean; sorts?: ("hot" | "new" | "top")[] } = {}
+): FeedDef[] {
+  const sorts = options.sorts ?? ["hot", "new", "top"];
+  const feeds: FeedDef[] = [];
+  for (const sort of sorts) {
+    const base = `https://www.reddit.com/r/${subreddit}/${sort}.json?limit=25`;
+    const url = sort === "top" ? `${base}&t=month` : base;
+    feeds.push({
+      url,
+      label: `r/${subreddit} ${sort}`,
+      filter: options.filter,
+    });
+  }
+  return feeds;
+}
+
+const REDDIT_FEEDS: FeedDef[] = [
+  ...buildSubredditFeeds("studyinkorea"),
+  ...buildSubredditFeeds("korea", { filter: isKoreaStudyPost }),
+  ...buildSubredditFeeds("Living_in_Korea"),
+  ...buildSubredditFeeds("KoreanAdvice"),
+  ...buildSubredditFeeds("teachinginkorea", { sorts: ["hot", "new"] }),
+];
+
 export async function scrapeRedditStudyKorea(): Promise<ScrapeRunResult> {
+  resetRedditFetchPreference();
+
   const runId = await startPipelineRun(
     "reddit",
     REDDIT_FEEDS.map((f) => f.label).join(", ")
@@ -87,6 +84,13 @@ export async function scrapeRedditStudyKorea(): Promise<ScrapeRunResult> {
           const d = c.data;
           if (!d?.id || seen.has(d.id)) continue;
           if (feed.filter && !feed.filter(d)) continue;
+
+          const pre = passesRedditPrefilter(d);
+          if (pre) {
+            console.log(`[Reddit] prefilter skip ${d.id}: ${pre}`);
+            continue;
+          }
+
           seen.add(d.id);
           posts.push(d);
           added++;
@@ -102,7 +106,7 @@ export async function scrapeRedditStudyKorea(): Promise<ScrapeRunResult> {
     }
 
     result.collected = posts.length;
-    console.log("[Reddit] fetched:", posts.length);
+    console.log("[Reddit] fetched after prefilter:", posts.length);
 
     let relevantCount = 0;
 
@@ -113,14 +117,15 @@ export async function scrapeRedditStudyKorea(): Promise<ScrapeRunResult> {
         fullContent || d.title || ""
       ).slice(0, CONTENT_FOR_AI_MAX);
       const url = d.permalink
-        ? `https://www.reddit.com${d.permalink}`
+        ? d.permalink.startsWith("http")
+          ? d.permalink
+          : `https://www.reddit.com${d.permalink}`
         : d.url || "";
       const title = (d.title ?? "").trim();
       const subreddit = d.subreddit ?? "studyinkorea";
 
       if (!title) {
         result.skipped++;
-        console.log("[Reddit] skip empty title:", d.id);
         continue;
       }
 
@@ -139,10 +144,6 @@ export async function scrapeRedditStudyKorea(): Promise<ScrapeRunResult> {
           title,
           fullContent,
           analysis
-        );
-
-        console.log(
-          `[Reddit] post ${d.id} r/${subreddit} save=${saveOk} claude_relevant=${analysis.is_relevant}`
         );
 
         if (!saveOk) {
@@ -174,9 +175,9 @@ export async function scrapeRedditStudyKorea(): Promise<ScrapeRunResult> {
           university,
           ai_summary: analysis.ai_summary,
           ai_summary_kr: analysis.ai_summary_kr,
-          ai_title_en: analysis.ai_title_en,
-          ai_summary_en: analysis.ai_summary_en,
-          ai_content_en: analysis.ai_content_en,
+          ai_title_en: analysis.ai_title_en || title,
+          ai_summary_en: analysis.ai_summary_en || analysis.ai_summary,
+          ai_content_en: analysis.ai_content_en || fullContent.slice(0, 8000),
           ai_tags: analysis.ai_tags,
           is_published: analysis.is_relevant,
         };
@@ -199,7 +200,7 @@ export async function scrapeRedditStudyKorea(): Promise<ScrapeRunResult> {
           ai_summary: title,
           ai_summary_kr: title,
           ai_tags: [],
-          is_relevant: true,
+          is_relevant: false,
         });
 
         const status = await upsertStudyKoreaPost({
@@ -217,9 +218,9 @@ export async function scrapeRedditStudyKorea(): Promise<ScrapeRunResult> {
           category: fallback.category,
           ai_summary: fallback.ai_summary,
           ai_summary_kr: fallback.ai_summary_kr,
-          ai_title_en: fallback.ai_title_en,
+          ai_title_en: title,
           ai_summary_en: fallback.ai_summary_en,
-          ai_content_en: fallback.ai_content_en,
+          ai_content_en: fullContent.slice(0, 8000),
           is_published: false,
         });
         if (status === "saved") {
@@ -231,7 +232,6 @@ export async function scrapeRedditStudyKorea(): Promise<ScrapeRunResult> {
     console.log("[Reddit] relevant:", relevantCount);
     console.log("[Reddit] saved:", result.saved);
     console.log("[Reddit] skipped:", result.skipped);
-    console.log("[Reddit] failed:", result.failed);
 
     await finishPipelineRun(runId, {
       collected: result.collected,

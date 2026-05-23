@@ -95,6 +95,8 @@ function AdminStudyKoreaInner() {
   const [reclassifyAuto, setReclassifyAuto] = useState(false);
   const [reclassifyLog, setReclassifyLog] = useState<string | null>(null);
   const reclassifyStopRef = useRef(false);
+  const [redditTestLoading, setRedditTestLoading] = useState(false);
+  const [redditTestResult, setRedditTestResult] = useState<string | null>(null);
 
   useEffect(() => {
     if (keyFromUrl && keyFromUrl !== key) setKey(keyFromUrl);
@@ -417,6 +419,24 @@ function AdminStudyKoreaInner() {
     }
   };
 
+  const runRedditTest = async () => {
+    if (!key.trim()) return;
+    setRedditTestLoading(true);
+    setRedditTestResult(null);
+    try {
+      const res = await fetch("/api/admin/test-reddit", { headers: hdrs() });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "테스트 실패");
+      setRedditTestResult(JSON.stringify(json, null, 2));
+    } catch (e) {
+      setRedditTestResult(
+        e instanceof Error ? e.message : "Reddit 접근 테스트 오류"
+      );
+    } finally {
+      setRedditTestLoading(false);
+    }
+  };
+
   const runCron = async (path: string, label: string) => {
     if (!key.trim()) return;
     setRunningSource(label);
@@ -543,7 +563,7 @@ function AdminStudyKoreaInner() {
             Study Korea Pipeline
           </h1>
           <p className="text-sm text-gray-600 mt-0.5">
-            Furniblog-style · 6 sources · Claude + Supabase
+            Furniblog-style · 7 sources · Claude + Supabase
           </p>
           <div className="flex flex-wrap gap-2 mt-3">
             <input
@@ -586,6 +606,29 @@ function AdminStudyKoreaInner() {
       <main className="max-w-6xl mx-auto px-4 py-6 space-y-6">
         {authorized && (
           <>
+            <section className="bg-orange-50 rounded-xl border border-orange-200 p-4 shadow-sm">
+              <h2 className="text-sm font-bold text-orange-900 mb-2">
+                🔍 Reddit 접근 테스트
+              </h2>
+              <p className="text-sm text-orange-800 mb-3">
+                Vercel 서버에서 www / old.reddit / RSS 세 방식을 시도합니다.
+                OAuth 없이 공개 API만 사용합니다.
+              </p>
+              <button
+                type="button"
+                disabled={redditTestLoading}
+                onClick={() => void runRedditTest()}
+                className="px-4 py-2 rounded-lg bg-orange-600 text-white text-sm font-semibold hover:bg-orange-700 disabled:opacity-50"
+              >
+                {redditTestLoading ? "테스트 중…" : "Reddit 접근 테스트"}
+              </button>
+              {redditTestResult && (
+                <pre className="mt-3 p-2 bg-white border border-orange-200 rounded text-xs font-mono whitespace-pre-wrap max-h-64 overflow-y-auto text-gray-800">
+                  {redditTestResult}
+                </pre>
+              )}
+            </section>
+
             {/* English backfill */}
             <section className="bg-blue-50 rounded-xl border border-blue-200 p-4 shadow-sm">
               <h2 className="text-sm font-bold text-blue-900 mb-2">

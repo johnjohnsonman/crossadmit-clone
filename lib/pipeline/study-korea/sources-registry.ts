@@ -26,9 +26,10 @@ export const STUDY_KOREA_SOURCE_META: StudyKoreaSourceMeta[] = [
   {
     id: "reddit",
     label: "Reddit",
+    cronPath: "/api/cron/scrape-reddit-study-korea",
     color: "bg-orange-100 text-orange-800",
-    status: "config_required",
-    statusLabel: "OAuth 설정 필요",
+    status: "active",
+    note: "공개 JSON/RSS · OAuth 불필요 · Vercel 서버 fetch",
   },
   {
     id: "quora",
