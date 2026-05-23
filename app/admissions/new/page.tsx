@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
-import AutocompleteInput from "@/components/AutocompleteInput";
+import AutocompleteInput, {
+  type AutocompleteItem,
+} from "@/components/AutocompleteInput";
 import { KOREAN_MAJORS } from "@/lib/data/korean-majors";
 import {
   KOREAN_UNIVERSITIES,
@@ -68,8 +70,14 @@ const TOPIK_OPTIONS = [
   { value: "6", label: "6급" },
 ];
 
-const uniLabels = KOREAN_UNIVERSITIES.map((u) => u.nameKo);
-const uniHints = KOREAN_UNIVERSITIES.map((u) => u.nameEn);
+const universityOptions: AutocompleteItem[] = KOREAN_UNIVERSITIES.map((u) => ({
+  label: u.nameKo,
+  hint: u.nameEn !== u.nameKo ? u.nameEn : undefined,
+}));
+
+const majorOptions: AutocompleteItem[] = KOREAN_MAJORS.map((label) => ({
+  label,
+}));
 
 const inputBase =
   "block w-full rounded-lg border border-gray-800 bg-gray-900 px-3 py-2 text-sm text-white shadow-sm " +
@@ -117,7 +125,9 @@ export default function AdmissionNewPage() {
   const [formError, setFormError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  const [deptOptions, setDeptOptions] = useState<Record<string, string[]>>({});
+  const [deptOptions, setDeptOptions] = useState<
+    Record<string, AutocompleteItem[]>
+  >({});
 
   const schoolsPayload = useMemo(() => {
     const list: {
@@ -174,17 +184,26 @@ export default function AdmissionNewPage() {
     );
   }
 
-  async function loadUniversities(q: string): Promise<string[]> {
-    if (!q.trim()) return uniLabels;
+  function toUniversityItem(u: {
+    name_kr: string;
+    name_en?: string | null;
+  }): AutocompleteItem {
+    const kr = (u.name_kr ?? "").trim();
+    const en = (u.name_en ?? "").trim();
+    const label = kr || en;
+    const hint = kr && en && kr !== en ? en : undefined;
+    return { label, hint };
+  }
+
+  async function loadUniversities(q: string): Promise<AutocompleteItem[]> {
+    if (!q.trim()) return universityOptions;
     const term = univSearchTerm(q) || q.trim();
     try {
       const res = await fetch(
         `/api/universities?search=${encodeURIComponent(term)}`
       );
       const data = await res.json();
-      return (data.universities ?? []).map(
-        (u: { name_kr: string; name_en?: string | null }) => formatUnivLabel(u)
-      );
+      return (data.universities ?? []).map(toUniversityItem);
     } catch {
       return [];
     }
@@ -206,8 +225,15 @@ export default function AdmissionNewPage() {
         updateRow(rowId, { univId: match.id });
         const dRes = await fetch(`/api/universities?univ_id=${match.id}`);
         const dData = await dRes.json();
-        const opts = (dData.departments ?? []).map(
-          (d: { dept_name: string }) => d.dept_name
+        const opts: AutocompleteItem[] = (dData.departments ?? []).map(
+          (d: { dept_name: string; dept_name_en?: string | null }) => {
+            const label = (d.dept_name ?? "").trim();
+            const en = (d.dept_name_en ?? "").trim();
+            return {
+              label,
+              hint: en && en !== label ? en : undefined,
+            };
+          }
         );
         setDeptOptions((prev) => ({ ...prev, [rowId]: opts }));
       }
@@ -401,8 +427,7 @@ export default function AdmissionNewPage() {
                         </label>
                         <AutocompleteInput
                           id={`u-${row.id}`}
-                          options={uniLabels}
-                          searchHints={uniHints}
+                          options={universityOptions}
                           value={row.universityInput}
                           onChange={(v) =>
                             updateRow(row.id, {
@@ -426,7 +451,7 @@ export default function AdmissionNewPage() {
                           options={
                             deptOptions[row.id]?.length
                               ? deptOptions[row.id]
-                              : KOREAN_MAJORS
+                              : majorOptions
                           }
                           value={row.majorInput}
                           onChange={(v) =>

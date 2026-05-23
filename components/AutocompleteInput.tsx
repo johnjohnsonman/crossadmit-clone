@@ -2,22 +2,30 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
+export type AutocompleteItem = { label: string; hint?: string };
+
+/** 하위 호환: 문자열은 label만 있는 항목으로 처리 */
+export type AutocompleteOption = AutocompleteItem | string;
+
 export type AutocompleteInputProps = {
-  options: string[];
-  /** options와 동일 길이 권장 — 영문 등 보조 검색 */
-  searchHints?: string[];
+  options: AutocompleteOption[];
   value: string;
   onChange: (v: string) => void;
-  /** 목록에서 항목 선택 시 */
-  onSelect?: (v: string) => void;
-  /** 비동기 옵션 로드 (검색어 변경 시) */
-  loadOptions?: (q: string) => Promise<string[]>;
+  onSelect?: (label: string, item?: AutocompleteItem) => void;
+  loadOptions?: (q: string) => Promise<AutocompleteOption[]>;
   placeholder?: string;
   className?: string;
   id?: string;
-  /** 매칭 최대 개수 */
   maxSuggestions?: number;
 };
+
+function normalizeOption(opt: AutocompleteOption): AutocompleteItem {
+  return typeof opt === "string" ? { label: opt } : opt;
+}
+
+function normalizeOptions(opts: AutocompleteOption[]): AutocompleteItem[] {
+  return opts.map(normalizeOption);
+}
 
 function normalize(s: string): string {
   return s.trim().toLowerCase();
@@ -25,7 +33,6 @@ function normalize(s: string): string {
 
 export default function AutocompleteInput({
   options,
-  searchHints,
   value,
   onChange,
   onSelect,
@@ -37,7 +44,9 @@ export default function AutocompleteInput({
 }: AutocompleteInputProps) {
   const [open, setOpen] = useState(false);
   const [highlight, setHighlight] = useState(0);
-  const [asyncOptions, setAsyncOptions] = useState<string[] | null>(null);
+  const [asyncOptions, setAsyncOptions] = useState<AutocompleteOption[] | null>(
+    null
+  );
   const wrapRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -55,31 +64,30 @@ export default function AutocompleteInput({
     };
   }, [value, loadOptions]);
 
-  const optionList = asyncOptions ?? options;
+  const optionList = useMemo(
+    () => normalizeOptions(asyncOptions ?? options),
+    [asyncOptions, options]
+  );
 
   const filtered = useMemo(() => {
     const q = normalize(value);
     if (!q) {
-      return optionList.slice(0, maxSuggestions).map((label, i) => ({
-        label,
-        index: i,
-      }));
+      return optionList.slice(0, maxSuggestions);
     }
-    const out: { label: string; index: number }[] = [];
-    for (let i = 0; i < optionList.length; i++) {
-      const label = optionList[i];
-      const hint = searchHints?.[i] ?? "";
+    const out: AutocompleteItem[] = [];
+    for (const item of optionList) {
+      const hint = item.hint ?? "";
       const match =
-        normalize(label).includes(q) ||
+        normalize(item.label).includes(q) ||
         normalize(hint).includes(q) ||
-        `${normalize(label)} ${normalize(hint)}`.includes(q);
+        `${normalize(item.label)} ${normalize(hint)}`.includes(q);
       if (match) {
-        out.push({ label, index: i });
+        out.push(item);
         if (out.length >= maxSuggestions) break;
       }
     }
     return out;
-  }, [optionList, searchHints, value, maxSuggestions]);
+  }, [optionList, value, maxSuggestions]);
 
   useEffect(() => {
     function handleDoc(e: MouseEvent) {
@@ -95,9 +103,9 @@ export default function AutocompleteInput({
     setHighlight(0);
   }, [value, open]);
 
-  function pick(label: string) {
-    onChange(label);
-    onSelect?.(label);
+  function pick(item: AutocompleteItem) {
+    onChange(item.label);
+    onSelect?.(item.label, item);
     setOpen(false);
     inputRef.current?.blur();
   }
@@ -130,7 +138,7 @@ export default function AutocompleteInput({
             setHighlight((h) => (h - 1 + filtered.length) % filtered.length);
           } else if (e.key === "Enter") {
             e.preventDefault();
-            pick(filtered[highlight]?.label ?? filtered[0].label);
+            pick(filtered[highlight] ?? filtered[0]);
           } else if (e.key === "Escape") {
             setOpen(false);
           }
@@ -142,7 +150,7 @@ export default function AutocompleteInput({
           role="listbox"
         >
           {filtered.map((item, i) => (
-            <li key={`${item.label}-${item.index}`}>
+            <li key={`${item.label}-${item.hint ?? ""}-${i}`}>
               <button
                 type="button"
                 className={`flex w-full px-3 py-2 text-left text-white hover:bg-gray-800 ${
@@ -150,14 +158,12 @@ export default function AutocompleteInput({
                 }`}
                 onMouseDown={(ev) => {
                   ev.preventDefault();
-                  pick(item.label);
+                  pick(item);
                 }}
               >
                 {item.label}
-                {searchHints?.[item.index] ? (
-                  <span className="ml-2 text-xs text-gray-500">
-                    {searchHints[item.index]}
-                  </span>
+                {item.hint ? (
+                  <span className="ml-2 text-xs text-gray-500">{item.hint}</span>
                 ) : null}
               </button>
             </li>
