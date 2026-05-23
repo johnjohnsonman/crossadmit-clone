@@ -5,6 +5,7 @@ import StructuredData from "@/components/StructuredData";
 import MentorCard from "@/components/mentors/MentorCard";
 import MentorIntroPanel from "@/components/mentors/MentorIntroPanel";
 import MentorRequestButton from "@/components/mentors/MentorRequestButton";
+import { ViewTracker } from "@/components/mentors/ViewTracker";
 import {
   mentorStudentStatusLabel,
   mentorTagsFlat,
@@ -82,6 +83,7 @@ export default async function MentorDetailPage({ params, searchParams }: Props) 
 
   return (
     <div className="min-h-screen bg-[#DAE0E6] dark:bg-[#030303]">
+      <ViewTracker mentorId={id} />
       <StructuredData data={personSchema} />
       <div className="max-w-3xl mx-auto px-4 py-6">
         <nav className="text-xs text-[#7C7C7C] mb-4">

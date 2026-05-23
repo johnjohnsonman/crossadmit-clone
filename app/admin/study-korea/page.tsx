@@ -151,6 +151,13 @@ function AdminStudyKoreaInner() {
   const [mentorTranslateAuto, setMentorTranslateAuto] = useState(false);
   const [mentorTranslateLog, setMentorTranslateLog] = useState<string | null>(null);
   const mentorTranslateStopRef = useRef(false);
+  const [mentorViewStats, setMentorViewStats] = useState({
+    today_views: 0,
+    week_views: 0,
+    top_today: [] as { nickname: string; views: number }[],
+    daily_last_7: [] as { date: string; views: number }[],
+  });
+  const [mentorViewStatsLoading, setMentorViewStatsLoading] = useState(false);
 
   const AI_GUIDE_CATEGORIES = [
     "visa",
@@ -255,6 +262,29 @@ function AdminStudyKoreaInner() {
       setSlugBackfillRunning(false);
     }
   };
+
+  const loadMentorViewStats = useCallback(async () => {
+    if (!key.trim()) return;
+    setMentorViewStatsLoading(true);
+    try {
+      const res = await fetch("/api/admin/mentors/view-stats", {
+        headers: hdrs(),
+      });
+      if (res.status === 401) return;
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "조회 통계 로드 실패");
+      setMentorViewStats({
+        today_views: json.today_views ?? 0,
+        week_views: json.week_views ?? 0,
+        top_today: json.top_today ?? [],
+        daily_last_7: json.daily_last_7 ?? [],
+      });
+    } catch {
+      /* table may not exist until migration 018 */
+    } finally {
+      setMentorViewStatsLoading(false);
+    }
+  }, [key, hdrs]);
 
   const loadMentorTranslateStatus = useCallback(async () => {
     if (!key.trim()) return;
@@ -598,13 +628,14 @@ function AdminStudyKoreaInner() {
       void loadReclassifyStatus();
       void loadAiGuidesStatus();
       void loadMentorTranslateStatus();
+      void loadMentorViewStats();
     } catch (e) {
       setAuthorized(false);
       setLoadErr(e instanceof Error ? e.message : "오류");
     } finally {
       setLoading(false);
     }
-  }, [hdrs, key, loadBackfillStatus, loadReclassifyStatus, loadAiGuidesStatus, loadMentorTranslateStatus]);
+  }, [hdrs, key, loadBackfillStatus, loadReclassifyStatus, loadAiGuidesStatus, loadMentorTranslateStatus, loadMentorViewStats]);
 
   useEffect(() => {
     if (keyFromUrl.trim()) void loadAll();
@@ -1466,6 +1497,58 @@ function AdminStudyKoreaInner() {
               >
                 검토하기 →
               </a>
+            </section>
+
+            <section className="bg-zinc-100 rounded-xl border border-zinc-300 p-4 shadow-sm">
+              <h2 className="text-sm font-bold text-zinc-800 mb-2">
+                📊 멘토 조회 통계
+              </h2>
+              {mentorViewStatsLoading ? (
+                <p className="text-sm text-zinc-600">불러오는 중…</p>
+              ) : (
+                <>
+                  <p className="text-sm text-zinc-700 mb-2">
+                    오늘 조회수:{" "}
+                    <span className="font-semibold tabular-nums">
+                      {mentorViewStats.today_views}
+                    </span>
+                    {" · "}
+                    이번 주:{" "}
+                    <span className="font-semibold tabular-nums">
+                      {mentorViewStats.week_views}
+                    </span>
+                  </p>
+                  {mentorViewStats.top_today.length > 0 && (
+                    <div className="mb-3">
+                      <p className="text-xs font-bold text-zinc-600 mb-1">
+                        오늘 Top 5
+                      </p>
+                      <ul className="text-sm text-zinc-800 space-y-0.5">
+                        {mentorViewStats.top_today.map((t) => (
+                          <li key={t.nickname}>
+                            {t.nickname}{" "}
+                            <span className="text-zinc-500">({t.views})</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {mentorViewStats.daily_last_7.length > 0 && (
+                    <p className="text-xs text-zinc-600">
+                      최근 7일:{" "}
+                      {mentorViewStats.daily_last_7
+                        .map((d) => `${d.date.slice(5)}:${d.views}`)
+                        .join(" · ")}
+                    </p>
+                  )}
+                  {mentorViewStats.today_views === 0 &&
+                    mentorViewStats.week_views === 0 && (
+                      <p className="text-xs text-zinc-500">
+                        018 마이그레이션 적용 후 조회가 기록됩니다.
+                      </p>
+                    )}
+                </>
+              )}
             </section>
 
             {/* English backfill */}
