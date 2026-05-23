@@ -1,4 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import {
+  normalizeUnivId,
+  resolveDepartmentId,
+} from "@/lib/admissions/resolve-school-ids";
 import { validateRegisteredSchool } from "@/lib/admissions/school-registration";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type {
@@ -142,12 +146,23 @@ export async function POST(request: NextRequest) {
 
     const admissionId = inserted.id as number;
 
-    const schoolRows: AdmissionSchoolInsert[] = schools.map((s) => {
+    const schoolRows: AdmissionSchoolInsert[] = [];
+    const resolvedSchools: SchoolSubmitPayload[] = [];
+
+    for (const s of schools) {
+      const univId = await normalizeUnivId(admin, s.univ_id);
+      const deptId = await resolveDepartmentId(
+        admin,
+        univId,
+        s.dept_name,
+        s.dept_id
+      );
       const flags = statusToFlags(s.status);
-      return {
+      resolvedSchools.push({ ...s, univ_id: univId, dept_id: deptId });
+      schoolRows.push({
         admission_id: admissionId,
-        univ_id: s.univ_id ?? 0,
-        dept_id: s.dept_id ?? 0,
+        univ_id: univId,
+        dept_id: deptId,
         univ_name: s.univ_name,
         dept_name: s.dept_name,
         is_apply: flags.is_apply,
@@ -157,8 +172,8 @@ export async function POST(request: NextRequest) {
         admission_type: s.admission_type || admission_type,
         review: review || "",
         thumbnail: "",
-      };
-    });
+      });
+    }
 
     const { error: schoolErr } = await admin
       .from("admission_schools")
@@ -173,7 +188,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const accepted = schools.filter(
+    const accepted = resolvedSchools.filter(
       (s) => s.status === "합격" || s.status === "등록"
     );
 

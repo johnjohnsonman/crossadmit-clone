@@ -176,9 +176,10 @@ export default function AdmissionNewPage() {
 
   async function loadUniversities(q: string): Promise<string[]> {
     if (!q.trim()) return uniLabels;
+    const term = univSearchTerm(q) || q.trim();
     try {
       const res = await fetch(
-        `/api/universities?search=${encodeURIComponent(q.trim())}`
+        `/api/universities?search=${encodeURIComponent(term)}`
       );
       const data = await res.json();
       return (data.universities ?? []).map(

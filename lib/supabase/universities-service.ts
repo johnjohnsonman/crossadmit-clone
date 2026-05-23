@@ -1,9 +1,9 @@
+import {
+  escapeIlikeForPostgrest,
+  safeSearchTerm,
+} from "@/lib/admissions/university-search";
 import { createClient } from "@/lib/supabase/server";
 import type { CrossComparison, University, UniversityDepartment } from "@/lib/supabase/types";
-
-function escapeIlike(raw: string): string {
-  return raw.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
-}
 
 async function loadUniversityNameMap(): Promise<
   Map<number, { name_kr: string; name_en: string }>
@@ -111,11 +111,11 @@ export async function getUniversities(params?: {
     query = query.eq("country", params.country.trim());
   }
 
-  if (params?.search?.trim()) {
-    const safe = escapeIlike(params.search.trim());
-    query = query.or(
-      `name_kr.ilike.%${safe}%,name_en.ilike.%${safe}%`
-    );
+  const searchRaw = params?.search?.trim() ?? "";
+  if (searchRaw) {
+    const safe = escapeIlikeForPostgrest(searchRaw);
+    if (!safe) return [];
+    query = query.or(`name_kr.ilike.%${safe}%,name_en.ilike.%${safe}%`);
   }
 
   const lim = params?.limit ?? 50;
@@ -127,8 +127,8 @@ export async function getUniversities(params?: {
     throw new Error(error.message);
   }
   const rows = (data ?? []) as University[];
-  if (params?.search?.trim()) {
-    return rankUniversitiesBySearch(rows, params.search);
+  if (searchRaw) {
+    return rankUniversitiesBySearch(rows, safeSearchTerm(searchRaw) || searchRaw);
   }
   return rows;
 }
@@ -178,10 +178,10 @@ export async function getUniversityDepartments(
     .order("dept_name", { ascending: true });
 
   if (search?.trim()) {
-    const safe = escapeIlike(search.trim());
-    query = query.or(
-      `dept_name.ilike.%${safe}%,dept_name_en.ilike.%${safe}%`
-    );
+    const safe = escapeIlikeForPostgrest(search.trim());
+    if (safe) {
+      query = query.or(`dept_name.ilike.%${safe}%,dept_name_en.ilike.%${safe}%`);
+    }
   }
 
   const { data, error } = await query.limit(80);
