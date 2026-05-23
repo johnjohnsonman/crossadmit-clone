@@ -1,54 +1,25 @@
 import { MetadataRoute } from "next";
+import { SITE_URL } from "@/lib/seo/constants";
 
 export default function robots(): MetadataRoute.Robots {
-  const baseUrl = "https://crossadmit.com"; // 실제 도메인으로 변경 필요
-
   return {
     rules: [
       {
         userAgent: "*",
         allow: "/",
-        allow: ["/forum", "/r/"],
-        disallow: [
-          "/api/",
-          "/admin/",
-          "/_next/",
-          "/private/",
-          "/search",
-        ],
+        disallow: ["/admin/", "/api/", "/submit", "/_next/", "/private/"],
       },
       {
         userAgent: "Googlebot",
         allow: "/",
-        allow: ["/forum", "/r/"],
-        disallow: [
-          "/api/",
-          "/admin/",
-          "/private/",
-          "/search",
-        ],
+        disallow: ["/admin/", "/api/", "/submit", "/private/"],
       },
       {
-        userAgent: "Baiduspider",
-        allow: ["/forum", "/r/"],
-        disallow: [
-          "/api/",
-          "/admin/",
-          "/private/",
-          "/search",
-        ],
-      },
-      {
-        userAgent: "Yandex",
-        allow: ["/forum", "/r/"],
-        disallow: [
-          "/api/",
-          "/admin/",
-          "/private/",
-          "/search",
-        ],
+        userAgent: "GPTBot",
+        disallow: "/",
       },
     ],
-    sitemap: `${baseUrl}/sitemap.xml`,
+    sitemap: `${SITE_URL}/sitemap.xml`,
+    host: SITE_URL,
   };
 }

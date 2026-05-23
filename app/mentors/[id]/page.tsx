@@ -14,8 +14,10 @@ import {
   tagTypeLabel,
 } from "@/lib/mentors/display";
 import { getMentorById, getSimilarMentors } from "@/lib/mentors/queries";
+import { SITE_URL } from "@/lib/seo/constants";
+import { seoAlternates, seoOpenGraph, seoTwitter } from "@/lib/seo/metadata";
 
-const BASE = "https://crossadmit.com";
+const BASE = SITE_URL;
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -27,19 +29,22 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const mentor = await getMentorById(id);
   if (!mentor) return { title: "Mentor not found" };
 
-  const uni = mentor.university?.name_en || mentor.university_name_freetext || "Korea";
-  const desc = (mentor.intro_en || mentor.intro_kr || "").slice(0, 150);
+  const uni =
+    mentor.university?.name_en || mentor.university_name_freetext || "Korean University";
+  const title = `${mentor.nickname} - ${uni} Mentor`;
+  const description = (mentor.intro_en || mentor.intro_kr || "").slice(0, 160);
 
   return {
-    title: `${mentor.nickname} - ${uni} Mentor | CrossAdmit`,
-    description: desc,
-    openGraph: {
-      title: mentor.nickname,
-      description: desc,
+    title,
+    description,
+    alternates: seoAlternates(`/mentors/${id}`),
+    openGraph: seoOpenGraph({
+      title: `${mentor.nickname} | ${uni} Mentor`,
+      description,
       type: "profile",
       url: `${BASE}/mentors/${id}`,
-    },
-    alternates: { canonical: `${BASE}/mentors/${id}` },
+    }),
+    twitter: seoTwitter(title, description),
   };
 }
 
@@ -73,9 +78,11 @@ export default async function MentorDetailPage({ params, searchParams }: Props) 
     "@type": "Person",
     name: mentor.nickname,
     description: (mentor.intro_en || mentor.intro_kr || "").slice(0, 300),
+    jobTitle: mentor.student_status === "graduated" ? "Graduate" : "Student",
+    url: `${BASE}/mentors/${id}`,
     ...(mentor.university && {
       affiliation: {
-        "@type": "EducationalOrganization",
+        "@type": "CollegeOrUniversity",
         name: mentor.university.name_en || mentor.university.name_kr,
       },
     }),

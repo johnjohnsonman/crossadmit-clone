@@ -2,12 +2,13 @@ import { MetadataRoute } from "next";
 import fs from "fs";
 import path from "path";
 import { REDDIT_CATEGORIES } from "@/lib/forum/reddit-categories";
-import { normalizePostCategory, postPath } from "@/lib/forum/reddit-categories";
-import { getPublishedPostsForSitemap } from "@/lib/forum/queries";
-import { getMentorIdsForSitemap } from "@/lib/mentors/queries";
+import { SITE_URL } from "@/lib/seo/constants";
+import { getSitemapMentors, getSitemapPosts } from "@/lib/seo/sitemap-data";
+
+export const revalidate = 3600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = "https://crossadmit.com";
+  const baseUrl = SITE_URL;
 
   const staticPages: MetadataRoute.Sitemap = [
     {
@@ -17,21 +18,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 1,
     },
     {
-      url: `${baseUrl}/crossadmit`,
-      lastModified: new Date(),
-      changeFrequency: "daily",
-      priority: 1,
-    },
-    {
       url: `${baseUrl}/forum`,
       lastModified: new Date(),
       changeFrequency: "hourly",
-      priority: 0.95,
-    },
-    {
-      url: `${baseUrl}/admissions`,
-      lastModified: new Date(),
-      changeFrequency: "daily",
       priority: 0.9,
     },
     {
@@ -40,45 +29,56 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "daily",
       priority: 0.9,
     },
-  ];
-
-  let mentorPages: MetadataRoute.Sitemap = [];
-  try {
-    const mentors = await getMentorIdsForSitemap(500);
-    mentorPages = mentors.map((m) => ({
-      url: `${baseUrl}/mentors/${m.id}`,
-      lastModified: new Date(m.updated_at),
-      changeFrequency: "weekly" as const,
+    {
+      url: `${baseUrl}/about`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
       priority: 0.7,
-    }));
-  } catch (e) {
-    console.error("[sitemap] mentors:", e);
-  }
+    },
+    {
+      url: `${baseUrl}/admissions`,
+      lastModified: new Date(),
+      changeFrequency: "daily",
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/crossadmit`,
+      lastModified: new Date(),
+      changeFrequency: "daily",
+      priority: 0.95,
+    },
+    {
+      url: `${baseUrl}/study-korea`,
+      lastModified: new Date(),
+      changeFrequency: "daily",
+      priority: 0.85,
+    },
+  ];
 
   const categoryHubs: MetadataRoute.Sitemap = REDDIT_CATEGORIES.map((c) => ({
     url: `${baseUrl}/r/${c.id}`,
     lastModified: new Date(),
     changeFrequency: "daily" as const,
-    priority: 0.85,
+    priority: 0.8,
   }));
 
-  let postPages: MetadataRoute.Sitemap = [];
-  try {
-    const posts = await getPublishedPostsForSitemap(3000);
-    postPages = posts
-      .filter((p) => p.slug)
-      .map((p) => {
-        const cat = normalizePostCategory(p.category, p.subcategory);
-        return {
-          url: `${baseUrl}${postPath(cat, p.slug)}`,
-          lastModified: new Date(p.created_at),
-          changeFrequency: "weekly" as const,
-          priority: 0.75,
-        };
-      });
-  } catch (e) {
-    console.error("[sitemap] study_korea_posts:", e);
-  }
+  const postPages: MetadataRoute.Sitemap = (await getSitemapPosts(2000)).map(
+    (p) => ({
+      url: `${baseUrl}${p.path}`,
+      lastModified: p.lastModified,
+      changeFrequency: "weekly" as const,
+      priority: 0.7,
+    })
+  );
+
+  const mentorPages: MetadataRoute.Sitemap = (await getSitemapMentors(500)).map(
+    (m) => ({
+      url: `${baseUrl}/mentors/${m.id}`,
+      lastModified: m.lastModified,
+      changeFrequency: "monthly" as const,
+      priority: 0.6,
+    })
+  );
 
   const crossAdmitPages: MetadataRoute.Sitemap = [];
   try {
@@ -112,7 +112,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       });
     }
   } catch (error) {
-    console.error("Error generating crossadmit sitemap:", error);
+    console.error("[sitemap] crossadmit:", error);
   }
 
   const admissionPages: MetadataRoute.Sitemap = [];
@@ -132,34 +132,30 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       });
     }
   } catch (error) {
-    console.error("Error generating admissions sitemap:", error);
+    console.error("[sitemap] admissions:", error);
   }
 
-  const forumPages: MetadataRoute.Sitemap = [];
-  const universities = [
+  const forumPages: MetadataRoute.Sitemap = [
     "seoul-national",
     "yonsei",
     "korea",
     "sungkunkwan",
     "chungang",
     "hanyang",
-  ];
-  universities.forEach((uni) => {
-    forumPages.push({
-      url: `${baseUrl}/forum/${uni}`,
-      lastModified: new Date(),
-      changeFrequency: "daily",
-      priority: 0.7,
-    });
-  });
+  ].map((uni) => ({
+    url: `${baseUrl}/forum/${uni}`,
+    lastModified: new Date(),
+    changeFrequency: "daily" as const,
+    priority: 0.7,
+  }));
 
   return [
     ...staticPages,
     ...categoryHubs,
     ...postPages,
+    ...mentorPages,
     ...crossAdmitPages,
     ...admissionPages,
-    ...mentorPages,
     ...forumPages,
   ];
 }

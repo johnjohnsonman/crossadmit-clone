@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import RedditCategoryFeed from "@/components/reddit-style/RedditCategoryFeed";
 import { getCategoryMeta, REDDIT_CATEGORIES } from "@/lib/forum/reddit-categories";
+import { getCategorySeoName } from "@/lib/seo/categories";
+import { seoAlternates, seoOpenGraph, seoTwitter } from "@/lib/seo/metadata";
 
 type Props = {
   params: Promise<{ category: string }>;
@@ -16,16 +18,21 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { category } = await params;
   const meta = getCategoryMeta(category);
-  const title = `r/${meta.label} — Study in Korea for International Students`;
-  const description = meta.description;
+  const names = getCategorySeoName(category);
+  const title = `r/${category} - ${names.en}`;
+  const description = `${names.en} for international students in Korea. Read guides, share experiences, and ask questions. ${meta.description}`;
 
   return {
     title,
     description,
-    openGraph: { title, description, type: "website" },
-    alternates: {
-      canonical: `https://crossadmit.com/r/${category}`,
-    },
+    alternates: seoAlternates(`/r/${category}`),
+    openGraph: seoOpenGraph({
+      title: `r/${category} | CrossAdmit`,
+      description: `${names.en} community for international students.`,
+      type: "website",
+      url: `https://crossadmit.com/r/${category}`,
+    }),
+    twitter: seoTwitter(`r/${category} | CrossAdmit`, description),
   };
 }
 

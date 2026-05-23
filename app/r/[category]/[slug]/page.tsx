@@ -26,8 +26,10 @@ import {
   postPath,
 } from "@/lib/forum/reddit-categories";
 import { getPostBySlug, getRelatedPosts } from "@/lib/forum/queries";
+import { SITE_URL } from "@/lib/seo/constants";
+import { seoAlternates, seoOpenGraph, seoTwitter } from "@/lib/seo/metadata";
 
-const BASE = "https://crossadmit.com";
+const BASE = SITE_URL;
 
 type Props = {
   params: Promise<{ category: string; slug: string }>;
@@ -42,21 +44,30 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const titleEn = post.ai_title_en?.trim() || post.title;
   const description = (
     post.ai_summary_en ||
+    post.ai_summary_kr ||
     post.ai_summary ||
     ""
   ).slice(0, 160);
-  const canonical = `${BASE}${postPath(cat, slug)}`;
+  const path = postPath(cat, slug);
+  const isAi =
+    post.post_type === "ai_guide" ||
+    post.source === "ai_guide" ||
+    Boolean(post.is_ai_generated);
 
   return {
-    title: `${titleEn} - r/${cat} | CrossAdmit`,
+    title: titleEn,
     description,
-    alternates: { canonical },
-    openGraph: {
+    alternates: seoAlternates(path),
+    openGraph: seoOpenGraph({
       title: titleEn,
       description,
       type: "article",
-      url: canonical,
-    },
+      url: `${BASE}${path}`,
+      publishedTime: post.source_created_at ?? post.created_at,
+      modifiedTime: post.ai_last_updated ?? post.created_at,
+      authors: isAi ? ["CrossAdmit AI"] : ["CrossAdmit Community"],
+    }),
+    twitter: seoTwitter(titleEn, description),
   };
 }
 
@@ -103,18 +114,31 @@ export default async function PostDetailPage({ params }: Props) {
     "@context": "https://schema.org",
     "@type": "Article",
     headline: title,
-    description: (post.ai_summary_en || post.ai_summary || "").slice(0, 200),
+    description: (post.ai_summary_en || post.ai_summary_kr || post.ai_summary || "").slice(
+      0,
+      200
+    ),
+    image: `${BASE}/opengraph-image`,
     datePublished: post.source_created_at ?? post.created_at,
     dateModified: post.ai_last_updated ?? post.created_at,
     author: isAiGuide
-      ? { "@type": "Organization", name: "CrossAdmit" }
-      : { "@type": "Person", name: displayName },
+      ? { "@type": "Organization", name: "CrossAdmit AI" }
+      : {
+          "@type": "Person",
+          name: post.anonymous_nickname || displayName || "CrossAdmit Community",
+        },
     publisher: {
       "@type": "Organization",
       name: "CrossAdmit",
-      url: BASE,
+      logo: {
+        "@type": "ImageObject",
+        url: `${BASE}/logo.png`,
+      },
     },
-    mainEntityOfPage: canonical,
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": canonical,
+    },
   };
 
   const sourceLabel =

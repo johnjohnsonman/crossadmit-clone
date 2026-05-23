@@ -3,9 +3,9 @@ import { Suspense } from "react";
 import CrossAdmitPage from "./crossadmit/page";
 
 export const metadata: Metadata = {
-  title: "크로스어드밋 | 대학 선택 통계 및 합격자 데이터베이스 | CrossAdmit | 交叉录取",
+  title: "CrossAdmit | Study in Korea & University Admission Statistics",
   description:
-    "두 대학에 동시에 합격했을 때 학생들의 선택 통계를 확인하세요. 서울대 vs 연세대, 고려대 vs 연세대 등 주요 대학 간 선택 통계를 제공합니다. Compare university admission statistics when students are accepted to multiple universities. Study in Korea. 比较同时被多所大学录取时的学生选择统计。留学韩国。",
+    "Study in Korea guides for international students — visa, admissions, scholarships — plus university choice statistics when students are accepted to multiple schools. 한국 유학·합격 통계.",
   keywords: [
     "크로스어드밋",
     "대학 선택 통계",

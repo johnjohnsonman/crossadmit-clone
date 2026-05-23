@@ -1,26 +1,14 @@
+# Served by app/robots.ts in production; kept for static fallback
 User-agent: *
 Allow: /
-Disallow: /api/
 Disallow: /admin/
+Disallow: /api/
+Disallow: /submit
 Disallow: /_next/
 Disallow: /private/
 
-User-agent: Googlebot
-Allow: /
-Disallow: /api/
-Disallow: /admin/
-Disallow: /private/
-
-User-agent: Baiduspider
-Allow: /
-Disallow: /api/
-Disallow: /admin/
-Disallow: /private/
-
-User-agent: Yandex
-Allow: /
-Disallow: /api/
-Disallow: /admin/
-Disallow: /private/
+User-agent: GPTBot
+Disallow: /
 
 Sitemap: https://crossadmit.com/sitemap.xml
+Host: https://crossadmit.com

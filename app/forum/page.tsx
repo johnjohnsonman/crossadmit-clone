@@ -1,21 +1,23 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import RedditForumHome from "@/components/reddit-style/RedditForumHome";
+import { seoAlternates, seoOpenGraph, seoTwitter } from "@/lib/seo/metadata";
+
+const title = "Forum - Study in Korea Community";
+const description =
+  "Reddit-style community for international students in Korea. Ask questions about visa, admissions, dorm life, scholarships, TOPIK, and more.";
 
 export const metadata: Metadata = {
-  title: "Study in Korea Forum for International Students | CrossAdmit",
-  description:
-    "Reddit-style forum for foreigners studying in Korea — visa, admissions, scholarships, dorm life, TOPIK, and campus tips curated from trusted sources.",
-  openGraph: {
-    title: "Study in Korea Forum | CrossAdmit",
-    description:
-      "Visa, admissions, scholarships & campus life for international students in Korea.",
+  title,
+  description,
+  alternates: seoAlternates("/forum"),
+  openGraph: seoOpenGraph({
+    title: "Forum | CrossAdmit",
+    description: "Community for international students studying in Korea",
     type: "website",
     url: "https://crossadmit.com/forum",
-  },
-  alternates: {
-    canonical: "https://crossadmit.com/forum",
-  },
+  }),
+  twitter: seoTwitter("Forum | CrossAdmit", description),
 };
 
 function ForumFallback() {

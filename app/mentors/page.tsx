@@ -7,17 +7,23 @@ import {
   MENTOR_PAGE_SIZE,
 } from "@/lib/mentors/queries";
 import type { Locale } from "@/lib/i18n/dictionary";
+import { seoAlternates, seoOpenGraph, seoTwitter } from "@/lib/seo/metadata";
+
+const title = "141 Verified Korean University Mentors";
+const description =
+  "Connect with verified students from Seoul National University, Yonsei, Korea University, KAIST and more. Get personalized guidance for studying in Korea.";
 
 export const metadata: Metadata = {
-  title: "Verified Mentors for Study in Korea | CrossAdmit",
-  description:
-    "141+ verified mentors from SNU, Yonsei, Korea University, KAIST and more. Get 1:1 admission and career advice from real students in Korea.",
-  openGraph: {
-    title: "Verified Mentors | CrossAdmit",
+  title,
+  description,
+  alternates: seoAlternates("/mentors"),
+  openGraph: seoOpenGraph({
+    title: "141 Verified Korean University Mentors | CrossAdmit",
+    description: "Talk directly with students from top Korean universities.",
     type: "website",
     url: "https://crossadmit.com/mentors",
-  },
-  alternates: { canonical: "https://crossadmit.com/mentors" },
+  }),
+  twitter: seoTwitter(title, description),
 };
 
 type Props = {
