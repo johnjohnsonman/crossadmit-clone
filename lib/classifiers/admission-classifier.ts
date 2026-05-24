@@ -128,9 +128,11 @@ export async function runStage1Filter(
   const rejectInLead = REJECT_MAIN.test(firstParagraph(text));
 
   if (unique.length === 0) {
+    console.log(`[stage1] failed (no_university): ${title.slice(0, 80)}`);
     return { pass: false, matchedUniversities: [], reason: "no_university" };
   }
   if (!hasAdmissionVerb) {
+    console.log(`[stage1] failed (no_admission_verb): ${title.slice(0, 80)}`);
     return {
       pass: false,
       matchedUniversities: unique,
@@ -138,6 +140,7 @@ export async function runStage1Filter(
     };
   }
   if (rejectInLead && !ADMISSION_VERB.test(firstParagraph(text))) {
+    console.log(`[stage1] failed (rejection_focus): ${title.slice(0, 80)}`);
     return {
       pass: false,
       matchedUniversities: unique,
@@ -145,6 +148,7 @@ export async function runStage1Filter(
     };
   }
 
+  console.log(`[stage1] passed: ${title.slice(0, 80)}`);
   return { pass: true, matchedUniversities: unique, reason: "ok" };
 }
 
@@ -253,7 +257,10 @@ export async function runStage2Classifier(
   source: string,
   url: string
 ): Promise<ClassificationResult> {
+  console.log(`[stage2] LLM call for: ${title.slice(0, 80)}`);
+
   if (isUrlClassifierCached(url)) {
+    console.log(`[stage2] skipped (url_cached_24h): ${url}`);
     return {
       classification: "general",
       data: null,
@@ -263,8 +270,9 @@ export async function runStage2Classifier(
     };
   }
 
-  const limit = canCallClassifier();
+  const limit = await canCallClassifier();
   if (!limit.ok) {
+    console.log(`[stage2] skipped (${limit.reason}): ${title.slice(0, 80)}`);
     return {
       classification: "general",
       data: null,
@@ -276,6 +284,7 @@ export async function runStage2Classifier(
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
+    console.error("[stage2] ANTHROPIC_API_KEY missing");
     return {
       classification: "general",
       data: null,
@@ -285,70 +294,85 @@ export async function runStage2Classifier(
     };
   }
 
-  const client = new Anthropic({ apiKey });
-  const message = await client.messages.create({
-    model: MODEL,
-    max_tokens: 2048,
-    messages: [
-      {
-        role: "user",
-        content: buildClassifierPrompt(title, body, source, url),
-      },
-    ],
-  });
-
-  recordClassifierCall();
-  cacheUrlClassifier(url);
-
-  const textBlock = message.content.find((b) => b.type === "text");
-  if (!textBlock || textBlock.type !== "text") {
-    throw new Error("Classifier returned no text");
-  }
-
-  let parsed: LlmPayload;
   try {
-    parsed = JSON.parse(textBlock.text) as LlmPayload;
-  } catch {
-    const m = textBlock.text.match(/\{[\s\S]*\}/);
-    if (!m) throw new Error("Classifier JSON parse failed");
-    parsed = JSON.parse(m[0]) as LlmPayload;
-  }
+    const client = new Anthropic({ apiKey });
+    const message = await client.messages.create({
+      model: MODEL,
+      max_tokens: 2048,
+      messages: [
+        {
+          role: "user",
+          content: buildClassifierPrompt(title, body, source, url),
+        },
+      ],
+    });
 
-  const confidence = Math.min(1, Math.max(0, parsed.confidence ?? 0));
-  const data = normalizeExtracted(parsed.extracted);
-  const track_evidence = parsed.track_evidence ?? "";
-  const reasoning = parsed.reasoning ?? "";
+    await recordClassifierCall();
+    cacheUrlClassifier(url);
 
-  const isStory = Boolean(parsed.is_admission_story);
-  const isKr = Boolean(parsed.is_korean_university);
+    const textBlock = message.content.find((b) => b.type === "text");
+    if (!textBlock || textBlock.type !== "text") {
+      throw new Error("Classifier returned no text");
+    }
 
-  if (!isStory || !isKr) {
+    let parsed: LlmPayload;
+    try {
+      parsed = JSON.parse(textBlock.text) as LlmPayload;
+    } catch {
+      const m = textBlock.text.match(/\{[\s\S]*\}/);
+      if (!m) throw new Error("Classifier JSON parse failed");
+      parsed = JSON.parse(m[0]) as LlmPayload;
+    }
+
+    const confidence = Math.min(1, Math.max(0, parsed.confidence ?? 0));
+    const data = normalizeExtracted(parsed.extracted);
+    const track_evidence = parsed.track_evidence ?? "";
+    const reasoning = parsed.reasoning ?? "";
+
+    const isStory = Boolean(parsed.is_admission_story);
+    const isKr = Boolean(parsed.is_korean_university);
+
+    let classification: ClassificationResult["classification"] = "general";
+    if (isStory && isKr) {
+      classification = confidence >= 0.7 ? "admission" : "review_needed";
+    }
+
+    console.log(
+      `[stage2] result: ${classification} (confidence: ${confidence.toFixed(2)}) — ${title.slice(0, 60)}`
+    );
+
+    if (classification === "general") {
+      return {
+        classification: "general",
+        data,
+        confidence,
+        track_evidence,
+        reasoning,
+      };
+    }
+
+    if (classification === "admission") {
+      return {
+        classification: "admission",
+        data,
+        confidence,
+        track_evidence,
+        reasoning,
+      };
+    }
+
     return {
-      classification: "general",
+      classification: "review_needed",
       data,
       confidence,
       track_evidence,
       reasoning,
     };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error("[stage2] Anthropic API error:", msg, { url, title: title.slice(0, 80) });
+    throw e;
   }
-
-  if (confidence >= 0.7) {
-    return {
-      classification: "admission",
-      data,
-      confidence,
-      track_evidence,
-      reasoning,
-    };
-  }
-
-  return {
-    classification: "review_needed",
-    data,
-    confidence,
-    track_evidence,
-    reasoning,
-  };
 }
 
 export async function classifyAdmissionPost(

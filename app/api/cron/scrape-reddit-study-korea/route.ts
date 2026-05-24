@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyCronOrAdmin } from "@/lib/pipeline/study-korea/auth";
-import { scrapeRedditSubredditBatch } from "@/lib/pipeline/study-korea/reddit";
+import { scrapeRedditSubredditBatch } from "@/lib/scrapers/reddit";
 import { getSubredditNames } from "@/lib/pipeline/study-korea/reddit-rss";
 
 export const runtime = "nodejs";
@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = request.nextUrl;
     const subreddit =
-      searchParams.get("subreddit")?.trim() || "studyinkorea";
+      searchParams.get("subreddit")?.trim() || "StudyInKorea";
     const feed = searchParams.get("feed")?.trim() || "hot";
     const limitRaw = parseInt(searchParams.get("limit") ?? "10", 10);
     const limit = Number.isFinite(limitRaw)
@@ -49,6 +49,9 @@ export async function GET(request: NextRequest) {
         fetched: result.fetched,
         saved: result.saved,
         failed: result.failed,
+        routed_admissions: result.routed_admissions,
+        routed_review: result.routed_review,
+        routed_general: result.routed_general,
       })
     );
 

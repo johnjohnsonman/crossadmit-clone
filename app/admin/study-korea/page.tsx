@@ -212,7 +212,6 @@ function AdminStudyKoreaInner() {
     "IntltoKorea",
     "Korea",
     "learnkorean",
-    "IWantOut",
     "movingtokorea",
   ] as const;
 

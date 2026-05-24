@@ -26,7 +26,6 @@ export const ADMISSION_FOCUSED_SUBREDDITS = [
 export const GENERAL_INFO_SUBREDDITS = [
   "Korea",
   "learnkorean",
-  "IWantOut",
   "movingtokorea",
 ] as const;
 
@@ -39,7 +38,7 @@ export const SUBREDDITS: SubredditConfig[] = [
     name,
     priority: 10 + i,
     keyword_filter:
-      name === "Korea" || name === "IWantOut"
+      name === "Korea"
         ? ["university", "admission", "accepted", "gks", "scholarship", "student", "study"]
         : ["university", "admission", "student", "visa", "korea"],
   })),

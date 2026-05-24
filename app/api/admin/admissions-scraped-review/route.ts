@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
       .ilike("classifier_reasoning", "%admin_rejected%")
       .gte("created_at", today);
 
-    const classifier = getClassifierUsageStats();
+    const classifier = await getClassifierUsageStats();
 
     return NextResponse.json({
       queue: queue ?? [],

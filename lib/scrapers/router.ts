@@ -101,7 +101,10 @@ export async function insertGeneralPost(
 }
 
 export async function routeScrapedPost(post: ScrapedPost): Promise<RouteResult> {
+  console.log(`[router] processing post: ${post.url}`);
+
   if (await isDuplicateUrl(post.url)) {
+    console.log(`[router] duplicate skip: ${post.url}`);
     return { routed: "duplicate", reason: "duplicate_url" };
   }
 
@@ -115,7 +118,10 @@ export async function routeScrapedPost(post: ScrapedPost): Promise<RouteResult> 
 
   if (!stage1.pass) {
     const status = await insertGeneralPost(post, stage1.reason);
-    if (status === "saved") return { routed: "general", reason: "rule_filter" };
+    if (status === "saved") {
+      console.log(`[router] inserted to: study_korea_posts (rule_filter)`);
+      return { routed: "general", reason: "rule_filter" };
+    }
     if (status === "skipped") {
       return { routed: "duplicate", reason: "general_skipped" };
     }
@@ -139,6 +145,7 @@ export async function routeScrapedPost(post: ScrapedPost): Promise<RouteResult> 
       confidence: classification.confidence,
       reasoning: classification.reasoning,
     });
+    console.log(`[router] inserted to: admissions (id=${id}, published)`);
     return {
       routed: "admission",
       admissionId: id,
@@ -157,6 +164,7 @@ export async function routeScrapedPost(post: ScrapedPost): Promise<RouteResult> 
       confidence: classification.confidence,
       reasoning: classification.reasoning,
     });
+    console.log(`[router] inserted to: admissions (id=${id}, review_needed)`);
     return {
       routed: "review_needed",
       admissionId: id,
@@ -170,6 +178,7 @@ export async function routeScrapedPost(post: ScrapedPost): Promise<RouteResult> 
     classification.reasoning || "llm_general"
   );
   if (status === "saved") {
+    console.log(`[router] inserted to: study_korea_posts (llm_general)`);
     return { routed: "general", reason: classification.reasoning };
   }
   return { routed: "duplicate", reason: "general_skipped" };

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyCronOrAdmin } from "@/lib/pipeline/study-korea/auth";
-import { scrapeRedditAllSubreddits } from "@/lib/pipeline/study-korea/reddit";
+import { scrapeRedditAllSubreddits } from "@/lib/scrapers/reddit";
 import { finishPipelineRun, startPipelineRun } from "@/lib/pipeline/study-korea/runs";
 
 export const runtime = "nodejs";

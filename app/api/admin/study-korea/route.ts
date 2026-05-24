@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
       .eq("needs_review", true)
       .eq("published", false);
 
-    const classifier = getClassifierUsageStats();
+    const classifier = await getClassifierUsageStats();
 
     return NextResponse.json({
       runs: runs ?? [],
