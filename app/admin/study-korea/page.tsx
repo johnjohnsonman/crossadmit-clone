@@ -16,6 +16,7 @@ import {
   getSourceCardBorder,
   type SourceStatus,
 } from "@/lib/pipeline/study-korea/sources-registry";
+import { ADMISSION_QUERY_COUNT } from "@/lib/pipeline/study-korea/admission-queries";
 
 type PipelineRun = {
   id: string;
@@ -1313,12 +1314,26 @@ function AdminStudyKoreaInner() {
               <h2 className="text-sm font-bold text-violet-900 mb-2">
                 🎯 합격 후기 자동 수집 (Naver webkr)
               </h2>
-              <p className="text-xs text-violet-800 mb-3">
-                디시 입시 갤러리·네이버 블로그/카페에서 합격 후기를 검색해{" "}
+              <p className="text-xs text-violet-800 mb-2">
+                외국인의 한국 유학 합격·장학금 후기를 영어/한국어/중국어/베트남어로
+                검색해{" "}
                 <code className="text-xs bg-white px-1 rounded">study_korea_posts</code>{" "}
-                에 저장합니다. Vercel 로그에서{" "}
-                <code className="text-xs bg-white px-1 rounded">[ADMISSION]</code>{" "}
-                로 진단하세요. Cron: 매일 04:00 UTC
+                에 저장합니다. (한국인 수능·수시·정시 입시 후기는 자동 제외)
+              </p>
+              <p className="text-xs text-violet-700 mb-3">
+                Naver webkr 쿼리 {ADMISSION_QUERY_COUNT}개 · Reddit{" "}
+                <code className="bg-white px-1 rounded text-[10px]">r/studyinkorea</code>
+                ,{" "}
+                <code className="bg-white px-1 rounded text-[10px]">
+                  r/koreanuniversity
+                </code>{" "}
+                등 · 로그{" "}
+                <code className="bg-white px-1 rounded text-[10px]">[ADMISSION]</code>
+                {" · "}
+                pending 한국인 입시 정리:{" "}
+                <code className="bg-white px-1 rounded text-[10px]">
+                  021_reject_korean_domestic_admissions.sql
+                </code>
               </p>
               <div className="flex gap-2 flex-wrap">
                 <button

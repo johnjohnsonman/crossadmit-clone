@@ -1,3 +1,4 @@
+import { passesInternationalAdmissionFilter } from "./admission-filters";
 import { analyzeStudyKoreaContent } from "./claude";
 import {
   collectRedditRssForSubreddit,
@@ -72,6 +73,10 @@ async function processRedditItems(
         continue;
       }
 
+      const admissionCandidate =
+        analysis.category === "admission" ||
+        passesInternationalAdmissionFilter(`${title} ${fullContent}`);
+
       const university =
         normalizeUniversitySlug(
           analysis.university || universityFromTitle,
@@ -102,6 +107,13 @@ async function processRedditItems(
         ai_content_en: analysis.ai_content_en || fullContent.slice(0, 8000),
         ai_tags: analysis.ai_tags,
         is_published: analysis.is_relevant,
+        ...(admissionCandidate
+          ? {
+              is_admission_post: true,
+              moderation_status: "pending",
+              category: "admission",
+            }
+          : {}),
       });
 
       if (status === "saved") result.saved++;

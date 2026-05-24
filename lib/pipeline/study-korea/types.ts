@@ -68,6 +68,9 @@ export interface StudyKoreaPostInput {
   ai_content_en?: string;
   ai_tags?: string[];
   is_published?: boolean;
+  /** 합격DB 검토 큐 (Reddit·Naver webkr 수집) */
+  is_admission_post?: boolean;
+  moderation_status?: string;
 }
 
 export interface ScrapeRunResult {

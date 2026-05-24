@@ -92,6 +92,13 @@ export async function upsertStudyKoreaPost(
     ai_tags: row.ai_tags ?? [],
     is_published: row.is_published ?? true,
     source_created_at: row.source_created_at,
+    ...(row.is_admission_post
+      ? {
+          is_admission_post: true,
+          moderation_status: row.moderation_status ?? "pending",
+          post_type: "scraped",
+        }
+      : {}),
   };
 
   console.log(
