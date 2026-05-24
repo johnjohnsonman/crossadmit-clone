@@ -86,6 +86,15 @@ export const STUDY_KOREA_SOURCE_META: StudyKoreaSourceMeta[] = [
     status: "active",
     note: "Herald Interview/International 기사 → admissions 라우팅",
   },
+  {
+    id: "korea_net_gks",
+    label: "Korea.net GKS interviews",
+    cronPath: "/api/cron/scrape-korea-net-gks",
+    color: "bg-amber-100 text-amber-800",
+    status: "active",
+    requiresEnv: ["HONORARY_REPORTERS_PASS_KEY"],
+    note: "Honorary Reporters GKS 검색 · passKey 필요",
+  },
 ];
 
 export type StudyKoreaSourceId = (typeof STUDY_KOREA_SOURCE_META)[number]["id"];
