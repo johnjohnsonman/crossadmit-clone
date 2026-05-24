@@ -103,6 +103,14 @@ export const STUDY_KOREA_SOURCE_META: StudyKoreaSourceMeta[] = [
     status: "active",
     note: "studykoreanews.com 영문·GKS·인터뷰 → admissions 라우팅",
   },
+  {
+    id: "gradcafe",
+    label: "GradCafe (PhD/MS)",
+    cronPath: "/api/cron/scrape-gradcafe",
+    color: "bg-rose-100 text-rose-800",
+    status: "active",
+    note: "thegradcafe.com 한국 대학 석박사 합격 결과 → graduate 트랙",
+  },
 ];
 
 export type StudyKoreaSourceId = (typeof STUDY_KOREA_SOURCE_META)[number]["id"];
