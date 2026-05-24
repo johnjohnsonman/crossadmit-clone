@@ -107,16 +107,27 @@ export default function FeaturedIntlStories({ locale, hrefForId }: Props) {
           ))}
         </div>
       ) : records.length === 0 ? null : (
-        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {records.map((r) => (
-            <FeaturedCard
-              key={r.id}
-              record={r}
-              href={hrefForId(String(r.id))}
-              locale={locale}
-            />
-          ))}
-        </div>
+        <>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {records.map((r) => (
+              <FeaturedCard
+                key={r.id}
+                record={r}
+                href={hrefForId(String(r.id))}
+                locale={locale}
+              />
+            ))}
+          </div>
+          <div className="mt-4 rounded-xl border border-[#E5E5E0] bg-[#FFFBF5] px-4 py-3 text-sm text-[#6B7280] flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <p>Want to share your journey?</p>
+            <Link
+              href="/admissions/new?lang=en"
+              className="font-semibold text-[#D97706] hover:underline"
+            >
+              Submit your story →
+            </Link>
+          </div>
+        </>
       )}
     </section>
   );

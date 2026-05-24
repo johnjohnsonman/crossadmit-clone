@@ -24,6 +24,10 @@ import type { Dictionary, Locale } from "@/lib/i18n/dictionary";
 import { withLang } from "@/lib/i18n/locale";
 
 const PAGE_SIZE = 20;
+type IntlSummary = {
+  total: number;
+  countries: string[];
+};
 
 const TEXT = {
   ko: {
@@ -198,6 +202,7 @@ export default function AdmissionsBulletinBoard({
   const [records, setRecords] = useState<AdmissionRecord[]>([]);
   const [popular, setPopular] = useState<AdmissionRecord[]>([]);
   const [popularLoading, setPopularLoading] = useState(true);
+  const [intlSummary, setIntlSummary] = useState<IntlSummary | null>(null);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -391,20 +396,67 @@ export default function AdmissionsBulletinBoard({
   }, [fetchList]);
 
   useEffect(() => {
+    if (locale !== "en") {
+      setIntlSummary(null);
+      return;
+    }
     let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch("/api/admissions?intl_summary=1", {
+          cache: "no-store",
+        });
+        if (!res.ok || cancelled) return;
+        const json = (await res.json()) as IntlSummary;
+        if (!cancelled) setIntlSummary(json);
+      } catch {
+        if (!cancelled) setIntlSummary(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [locale]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const tracks = EN_DEFAULT_ADMIT_TRACKS.join(",");
+
+    const fetchPopularBySort = async (
+      sort: SortMode
+    ): Promise<AdmissionRecord[]> => {
+      const params = new URLSearchParams({
+        limit: "3",
+        offset: "0",
+        sort,
+      });
+      if (locale === "en") params.set("admit_track", tracks);
+      const res = await fetch(`/api/admissions?${params.toString()}`, {
+        cache: "no-store",
+      });
+      if (!res.ok) return [];
+      const json = await res.json();
+      return (json.data ?? []) as AdmissionRecord[];
+    };
+
     async function loadPopular() {
       setPopularLoading(true);
       try {
-        const res = await fetch(
-          "/api/admissions?limit=3&offset=0&sort=likes",
-          { cache: "no-store" }
-        );
-        if (!res.ok) {
-          if (!cancelled) setPopular([]);
+        if (locale !== "en") {
+          const records = await fetchPopularBySort("likes");
+          if (!cancelled) setPopular(records);
           return;
         }
-        const json = await res.json();
-        if (!cancelled) setPopular(json.data ?? []);
+
+        const merged = new Map<number, AdmissionRecord>();
+        for (const sort of ["likes", "views", "latest"] as const) {
+          const rows = await fetchPopularBySort(sort);
+          for (const row of rows) {
+            if (!merged.has(row.id)) merged.set(row.id, row);
+          }
+          if (merged.size >= 3) break;
+        }
+        if (!cancelled) setPopular([...merged.values()].slice(0, 3));
       } catch {
         if (!cancelled) setPopular([]);
       } finally {
@@ -415,7 +467,7 @@ export default function AdmissionsBulletinBoard({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [locale]);
 
   const scrollToList = () => {
     listSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -623,9 +675,24 @@ export default function AdmissionsBulletinBoard({
               <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-[#1A1A1A]">
                 {t.title}
               </h1>
-              <p className="mt-2 text-sm text-[#6B7280] leading-relaxed">
-                {t.subtitle(total)}
-              </p>
+              {locale === "en" ? (
+                <>
+                  <p className="mt-2 text-base sm:text-lg font-semibold text-[#1A1A1A] leading-relaxed">
+                    🌏{" "}
+                    {(intlSummary?.total ?? 0).toLocaleString()} international
+                    admission stories
+                  </p>
+                  <p className="mt-1 text-sm text-[#6B7280] leading-relaxed">
+                    {intlSummary?.countries?.length
+                      ? `From around the world: ${intlSummary.countries.join(", ")}`
+                      : "From around the world: Vietnam, Nepal, Kyrgyzstan, Indonesia..."}
+                  </p>
+                </>
+              ) : (
+                <p className="mt-2 text-sm text-[#6B7280] leading-relaxed">
+                  {t.subtitle(total)}
+                </p>
+              )}
             </div>
             <Link
               href={withLang("/admissions/new", locale)}

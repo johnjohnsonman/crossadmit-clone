@@ -3,6 +3,7 @@ import { parseAdmitTrackList } from "@/lib/admissions/admit-track";
 import {
   getAdmissions,
   getFeaturedIntlStories,
+  getIntlAdmissionsSummary,
 } from "@/lib/supabase/admissions-service";
 import type { AdmissionStatusFilter } from "@/lib/supabase/admissions-service";
 import { getDcCommentCounts } from "@/lib/supabase/comment-counts";
@@ -57,8 +58,16 @@ export async function GET(request: NextRequest) {
   }
 
   const featuredOnly = searchParams.get("featured") === "1";
+  const intlSummaryOnly = searchParams.get("intl_summary") === "1";
 
   try {
+    if (intlSummaryOnly) {
+      const summary = await getIntlAdmissionsSummary();
+      return NextResponse.json(summary, {
+        headers: { "Cache-Control": "no-store, max-age=0" },
+      });
+    }
+
     if (featuredOnly) {
       const lim = Number.isNaN(limit) ? 4 : Math.min(limit, 8);
       const data = await getFeaturedIntlStories(lim);

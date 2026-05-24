@@ -240,7 +240,106 @@ export async function getFeaturedIntlStories(
     );
   });
 
-  return rows.slice(0, limit);
+  if (rows.length <= limit) return rows;
+
+  const picked: Admission[] = [];
+  const pickedIds = new Set<number>();
+  const pickedSchools = new Set<string>();
+
+  const schoolKeyOf = (row: Admission): string => {
+    const regist = row.admission_schools?.find((s) => s.is_regist);
+    const accept = row.admission_schools?.find((s) => s.is_accept);
+    const name = (regist?.univ_name || accept?.univ_name || "").trim().toLowerCase();
+    return name || `admission-${row.id}`;
+  };
+
+  const tryPick = (predicate: (r: Admission) => boolean) => {
+    const preferUniqueSchool = rows.find((r) => {
+      if (pickedIds.has(r.id) || !predicate(r)) return false;
+      const schoolKey = schoolKeyOf(r);
+      return !pickedSchools.has(schoolKey);
+    });
+    const chosen =
+      preferUniqueSchool ??
+      rows.find((r) => !pickedIds.has(r.id) && predicate(r));
+    if (!chosen) return;
+    picked.push(chosen);
+    pickedIds.add(chosen.id);
+    pickedSchools.add(schoolKeyOf(chosen));
+  };
+
+  for (const track of EN_DEFAULT_ADMIT_TRACKS) {
+    if (picked.length >= limit) break;
+    tryPick((r) => r.admit_track === track);
+  }
+
+  for (const row of rows) {
+    if (picked.length >= limit) break;
+    if (pickedIds.has(row.id)) continue;
+    const schoolKey = schoolKeyOf(row);
+    if (!pickedSchools.has(schoolKey)) {
+      picked.push(row);
+      pickedIds.add(row.id);
+      pickedSchools.add(schoolKey);
+    }
+  }
+
+  for (const row of rows) {
+    if (picked.length >= limit) break;
+    if (pickedIds.has(row.id)) continue;
+    picked.push(row);
+    pickedIds.add(row.id);
+  }
+
+  return picked.slice(0, limit);
+}
+
+export async function getIntlAdmissionsSummary(): Promise<{
+  total: number;
+  countries: string[];
+}> {
+  const supabase = await createClient();
+  const tracks = [...EN_DEFAULT_ADMIT_TRACKS];
+
+  const { count, error: countError } = await supabase
+    .from("admissions")
+    .select("id", { count: "exact", head: true })
+    .eq("published", true)
+    .in("admit_track", tracks);
+
+  if (countError) {
+    console.error("getIntlAdmissionsSummary count:", countError);
+    throw new Error(countError.message);
+  }
+
+  const { data, error } = await supabase
+    .from("admissions")
+    .select("home_country")
+    .eq("published", true)
+    .in("admit_track", tracks)
+    .limit(500);
+
+  if (error) {
+    console.error("getIntlAdmissionsSummary countries:", error);
+    throw new Error(error.message);
+  }
+
+  const freq = new Map<string, number>();
+  for (const row of data ?? []) {
+    const c = row.home_country?.trim();
+    if (!c) continue;
+    freq.set(c, (freq.get(c) ?? 0) + 1);
+  }
+
+  const countries = [...freq.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .map(([c]) => c)
+    .slice(0, 6);
+
+  return {
+    total: count ?? 0,
+    countries,
+  };
 }
 
 /** International track mentors (admission opt-in, instant listing) */
