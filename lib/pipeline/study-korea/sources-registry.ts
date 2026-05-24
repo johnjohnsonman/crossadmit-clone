@@ -78,6 +78,14 @@ export const STUDY_KOREA_SOURCE_META: StudyKoreaSourceMeta[] = [
     status: "active",
     note: "UIC [Student Interview] 공식 시리즈 → admissions 라우팅",
   },
+  {
+    id: "kaist_herald",
+    label: "KAIST Herald interviews",
+    cronPath: "/api/cron/scrape-kaist-herald",
+    color: "bg-sky-100 text-sky-800",
+    status: "active",
+    note: "Herald Interview/International 기사 → admissions 라우팅",
+  },
 ];
 
 export type StudyKoreaSourceId = (typeof STUDY_KOREA_SOURCE_META)[number]["id"];
