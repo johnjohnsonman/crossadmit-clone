@@ -1359,6 +1359,7 @@ function AdminStudyKoreaInner() {
               )}
             </section>
 
+            {false && (
             <section className="bg-violet-50 rounded-xl border border-violet-200 p-4 shadow-sm">
               <h2 className="text-sm font-bold text-violet-900 mb-2">
                 🎯 합격 후기 자동 수집 (Naver webkr)
@@ -1464,7 +1465,9 @@ function AdminStudyKoreaInner() {
                 </div>
               )}
             </section>
+            )}
 
+            {false && (
             <section className="bg-slate-100 rounded-xl border border-slate-300 p-4 shadow-sm">
               <h2 className="text-sm font-bold text-slate-900 mb-2">
                 합격 후기 검토 대기
@@ -1487,6 +1490,7 @@ function AdminStudyKoreaInner() {
                 검토 페이지 열기 →
               </a>
             </section>
+            )}
 
             <section className="bg-sky-50 rounded-xl border border-sky-200 p-4 shadow-sm">
               <h2 className="text-sm font-bold text-sky-900 mb-2">

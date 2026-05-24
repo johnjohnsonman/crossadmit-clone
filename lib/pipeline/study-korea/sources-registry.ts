@@ -70,6 +70,14 @@ export const STUDY_KOREA_SOURCE_META: StudyKoreaSourceMeta[] = [
     requiresEnv: ["NAVER_CLIENT_ID", "NAVER_CLIENT_SECRET"],
     note: "디시/블로그/카페 합격 후기 → 검토 대기",
   },
+  {
+    id: "yonsei_uic",
+    label: "Yonsei UIC interviews",
+    cronPath: "/api/cron/scrape-yonsei-uic",
+    color: "bg-indigo-100 text-indigo-800",
+    status: "active",
+    note: "UIC [Student Interview] 공식 시리즈 → admissions 라우팅",
+  },
 ];
 
 export type StudyKoreaSourceId = (typeof STUDY_KOREA_SOURCE_META)[number]["id"];
