@@ -48,7 +48,7 @@ function FeaturedCard({
       </div>
       <p className="mt-3 text-lg font-bold text-[#1A1A1A] line-clamp-2">{top}</p>
       <p className="mt-1 text-sm text-[#6B7280] tabular-nums">{record.year}</p>
-      <p className="mt-3 text-xs text-[#6B7280] font-mono bg-[#FAFAF8] rounded px-2 py-1">
+      <p className="mt-3 text-xs text-[#4B5563] font-mono bg-[#FAFAF8] rounded px-2 py-1">
         {scoreSnippet(record)}
       </p>
       <p className="mt-auto pt-4 text-sm font-semibold text-[#2D5A27]">
@@ -93,8 +93,8 @@ export default function FeaturedIntlStories({ locale, hrefForId }: Props) {
 
   return (
     <section className="mb-8">
-      <h2 className="text-lg font-bold text-white">Featured stories</h2>
-      <p className="mt-1 text-sm text-gray-400">
+      <h2 className="text-lg font-bold text-[#1A1A1A]">Featured stories</h2>
+      <p className="mt-1 text-sm text-[#6B7280]">
         International & overseas Korean admission journeys
       </p>
       {loading ? (
@@ -102,7 +102,7 @@ export default function FeaturedIntlStories({ locale, hrefForId }: Props) {
           {[1, 2, 3, 4].map((i) => (
             <div
               key={i}
-              className="h-[180px] rounded-xl border border-gray-800 bg-gray-900 animate-pulse"
+              className="h-[180px] rounded-xl border border-[#E5E5E0] bg-white animate-pulse"
             />
           ))}
         </div>

@@ -76,7 +76,7 @@ export default function AdmissionLikeButton({
       type="button"
       disabled={liked || busy}
       onClick={() => void onClick()}
-      className="text-sm text-gray-400 hover:text-orange-400 disabled:opacity-60 tabular-nums"
+      className="text-sm text-[#6B7280] hover:text-[#D97706] disabled:opacity-60 tabular-nums"
       title="공감"
     >
       👍 {count}
