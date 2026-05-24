@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { parseAdmitTrackList } from "@/lib/admissions/admit-track";
-import { getAdmissions } from "@/lib/supabase/admissions-service";
+import {
+  getAdmissions,
+  getFeaturedIntlStories,
+} from "@/lib/supabase/admissions-service";
 import type { AdmissionStatusFilter } from "@/lib/supabase/admissions-service";
 import { getDcCommentCounts } from "@/lib/supabase/comment-counts";
 import { admissionToRecord } from "@/lib/supabase/map";
@@ -53,7 +56,24 @@ export async function GET(request: NextRequest) {
     if (!Number.isNaN(y)) year = y;
   }
 
+  const featuredOnly = searchParams.get("featured") === "1";
+
   try {
+    if (featuredOnly) {
+      const lim = Number.isNaN(limit) ? 4 : Math.min(limit, 8);
+      const data = await getFeaturedIntlStories(lim);
+      const ids = data.map((r) => r.id);
+      const dcCounts = await getDcCommentCounts(ids);
+      const records = data.map((row) => ({
+        ...admissionToRecord(row),
+        dcCommentCount: dcCounts[row.id] ?? 0,
+      }));
+      return NextResponse.json(
+        { data: records, total: records.length, limit: lim, offset: 0 },
+        { headers: { "Cache-Control": "no-store, max-age=0" } }
+      );
+    }
+
     const { data, total } = await getAdmissions({
       year,
       year_before: yearBefore,

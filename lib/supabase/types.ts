@@ -48,6 +48,8 @@ export type Admission = {
   source_url?: string | null;
   admit_track?: AdmitTrack | string | null;
   source_type?: SourceType | string | null;
+  home_country?: string | null;
+  high_school_type?: string | null;
   created_at: string;
   admission_schools?: AdmissionSchool[];
 };

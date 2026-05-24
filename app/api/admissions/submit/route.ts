@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAdmitTrack } from "@/lib/admissions/admit-track";
-import { buildIntlTitle } from "@/lib/admissions/intl-submission";
+import { generateAdmissionTitle } from "@/lib/admissions/auto-title";
 import {
   normalizeUnivId,
   resolveDepartmentId,
@@ -69,7 +69,7 @@ async function persistAdmission(
     return {
       ok: false as const,
       error: insErr?.message?.includes("admit_track")
-        ? "Database migration required: run 022_admit_track.sql in Supabase."
+        ? "Database migration required: run 022_admit_track.sql and 023_intl_submission_fields.sql in Supabase."
         : "저장에 실패했습니다.",
     };
   }
@@ -226,20 +226,18 @@ export async function POST(request: NextRequest) {
 
       const registered = schools.filter((s) => s.status === "등록");
       const primary = registered[0] ?? schools.find((s) => s.status === "합격") ?? schools[0];
-      const trackForTitle =
-        admit_track === "gks"
-          ? "gks"
-          : admit_track === "overseas_kr"
-            ? "overseas_kr"
-            : "international";
-      const autoTitle = buildIntlTitle(
+      const autoTitle = generateAdmissionTitle({
         year,
-        primary.univ_name,
-        trackForTitle
-      );
+        universityName: primary.univ_name,
+        departmentName: primary.dept_name,
+        admitTrack: admit_track,
+        locale: "en",
+      });
 
       const nickname = String(body.nickname ?? "").trim();
       const isVerified = Boolean(body.is_verified);
+      const homeCountry = String(body.home_country ?? body.hs_country ?? "").trim();
+      const highSchoolType = String(body.high_school_type ?? "").trim();
 
       const admissionRow: AdmissionsInsert = {
         original_user_id: 0,
@@ -258,6 +256,8 @@ export async function POST(request: NextRequest) {
         source: "crossadmit_intl_form",
         admit_track,
         source_type: "user_submitted_intl",
+        home_country: homeCountry || null,
+        high_school_type: highSchoolType || null,
         source_url: String(body.verification_url ?? "").trim() || undefined,
         created_at: new Date().toISOString(),
       };

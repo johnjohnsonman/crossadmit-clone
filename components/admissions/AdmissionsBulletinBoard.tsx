@@ -59,7 +59,7 @@ const TEXT = {
     title: "Admissions DB",
     subtitle: (n: number) =>
       `${n.toLocaleString()} admission stories and specs`,
-    register: "+ Submit story",
+    register: "Share your story →",
     searchPlaceholder: "Search school...",
     yearAll: "Year",
     typeAll: "Type",
@@ -70,9 +70,11 @@ const TEXT = {
     sortViews: "Most views",
     sortOldest: "Oldest",
     empty: "No stories match your filters.",
-    emptyIntl:
-      "We're just getting started. Be the first international student to share your Korean university admission story.",
-    emptyIntlCta: "Submit your story →",
+    emptyIntlTitle: "Be the first international student to share.",
+    emptyIntlSub:
+      "Your story helps the next generation choose Korean universities.",
+    emptyIntlCta: "Share Your Story →",
+    emptyIntlWhy: "Why share?",
     trackFilter: "Track",
     resetFilters: "Clear filters",
     schoolFilter: "School",
@@ -602,7 +604,15 @@ export default function AdmissionsBulletinBoard({
 
   const empty = !loading && records.length === 0;
 
-  const showIntlEmpty = empty && locale === "en";
+  const isIntlGksOnlyFilter =
+    appliedTracks !== null &&
+    appliedTracks.length > 0 &&
+    appliedTracks.every(
+      (t) => t === "international" || t === "gks"
+    ) &&
+    !appliedTracks.includes("overseas_kr");
+
+  const showIntlEmpty = empty && locale === "en" && isIntlGksOnlyFilter;
 
   return (
     <main className="min-h-screen bg-gray-950 text-gray-300">
@@ -764,24 +774,43 @@ export default function AdmissionsBulletinBoard({
           <AdmissionsListSkeleton count={5} />
         ) : empty ? (
           <div className="rounded-xl border border-gray-800 bg-gray-900 px-6 py-16 text-center">
-            <p className="text-gray-400">
-              {showIntlEmpty ? t.emptyIntl : t.empty}
-            </p>
             {showIntlEmpty ? (
-              <Link
-                href={withLang("/admissions/new?lang=en", locale)}
-                className="mt-6 inline-block rounded-lg bg-[#2D5A27] px-6 py-3 text-base font-semibold text-white hover:bg-[#244a20]"
-              >
-                {t.emptyIntlCta}
-              </Link>
+              <>
+                <p className="text-4xl" aria-hidden>
+                  🌏
+                </p>
+                <p className="mt-4 text-lg font-semibold text-white">
+                  {TEXT.en.emptyIntlTitle}
+                </p>
+                <p className="mt-2 text-sm text-gray-400 max-w-md mx-auto">
+                  {TEXT.en.emptyIntlSub}
+                </p>
+                <Link
+                  href={withLang("/admissions/new?lang=en", locale)}
+                  className="mt-8 inline-block rounded-lg bg-orange-500 px-8 py-3.5 text-base font-semibold text-white hover:bg-orange-600 transition-colors"
+                >
+                  {TEXT.en.emptyIntlCta}
+                </Link>
+                <p className="mt-4">
+                  <Link
+                    href={withLang("/about-stories", locale)}
+                    className="text-sm font-medium text-gray-400 hover:text-orange-400 underline-offset-2 hover:underline"
+                  >
+                    {TEXT.en.emptyIntlWhy}
+                  </Link>
+                </p>
+              </>
             ) : (
-              <button
-                type="button"
-                onClick={resetFilters}
-                className="mt-4 text-sm font-medium text-orange-400 hover:underline"
-              >
-                {t.resetFilters}
-              </button>
+              <>
+                <p className="text-gray-400">{t.empty}</p>
+                <button
+                  type="button"
+                  onClick={resetFilters}
+                  className="mt-4 text-sm font-medium text-orange-400 hover:underline"
+                >
+                  {t.resetFilters}
+                </button>
+              </>
             )}
           </div>
         ) : (

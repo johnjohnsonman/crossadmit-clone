@@ -4,8 +4,6 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { AdmissionRecord } from "@/lib/types";
 import AdmitTrackBadge from "@/components/admissions/AdmitTrackBadge";
-import { EN_DEFAULT_ADMIT_TRACKS } from "@/lib/admissions/admit-track";
-
 type Props = {
   locale: "ko" | "en";
   hrefForId: (id: string) => string;
@@ -69,9 +67,8 @@ export default function FeaturedIntlStories({ locale, hrefForId }: Props) {
     async function load() {
       setLoading(true);
       try {
-        const tracks = EN_DEFAULT_ADMIT_TRACKS.join(",");
         const res = await fetch(
-          `/api/admissions?admit_track=${tracks}&limit=4&offset=0&sort=latest`,
+          `/api/admissions?featured=1&limit=4`,
           { cache: "no-store" }
         );
         if (!res.ok) {

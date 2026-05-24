@@ -1,4 +1,5 @@
 import type { AdmitTrack } from "@/lib/admissions/admit-track";
+import { EN_DEFAULT_ADMIT_TRACKS } from "@/lib/admissions/admit-track";
 import { createClient } from "@/lib/supabase/server";
 import type { Admission, CrossComparison } from "@/lib/supabase/types";
 
@@ -206,6 +207,30 @@ export async function getAdmissions(
   }
 
   return { data: (data ?? []) as Admission[], total: count ?? 0 };
+}
+
+/** Featured intl stories: verified first, then latest */
+export async function getFeaturedIntlStories(
+  limit = 4
+): Promise<Admission[]> {
+  const tracks = [...EN_DEFAULT_ADMIT_TRACKS];
+  const { data } = await getAdmissions({
+    admit_track: tracks,
+    limit: 24,
+    offset: 0,
+    sort: "latest",
+  });
+
+  const rows = [...(data ?? [])].sort((a, b) => {
+    const va = a.is_verified ? 1 : 0;
+    const vb = b.is_verified ? 1 : 0;
+    if (vb !== va) return vb - va;
+    return (
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+  });
+
+  return rows.slice(0, limit);
 }
 
 export async function getAdmissionById(

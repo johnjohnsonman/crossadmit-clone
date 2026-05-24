@@ -31,6 +31,15 @@ export const INTL_TRACK_OPTIONS: {
   { value: "other", label: "Other (please specify)", admitTrack: "international" },
 ];
 
+export const HS_SCHOOL_TYPES = [
+  "Public",
+  "Private",
+  "International school",
+  "IB programme",
+  "National curriculum (non-KR)",
+  "Other",
+] as const;
+
 export const HS_COUNTRIES = [
   "Vietnam",
   "China",
@@ -57,25 +66,17 @@ export type IntlFormDraft = {
   track: IntlAdmissionTrack;
   trackOther: string;
   hsCountry: string;
+  highSchoolType: string;
   schools: Array<{
     id: string;
     universityInput: string;
     univId: number;
     status: IntlSchoolStatus;
   }>;
-  scores: {
-    satTotal: string;
-    satBreakdown: string;
-    act: string;
-    ibTotal: string;
-    ibDetail: string;
-    ap: string;
-    aLevel: string;
-    topik: string;
-    toeflIelts: string;
-    gpa: string;
-    gpaSystem: string;
-  };
+  /** Free-form scores block (SAT, IB, TOPIK, etc.) */
+  scoresText: string;
+  gpa: string;
+  gpaSystem: string;
   narrative: {
     extracurriculars: string;
     essays: string;
@@ -84,7 +85,7 @@ export type IntlFormDraft = {
   };
 };
 
-export const INTL_DRAFT_STORAGE_KEY = "crossadmit_intl_form_draft_v1";
+export const INTL_DRAFT_STORAGE_KEY = "crossadmit_intl_draft";
 
 export function trackToAdmitTrack(
   track: IntlAdmissionTrack,
@@ -95,39 +96,22 @@ export function trackToAdmitTrack(
   return found?.admitTrack ?? "international";
 }
 
-export function buildIntlInputScore(scores: IntlFormDraft["scores"]): string {
-  const lines: string[] = [];
-  if (scores.satTotal.trim())
-    lines.push(
-      `SAT: ${scores.satTotal.trim()}${scores.satBreakdown.trim() ? ` (${scores.satBreakdown.trim()})` : ""}`
-    );
-  if (scores.act.trim()) lines.push(`ACT: ${scores.act.trim()}`);
-  if (scores.ibTotal.trim())
-    lines.push(
-      `IB: ${scores.ibTotal.trim()}${scores.ibDetail.trim() ? ` — ${scores.ibDetail.trim()}` : ""}`
-    );
-  if (scores.ap.trim()) lines.push(`AP: ${scores.ap.trim()}`);
-  if (scores.aLevel.trim()) lines.push(`A-Level: ${scores.aLevel.trim()}`);
-  if (scores.topik.trim()) lines.push(`TOPIK: ${scores.topik.trim()}`);
-  if (scores.toeflIelts.trim())
-    lines.push(`TOEFL/IELTS: ${scores.toeflIelts.trim()}`);
-  return lines.join("\n");
+export function buildIntlInputScore(draft: Pick<IntlFormDraft, "scoresText">): string {
+  return draft.scoresText.trim();
 }
 
-export function buildIntlInputGpa(scores: IntlFormDraft["scores"]): string {
-  const g = scores.gpa.trim();
-  const sys = scores.gpaSystem.trim();
+export function buildIntlInputGpa(draft: Pick<IntlFormDraft, "gpa" | "gpaSystem">): string {
+  const g = draft.gpa.trim();
+  const sys = draft.gpaSystem.trim();
   if (!g && !sys) return "";
   if (g && sys) return `${g} (${sys})`;
   return g || sys;
 }
 
 export function buildIntlSpecialty(
-  draft: Pick<IntlFormDraft, "narrative" | "track" | "trackOther" | "hsCountry">
+  draft: Pick<IntlFormDraft, "narrative" | "track" | "trackOther">
 ): string {
   const parts: string[] = [];
-  if (draft.hsCountry.trim())
-    parts.push(`High school country: ${draft.hsCountry.trim()}`);
   if (draft.track === "other" && draft.trackOther.trim())
     parts.push(`Admission track (other): ${draft.trackOther.trim()}`);
   const { extracurriculars, essays, interview, tips } = draft.narrative;
@@ -139,21 +123,31 @@ export function buildIntlSpecialty(
   return parts.join("\n\n");
 }
 
-export function buildIntlTitle(
-  year: number,
-  topUniv: string,
-  track: IntlAdmissionTrack
-): string {
-  const trackLabel =
-    track === "gks"
-      ? "GKS"
-      : track === "overseas_kr"
-        ? "Overseas Korean track"
-        : track === "other"
-          ? "International track"
-          : "International track";
-  return `${year} · ${topUniv} · ${trackLabel}`;
-}
+export const STEP_MICROCOPY: Record<
+  number,
+  { why: string; anon: string; title?: string }
+> = {
+  1: {
+    why: "To help future applicants from similar backgrounds.",
+    anon: "We never publish real names.",
+    title: "About you",
+  },
+  2: {
+    why: "We match schools to our Korean university database.",
+    anon: "You can list every school you applied to.",
+    title: "Universities",
+  },
+  3: {
+    why: "Realistic score ranges help others calibrate their chances.",
+    anon: "All fields are optional — share only what you want.",
+    title: "Profile & scores",
+  },
+  4: {
+    why: "Verified stories get a badge (optional upload).",
+    anon: "Screenshots are stored securely and not shared publicly in full.",
+    title: "Verification",
+  },
+};
 
 export function intlStatusToKorean(
   status: IntlSchoolStatus

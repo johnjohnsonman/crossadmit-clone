@@ -9,11 +9,12 @@ import {
   buildIntlInputGpa,
   buildIntlInputScore,
   buildIntlSpecialty,
-  buildIntlTitle,
   HS_COUNTRIES,
+  HS_SCHOOL_TYPES,
   INTL_DRAFT_STORAGE_KEY,
   INTL_TRACK_OPTIONS,
   intlStatusToKorean,
+  STEP_MICROCOPY,
   trackToAdmitTrack,
   validateIntlSchools,
   type IntlAdmissionTrack,
@@ -24,6 +25,14 @@ import { withLang } from "@/lib/i18n/locale";
 
 const YEAR_OPTIONS = ["2026", "2025", "2024", "2023", "2022", "2021", "2020"];
 const STEPS = 4;
+
+const SCORES_PLACEHOLDER = `Examples (free format):
+SAT 1480 (ERW 720, Math 760)
+ACT 32
+IB 38 — HL Math AA 7, HL Physics 6
+AP: Calc BC 5, Physics C 5
+TOPIK II Level 4
+TOEFL 105 / IELTS 7.5`;
 
 const inputClass =
   "mt-1 block w-full rounded-lg border border-[#E5E5E0] bg-white px-3 py-2 text-sm text-[#1A1A1A] shadow-sm " +
@@ -49,20 +58,11 @@ const EMPTY_DRAFT: IntlFormDraft = {
   track: "international",
   trackOther: "",
   hsCountry: "",
+  highSchoolType: "",
   schools: [newSchoolRow(), newSchoolRow()],
-  scores: {
-    satTotal: "",
-    satBreakdown: "",
-    act: "",
-    ibTotal: "",
-    ibDetail: "",
-    ap: "",
-    aLevel: "",
-    topik: "",
-    toeflIelts: "",
-    gpa: "",
-    gpaSystem: "4.0",
-  },
+  scoresText: "",
+  gpa: "",
+  gpaSystem: "4.0",
   narrative: {
     extracurriculars: "",
     essays: "",
@@ -70,6 +70,30 @@ const EMPTY_DRAFT: IntlFormDraft = {
     tips: "",
   },
 };
+
+function migrateLegacyDraft(parsed: Record<string, unknown>): IntlFormDraft {
+  const base = { ...EMPTY_DRAFT, ...parsed } as IntlFormDraft;
+  if (!base.scoresText && parsed.scores && typeof parsed.scores === "object") {
+    const s = parsed.scores as Record<string, string>;
+    const lines: string[] = [];
+    const push = (label: string, v?: string) => {
+      if (v?.trim()) lines.push(`${label}: ${v.trim()}`);
+    };
+    push("SAT", s.satTotal);
+    push("SAT breakdown", s.satBreakdown);
+    push("ACT", s.act);
+    push("IB", s.ibTotal);
+    push("IB detail", s.ibDetail);
+    push("AP", s.ap);
+    push("A-Level", s.aLevel);
+    push("TOPIK", s.topik);
+    push("TOEFL/IELTS", s.toeflIelts);
+    base.scoresText = lines.join("\n");
+    if (s.gpa?.trim()) base.gpa = s.gpa;
+    if (s.gpaSystem?.trim()) base.gpaSystem = s.gpaSystem;
+  }
+  return base;
+}
 
 export default function InternationalSubmissionForm() {
   const [step, setStep] = useState(1);
@@ -86,9 +110,16 @@ export default function InternationalSubmissionForm() {
     try {
       const raw = localStorage.getItem(INTL_DRAFT_STORAGE_KEY);
       if (raw) {
-        const parsed = JSON.parse(raw) as IntlFormDraft;
-        setDraft({ ...EMPTY_DRAFT, ...parsed, scores: { ...EMPTY_DRAFT.scores, ...parsed.scores }, narrative: { ...EMPTY_DRAFT.narrative, ...parsed.narrative } });
-        setStep(Math.min(Math.max(parsed.step ?? 1, 1), STEPS));
+        const parsed = JSON.parse(raw) as Record<string, unknown>;
+        const merged = migrateLegacyDraft(parsed);
+        setDraft({
+          ...merged,
+          narrative: {
+            ...EMPTY_DRAFT.narrative,
+            ...merged.narrative,
+          },
+        });
+        setStep(Math.min(Math.max((parsed.step as number) ?? 1, 1), STEPS));
       }
     } catch {
       /* ignore */
@@ -109,7 +140,7 @@ export default function InternationalSubmissionForm() {
     return () => window.clearTimeout(t);
   }, [draft, step]);
 
-  const progressPct = Math.round((step / STEPS) * 100);
+  const micro = STEP_MICROCOPY[step];
 
   const updateDraft = useCallback((patch: Partial<IntlFormDraft>) => {
     setDraft((d) => ({ ...d, ...patch }));
@@ -169,7 +200,12 @@ export default function InternationalSubmissionForm() {
           ...d,
           schools: d.schools.map((s) => ({
             ...s,
-            status: s.id === rowId ? "enrolled" : s.status === "enrolled" ? "admitted" : s.status,
+            status:
+              s.id === rowId
+                ? "enrolled"
+                : s.status === "enrolled"
+                  ? "admitted"
+                  : s.status,
           })),
         };
       }
@@ -202,6 +238,8 @@ export default function InternationalSubmissionForm() {
       if (draft.track === "other" && !draft.trackOther.trim())
         return "Please describe your admission track.";
       if (!draft.hsCountry) return "Please select your high school country.";
+      if (!draft.highSchoolType)
+        return "Please select your high school type.";
     }
     if (n === 2) {
       if (schoolsForSubmit.length === 0)
@@ -261,9 +299,11 @@ export default function InternationalSubmissionForm() {
           admit_track: trackToAdmitTrack(draft.track, draft.trackOther),
           track: draft.track,
           track_other: draft.trackOther.trim(),
+          home_country: draft.hsCountry,
+          high_school_type: draft.highSchoolType,
           hs_country: draft.hsCountry,
-          input_score: buildIntlInputScore(draft.scores),
-          input_gpa: buildIntlInputGpa(draft.scores),
+          input_score: buildIntlInputScore(draft),
+          input_gpa: buildIntlInputGpa(draft),
           input_specialty: buildIntlSpecialty(draft),
           verification_url: verificationUrl,
           is_verified: Boolean(verificationUrl),
@@ -331,8 +371,31 @@ export default function InternationalSubmissionForm() {
   }
 
   return (
-    <main className="min-h-screen bg-[#FAFAF8] pb-20 pt-10">
-      <div className="container mx-auto max-w-2xl px-4">
+    <main className="min-h-screen bg-[#FAFAF8] pb-24">
+      <div className="sticky top-0 z-30 border-b border-[#E5E5E0] bg-[#FAFAF8]/95 backdrop-blur">
+        <div className="container mx-auto max-w-2xl px-4 py-3">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-1.5 text-sm tracking-widest text-[#2D5A27]">
+              {Array.from({ length: STEPS }, (_, i) => (
+                <span
+                  key={i}
+                  className={
+                    i + 1 <= step ? "text-[#2D5A27]" : "text-[#D1D5DB]"
+                  }
+                  aria-hidden
+                >
+                  {i + 1 <= step ? "●" : "○"}
+                </span>
+              ))}
+            </div>
+            <p className="text-sm font-medium text-[#6B7280]">
+              Step {step} of {STEPS}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="container mx-auto max-w-2xl px-4 pt-8">
         <Link
           href={withLang("/admissions", "en")}
           className="text-sm font-medium text-[#2D5A27] hover:underline"
@@ -341,23 +404,20 @@ export default function InternationalSubmissionForm() {
         </Link>
 
         <div className="mt-6 rounded-xl border border-[#E5E5E0] bg-white p-6 shadow-sm md:p-8">
-          <p className="text-sm font-medium text-[#2D5A27]">
-            Step {step} of {STEPS}
-          </p>
-          <div className="mt-2 h-2 rounded-full bg-[#E5E5E0] overflow-hidden">
-            <div
-              className="h-full bg-[#2D5A27] transition-all"
-              style={{ width: `${progressPct}%` }}
-            />
-          </div>
-
-          <h1 className="mt-6 text-2xl font-bold text-[#1A1A1A]">
+          <h1 className="text-2xl font-bold text-[#1A1A1A]">
             Share your journey to Korean universities
           </h1>
           <p className="mt-2 text-sm text-[#6B7280] leading-relaxed">
             Your story helps the next generation of international students see
             realistic profiles and paths to study in Korea.
           </p>
+
+          {micro && (
+            <div className="mt-4 space-y-2">
+              <Micro q="Why do we ask?" a={micro.why} />
+              <Micro q="Anonymous is OK." a={micro.anon} />
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="mt-8 space-y-8">
             {formError && (
@@ -368,14 +428,9 @@ export default function InternationalSubmissionForm() {
 
             {step === 1 && (
               <section className="space-y-5">
-                <Micro
-                  q="Why are you asking?"
-                  a="To help other international students see realistic profiles."
-                />
-                <Micro
-                  q="Anonymous is OK"
-                  a="No real names required — use a nickname like “Maya from Vietnam”."
-                />
+                <h2 className="text-lg font-semibold text-[#1A1A1A]">
+                  {micro?.title ?? "About you"}
+                </h2>
                 <div>
                   <label className={labelClass} htmlFor="handle">
                     Anonymous handle{" "}
@@ -423,7 +478,9 @@ export default function InternationalSubmissionForm() {
                           className="mt-1"
                           checked={draft.track === opt.value}
                           onChange={() =>
-                            updateDraft({ track: opt.value as IntlAdmissionTrack })
+                            updateDraft({
+                              track: opt.value as IntlAdmissionTrack,
+                            })
                           }
                         />
                         <span className="text-sm text-[#1A1A1A]">{opt.label}</span>
@@ -459,16 +516,36 @@ export default function InternationalSubmissionForm() {
                     ))}
                   </select>
                 </div>
+                <div>
+                  <label className={labelClass} htmlFor="hsType">
+                    High school type <span className="text-red-600">*</span>
+                  </label>
+                  <select
+                    id="hsType"
+                    className={inputClass}
+                    value={draft.highSchoolType}
+                    onChange={(e) =>
+                      updateDraft({ highSchoolType: e.target.value })
+                    }
+                  >
+                    <option value="">Select type</option>
+                    {HS_SCHOOL_TYPES.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </section>
             )}
 
             {step === 2 && (
               <section className="space-y-4">
                 <h2 className="text-lg font-semibold text-[#1A1A1A]">
-                  Universities applied to
+                  {micro?.title ?? "Universities"}
                 </h2>
                 <p className="text-sm text-[#6B7280]">
-                  Search Korean universities. Mark one as{" "}
+                  Search Korean universities only. Mark one as{" "}
                   <strong>Enrolled</strong> if you attended.
                 </p>
                 {draft.schools.map((row, idx) => (
@@ -491,7 +568,7 @@ export default function InternationalSubmissionForm() {
                       }
                       onSelect={(v) => void onUnivPick(row.id, v)}
                       loadOptions={loadKrUniversities}
-                      placeholder="Search e.g. Seoul National University"
+                      placeholder="e.g. Seoul National University"
                       className={inputClass}
                     />
                     <select
@@ -532,114 +609,53 @@ export default function InternationalSubmissionForm() {
             {step === 3 && (
               <section className="space-y-5">
                 <h2 className="text-lg font-semibold text-[#1A1A1A]">
-                  Scores & profile <span className="text-sm font-normal text-[#9CA3AF]">(all optional)</span>
+                  {micro?.title ?? "Profile & scores"}{" "}
+                  <span className="text-sm font-normal text-[#9CA3AF]">
+                    (optional)
+                  </span>
                 </h2>
-                <ScoreField
-                  label="SAT total"
-                  value={draft.scores.satTotal}
-                  onChange={(v) =>
-                    setDraft((d) => ({
-                      ...d,
-                      scores: { ...d.scores, satTotal: v },
-                    }))
-                  }
-                />
-                <ScoreField
-                  label="SAT breakdown"
-                  value={draft.scores.satBreakdown}
-                  onChange={(v) =>
-                    setDraft((d) => ({
-                      ...d,
-                      scores: { ...d.scores, satBreakdown: v },
-                    }))
-                  }
-                  placeholder="e.g. ERW 750, Math 770"
-                />
-                <ScoreField
-                  label="ACT"
-                  value={draft.scores.act}
-                  onChange={(v) =>
-                    setDraft((d) => ({ ...d, scores: { ...d.scores, act: v } }))
-                  }
-                />
-                <ScoreField
-                  label="IB total"
-                  value={draft.scores.ibTotal}
-                  onChange={(v) =>
-                    setDraft((d) => ({
-                      ...d,
-                      scores: { ...d.scores, ibTotal: v },
-                    }))
-                  }
-                />
-                <ScoreField
-                  label="IB HL/SL detail"
-                  value={draft.scores.ibDetail}
-                  onChange={(v) =>
-                    setDraft((d) => ({
-                      ...d,
-                      scores: { ...d.scores, ibDetail: v },
-                    }))
-                  }
-                />
-                <ScoreField
-                  label="AP scores"
-                  value={draft.scores.ap}
-                  onChange={(v) =>
-                    setDraft((d) => ({ ...d, scores: { ...d.scores, ap: v } }))
-                  }
-                />
-                <ScoreField
-                  label="A-Level"
-                  value={draft.scores.aLevel}
-                  onChange={(v) =>
-                    setDraft((d) => ({
-                      ...d,
-                      scores: { ...d.scores, aLevel: v },
-                    }))
-                  }
-                />
-                <ScoreField
-                  label="TOPIK level"
-                  value={draft.scores.topik}
-                  onChange={(v) =>
-                    setDraft((d) => ({
-                      ...d,
-                      scores: { ...d.scores, topik: v },
-                    }))
-                  }
-                />
-                <ScoreField
-                  label="TOEFL / IELTS"
-                  value={draft.scores.toeflIelts}
-                  onChange={(v) =>
-                    setDraft((d) => ({
-                      ...d,
-                      scores: { ...d.scores, toeflIelts: v },
-                    }))
-                  }
-                />
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <ScoreField
-                    label="High school GPA"
-                    value={draft.scores.gpa}
-                    onChange={(v) =>
-                      setDraft((d) => ({
-                        ...d,
-                        scores: { ...d.scores, gpa: v },
-                      }))
+                <div>
+                  <label className={labelClass} htmlFor="scoresText">
+                    Test scores & qualifications
+                  </label>
+                  <textarea
+                    id="scoresText"
+                    rows={8}
+                    className={inputClass}
+                    placeholder={SCORES_PLACEHOLDER}
+                    value={draft.scoresText}
+                    onChange={(e) =>
+                      updateDraft({ scoresText: e.target.value })
                     }
                   />
+                  <p className="mt-1 text-xs text-[#9CA3AF]">
+                    Write in any format — English recommended for the public
+                    listing.
+                  </p>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
                   <div>
-                    <label className={labelClass}>GPA system</label>
-                    <select
+                    <label className={labelClass} htmlFor="gpa">
+                      High school GPA
+                    </label>
+                    <input
+                      id="gpa"
                       className={inputClass}
-                      value={draft.scores.gpaSystem}
+                      placeholder="e.g. 3.85"
+                      value={draft.gpa}
+                      onChange={(e) => updateDraft({ gpa: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass} htmlFor="gpaSystem">
+                      GPA system
+                    </label>
+                    <select
+                      id="gpaSystem"
+                      className={inputClass}
+                      value={draft.gpaSystem}
                       onChange={(e) =>
-                        setDraft((d) => ({
-                          ...d,
-                          scores: { ...d.scores, gpaSystem: e.target.value },
-                        }))
+                        updateDraft({ gpaSystem: e.target.value })
                       }
                     >
                       <option value="4.0">4.0 scale</option>
@@ -651,6 +667,7 @@ export default function InternationalSubmissionForm() {
                 </div>
                 <TextArea
                   label="Extracurriculars & achievements"
+                  placeholder="e.g. Model UN, robotics club captain"
                   value={draft.narrative.extracurriculars}
                   onChange={(v) =>
                     setDraft((d) => ({
@@ -661,6 +678,7 @@ export default function InternationalSubmissionForm() {
                 />
                 <TextArea
                   label="Essay topics (themes only, not full essays)"
+                  placeholder="e.g. Why Korea, leadership experience"
                   value={draft.narrative.essays}
                   onChange={(v) =>
                     setDraft((d) => ({
@@ -671,6 +689,7 @@ export default function InternationalSubmissionForm() {
                 />
                 <TextArea
                   label="Interview experience"
+                  placeholder="e.g. Video interview in English, 20 min"
                   value={draft.narrative.interview}
                   onChange={(v) =>
                     setDraft((d) => ({
@@ -681,6 +700,7 @@ export default function InternationalSubmissionForm() {
                 />
                 <TextArea
                   label="Tips for international applicants"
+                  placeholder="e.g. Start TOPIK early, contact current students"
                   value={draft.narrative.tips}
                   onChange={(v) =>
                     setDraft((d) => ({
@@ -695,7 +715,10 @@ export default function InternationalSubmissionForm() {
             {step === 4 && (
               <section className="space-y-4">
                 <h2 className="text-lg font-semibold text-[#1A1A1A]">
-                  Verification <span className="text-sm font-normal text-[#9CA3AF]">(optional)</span>
+                  {micro?.title ?? "Verification"}{" "}
+                  <span className="text-sm font-normal text-[#9CA3AF]">
+                    (optional)
+                  </span>
                 </h2>
                 <p className="text-sm text-[#6B7280]">
                   Upload a screenshot of your admission letter. Verified stories
@@ -712,7 +735,7 @@ export default function InternationalSubmissionForm() {
               </section>
             )}
 
-            <div className="flex flex-wrap gap-3 pt-2">
+            <div className="flex flex-wrap gap-3 pt-2 border-t border-[#E5E5E0]">
               {step > 1 && (
                 <button
                   type="button"
@@ -731,7 +754,7 @@ export default function InternationalSubmissionForm() {
                   onClick={nextStep}
                   className="flex-1 rounded-lg bg-[#2D5A27] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#244a20]"
                 >
-                  Continue
+                  Next
                 </button>
               ) : (
                 <button
@@ -753,12 +776,12 @@ export default function InternationalSubmissionForm() {
 function Micro({ q, a }: { q: string; a: string }) {
   return (
     <p className="text-xs text-[#6B7280] rounded-lg bg-[#FAFAF8] border border-[#E5E5E0] px-3 py-2">
-      <span className="font-semibold text-[#2D5A27]">{q}</span> → {a}
+      <span className="font-semibold text-[#2D5A27]">{q}</span> {a}
     </p>
   );
 }
 
-function ScoreField({
+function TextArea({
   label,
   value,
   onChange,
@@ -772,31 +795,10 @@ function ScoreField({
   return (
     <div>
       <label className={labelClass}>{label}</label>
-      <input
-        className={inputClass}
-        value={value}
-        placeholder={placeholder}
-        onChange={(e) => onChange(e.target.value)}
-      />
-    </div>
-  );
-}
-
-function TextArea({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-}) {
-  return (
-    <div>
-      <label className={labelClass}>{label}</label>
       <textarea
         rows={3}
         className={inputClass}
+        placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
       />
