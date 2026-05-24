@@ -25,7 +25,11 @@ import {
 } from "@/lib/admissions/intl-submission";
 import { withLang } from "@/lib/i18n/locale";
 
-const YEAR_OPTIONS = ["2026", "2025", "2024", "2023", "2022", "2021", "2020"];
+const CURRENT_YEAR = new Date().getFullYear();
+const YEAR_OPTIONS = Array.from(
+  { length: CURRENT_YEAR - 2000 + 1 },
+  (_, i) => String(CURRENT_YEAR - i)
+);
 const STEPS = 4;
 
 const SCORES_PLACEHOLDER = `Examples (free format):
