@@ -8,7 +8,7 @@ export type AutocompleteItem = { label: string; hint?: string };
 export type AutocompleteOption = AutocompleteItem | string;
 
 export type AutocompleteInputProps = {
-  options: AutocompleteOption[];
+  options?: AutocompleteOption[];
   value: string;
   onChange: (v: string) => void;
   onSelect?: (label: string, item?: AutocompleteItem) => void;
@@ -23,7 +23,8 @@ function normalizeOption(opt: AutocompleteOption): AutocompleteItem {
   return typeof opt === "string" ? { label: opt } : opt;
 }
 
-function normalizeOptions(opts: AutocompleteOption[]): AutocompleteItem[] {
+function normalizeOptions(opts?: AutocompleteOption[] | null): AutocompleteItem[] {
+  if (!opts || !Array.isArray(opts)) return [];
   return opts.map(normalizeOption);
 }
 
@@ -32,7 +33,7 @@ function normalize(s: string): string {
 }
 
 export default function AutocompleteInput({
-  options,
+  options = [],
   value,
   onChange,
   onSelect,
@@ -57,7 +58,7 @@ export default function AutocompleteInput({
     }
     let cancelled = false;
     void loadOptions(value).then((list) => {
-      if (!cancelled) setAsyncOptions(list);
+      if (!cancelled) setAsyncOptions(Array.isArray(list) ? list : []);
     });
     return () => {
       cancelled = true;

@@ -14,6 +14,8 @@ import {
   INTL_DRAFT_STORAGE_KEY,
   INTL_TRACK_OPTIONS,
   intlStatusToKorean,
+  mergeIntlDraftFromStorage,
+  parseKrUniversitiesResponse,
   STEP_MICROCOPY,
   trackToAdmitTrack,
   validateIntlSchools,
@@ -71,30 +73,6 @@ const EMPTY_DRAFT: IntlFormDraft = {
   },
 };
 
-function migrateLegacyDraft(parsed: Record<string, unknown>): IntlFormDraft {
-  const base = { ...EMPTY_DRAFT, ...parsed } as IntlFormDraft;
-  if (!base.scoresText && parsed.scores && typeof parsed.scores === "object") {
-    const s = parsed.scores as Record<string, string>;
-    const lines: string[] = [];
-    const push = (label: string, v?: string) => {
-      if (v?.trim()) lines.push(`${label}: ${v.trim()}`);
-    };
-    push("SAT", s.satTotal);
-    push("SAT breakdown", s.satBreakdown);
-    push("ACT", s.act);
-    push("IB", s.ibTotal);
-    push("IB detail", s.ibDetail);
-    push("AP", s.ap);
-    push("A-Level", s.aLevel);
-    push("TOPIK", s.topik);
-    push("TOEFL/IELTS", s.toeflIelts);
-    base.scoresText = lines.join("\n");
-    if (s.gpa?.trim()) base.gpa = s.gpa;
-    if (s.gpaSystem?.trim()) base.gpaSystem = s.gpaSystem;
-  }
-  return base;
-}
-
 export default function InternationalSubmissionForm() {
   const [step, setStep] = useState(1);
   const [draft, setDraft] = useState<IntlFormDraft>(EMPTY_DRAFT);
@@ -111,18 +89,15 @@ export default function InternationalSubmissionForm() {
       const raw = localStorage.getItem(INTL_DRAFT_STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw) as Record<string, unknown>;
-        const merged = migrateLegacyDraft(parsed);
-        setDraft({
-          ...merged,
-          narrative: {
-            ...EMPTY_DRAFT.narrative,
-            ...merged.narrative,
-          },
-        });
-        setStep(Math.min(Math.max((parsed.step as number) ?? 1, 1), STEPS));
+        setDraft(mergeIntlDraftFromStorage(parsed, EMPTY_DRAFT));
+        const stepNum =
+          typeof parsed.step === "number"
+            ? parsed.step
+            : parseInt(String(parsed.step ?? "1"), 10);
+        setStep(Math.min(Math.max(stepNum || 1, 1), STEPS));
       }
-    } catch {
-      /* ignore */
+    } catch (e) {
+      console.warn("Draft restore failed:", e);
     }
   }, []);
 
@@ -151,12 +126,10 @@ export default function InternationalSubmissionForm() {
     try {
       const res = await fetch(`/api/universities?${params.toString()}`);
       const data = await res.json();
-      return (data.universities ?? []).map(
-        (u: { name_kr: string; name_en?: string }) => ({
-          label: u.name_en?.trim() || u.name_kr,
-          hint: u.name_kr !== u.name_en ? u.name_kr : undefined,
-        })
-      );
+      return parseKrUniversitiesResponse(data).map((u) => ({
+        label: u.name_en?.trim() || u.name_kr,
+        hint: u.name_kr !== u.name_en ? u.name_kr : undefined,
+      }));
     } catch {
       return [];
     }
@@ -165,7 +138,7 @@ export default function InternationalSubmissionForm() {
   async function onUnivPick(rowId: string, name: string) {
     setDraft((d) => ({
       ...d,
-      schools: d.schools.map((s) =>
+      schools: (d.schools ?? []).map((s) =>
         s.id === rowId ? { ...s, universityInput: name, univId: 0 } : s
       ),
     }));
@@ -174,8 +147,9 @@ export default function InternationalSubmissionForm() {
         `/api/universities?search=${encodeURIComponent(name)}&country=kr`
       );
       const data = await res.json();
-      const match = (data.universities ?? []).find(
-        (u: { id: number; name_en: string; name_kr: string }) =>
+      const list = parseKrUniversitiesResponse(data);
+      const match = list.find(
+        (u) =>
           u.name_en === name ||
           u.name_kr === name ||
           `${u.name_en}` === name
@@ -183,8 +157,8 @@ export default function InternationalSubmissionForm() {
       if (match?.id) {
         setDraft((d) => ({
           ...d,
-          schools: d.schools.map((s) =>
-            s.id === rowId ? { ...s, univId: match.id } : s
+          schools: (d.schools ?? []).map((s) =>
+            s.id === rowId ? { ...s, univId: match.id! } : s
           ),
         }));
       }
@@ -195,10 +169,11 @@ export default function InternationalSubmissionForm() {
 
   function setSchoolStatus(rowId: string, status: IntlSchoolStatus) {
     setDraft((d) => {
+      const rows = d.schools ?? [];
       if (status === "enrolled") {
         return {
           ...d,
-          schools: d.schools.map((s) => ({
+          schools: rows.map((s) => ({
             ...s,
             status:
               s.id === rowId
@@ -211,7 +186,7 @@ export default function InternationalSubmissionForm() {
       }
       return {
         ...d,
-        schools: d.schools.map((s) =>
+        schools: rows.map((s) =>
           s.id === rowId ? { ...s, status } : s
         ),
       };
@@ -219,7 +194,7 @@ export default function InternationalSubmissionForm() {
   }
 
   const filledSchools = useMemo(
-    () => draft.schools.filter((s) => s.universityInput.trim()),
+    () => (draft.schools ?? []).filter((s) => s.universityInput.trim()),
     [draft.schools]
   );
 
@@ -548,18 +523,19 @@ export default function InternationalSubmissionForm() {
                   Search Korean universities only. Mark one as{" "}
                   <strong>Enrolled</strong> if you attended.
                 </p>
-                {draft.schools.map((row, idx) => (
+                {(draft.schools ?? []).map((row, idx) => (
                   <div
                     key={row.id}
                     className="rounded-lg border border-[#E5E5E0] p-3 space-y-2"
                   >
                     <label className={labelClass}>University {idx + 1}</label>
                     <AutocompleteInput
+                      options={[]}
                       value={row.universityInput}
                       onChange={(v) =>
                         setDraft((d) => ({
                           ...d,
-                          schools: d.schools.map((s) =>
+                          schools: (d.schools ?? []).map((s) =>
                             s.id === row.id
                               ? { ...s, universityInput: v, univId: 0 }
                               : s
@@ -592,13 +568,16 @@ export default function InternationalSubmissionForm() {
                   type="button"
                   className="text-sm font-medium text-[#2D5A27] hover:underline"
                   onClick={() =>
-                    setDraft((d) => ({
-                      ...d,
-                      schools:
-                        d.schools.length >= 10
-                          ? d.schools
-                          : [...d.schools, newSchoolRow()],
-                    }))
+                    setDraft((d) => {
+                      const rows = d.schools ?? [];
+                      return {
+                        ...d,
+                        schools:
+                          rows.length >= 10
+                            ? rows
+                            : [...rows, newSchoolRow()],
+                      };
+                    })
                   }
                 >
                   + Add another university

@@ -87,6 +87,154 @@ export type IntlFormDraft = {
 
 export const INTL_DRAFT_STORAGE_KEY = "crossadmit_intl_draft";
 
+export type IntlSchoolEntry = IntlFormDraft["schools"][number];
+
+const VALID_SCHOOL_STATUS = new Set<IntlSchoolStatus>([
+  "admitted",
+  "waitlisted",
+  "rejected",
+  "enrolled",
+]);
+
+function defaultSchoolRows(count = 2): IntlSchoolEntry[] {
+  return Array.from({ length: count }, (_, i) => ({
+    id: `default-school-${i}-${Date.now()}`,
+    universityInput: "",
+    univId: 0,
+    status: "admitted" as const,
+  }));
+}
+
+/** Ensures schools is always a non-empty array (Step 2 .map safety). */
+export function normalizeIntlSchools(
+  raw: unknown,
+  fallback?: IntlSchoolEntry[]
+): IntlSchoolEntry[] {
+  const base = fallback?.length ? fallback : defaultSchoolRows();
+  let list: unknown[] | null = null;
+  if (Array.isArray(raw)) list = raw;
+  else if (raw && typeof raw === "object") {
+    const o = raw as { schoolsApplied?: unknown; schools?: unknown };
+    if (Array.isArray(o.schoolsApplied)) list = o.schoolsApplied;
+    else if (Array.isArray(o.schools)) list = o.schools;
+  }
+  if (!list?.length) return [...base];
+
+  const normalized = list.map((item, i) => {
+    const o =
+      item && typeof item === "object"
+        ? (item as Record<string, unknown>)
+        : {};
+    const statusRaw = String(o.status ?? "admitted");
+    const status = VALID_SCHOOL_STATUS.has(statusRaw as IntlSchoolStatus)
+      ? (statusRaw as IntlSchoolStatus)
+      : "admitted";
+    return {
+      id:
+        typeof o.id === "string" && o.id
+          ? o.id
+          : `school-${i}-${Date.now()}`,
+      universityInput: String(
+        o.universityInput ?? o.univName ?? o.university ?? ""
+      ).trim(),
+      univId: typeof o.univId === "number" && !Number.isNaN(o.univId) ? o.univId : 0,
+      status,
+    };
+  });
+
+  return normalized.length > 0 ? normalized : [...base];
+}
+
+export function mergeIntlDraftFromStorage(
+  parsed: Record<string, unknown>,
+  empty: IntlFormDraft
+): IntlFormDraft {
+  const schools = normalizeIntlSchools(
+    parsed.schools ?? parsed.schoolsApplied,
+    empty.schools
+  );
+
+  let scoresText = typeof parsed.scoresText === "string" ? parsed.scoresText : "";
+  let gpa = typeof parsed.gpa === "string" ? parsed.gpa : "";
+  let gpaSystem =
+    typeof parsed.gpaSystem === "string" ? parsed.gpaSystem : empty.gpaSystem;
+
+  if (!scoresText && parsed.scores && typeof parsed.scores === "object") {
+    const s = parsed.scores as Record<string, string>;
+    const lines: string[] = [];
+    const push = (label: string, v?: string) => {
+      if (v?.trim()) lines.push(`${label}: ${v.trim()}`);
+    };
+    push("SAT", s.satTotal ?? s.sat);
+    push("SAT breakdown", s.satBreakdown);
+    push("ACT", s.act);
+    push("IB", s.ibTotal ?? s.ib);
+    push("IB detail", s.ibDetail);
+    push("AP", s.ap);
+    push("A-Level", s.aLevel);
+    push("TOPIK", s.topik);
+    push("TOEFL/IELTS", s.toeflIelts ?? s.toefl ?? s.ielts);
+    scoresText = lines.join("\n");
+    if (s.gpa?.trim()) gpa = s.gpa;
+    if (s.gpaSystem?.trim()) gpaSystem = s.gpaSystem;
+  }
+
+  const narrativeRaw =
+    parsed.narrative && typeof parsed.narrative === "object"
+      ? (parsed.narrative as Partial<IntlFormDraft["narrative"]>)
+      : {};
+
+  const trackRaw = String(parsed.track ?? empty.track);
+  const track = INTL_TRACK_OPTIONS.some((o) => o.value === trackRaw)
+    ? (trackRaw as IntlAdmissionTrack)
+    : empty.track;
+
+  return {
+    ...empty,
+    ...parsed,
+    track,
+    trackOther: String(parsed.trackOther ?? "").trim(),
+    handle: String(parsed.handle ?? parsed.displayName ?? "").trim(),
+    year: String(parsed.year ?? parsed.yearAdmitted ?? "").trim(),
+    hsCountry: String(parsed.hsCountry ?? parsed.homeCountry ?? "").trim(),
+    highSchoolType: String(parsed.highSchoolType ?? "").trim(),
+    schools,
+    scoresText,
+    gpa,
+    gpaSystem,
+    narrative: {
+      ...empty.narrative,
+      extracurriculars: String(
+        narrativeRaw.extracurriculars ?? parsed.extracurriculars ?? ""
+      ),
+      essays: String(narrativeRaw.essays ?? parsed.essays ?? ""),
+      interview: String(narrativeRaw.interview ?? parsed.interview ?? ""),
+      tips: String(narrativeRaw.tips ?? parsed.tips ?? ""),
+    },
+  };
+}
+
+export function parseKrUniversitiesResponse(data: unknown): Array<{
+  name_kr: string;
+  name_en?: string | null;
+  id?: number;
+}> {
+  if (Array.isArray(data)) {
+    return data as Array<{ name_kr: string; name_en?: string | null; id?: number }>;
+  }
+  if (data && typeof data === "object") {
+    const u = (data as { universities?: unknown }).universities;
+    if (Array.isArray(u)) {
+      return u as Array<{
+        name_kr: string;
+        name_en?: string | null;
+        id?: number;
+      }>;
+    }
+  }
+  return [];
+}
+
 export function trackToAdmitTrack(
   track: IntlAdmissionTrack,
   trackOther: string

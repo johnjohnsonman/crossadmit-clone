@@ -1,6 +1,7 @@
 "use client";
 
 import InternationalSubmissionForm from "@/components/admissions/InternationalSubmissionForm";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
@@ -805,7 +806,13 @@ function NewAdmissionRouter() {
   const searchParams = useSearchParams();
   const isIntl =
     searchParams.get("lang") === "en" || searchParams.get("intl") === "1";
-  if (isIntl) return <InternationalSubmissionForm />;
+  if (isIntl) {
+    return (
+      <ErrorBoundary>
+        <InternationalSubmissionForm />
+      </ErrorBoundary>
+    );
+  }
   return <AdmissionNewPageKo />;
 }
 
