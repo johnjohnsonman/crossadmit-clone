@@ -63,6 +63,7 @@ export async function PATCH(request: NextRequest) {
       "studyinkorea",
       "university_intl",
       "user_submitted",
+      "user_submitted_intl",
     ];
     const v = String(value ?? "").trim();
     if (!allowed.includes(v)) {

@@ -13,6 +13,7 @@ import PopularAdmissionsSection, {
   AdmissionsListDivider,
 } from "@/components/admissions/PopularAdmissionsSection";
 import AdmitTrackBadge from "@/components/admissions/AdmitTrackBadge";
+import FeaturedIntlStories from "@/components/admissions/FeaturedIntlStories";
 import {
   ADMIT_TRACK_FILTER_OPTIONS,
   EN_DEFAULT_ADMIT_TRACKS,
@@ -70,7 +71,7 @@ const TEXT = {
     sortOldest: "Oldest",
     empty: "No stories match your filters.",
     emptyIntl:
-      "We're collecting admission stories for international students. Be the first to share yours.",
+      "We're just getting started. Be the first international student to share your Korean university admission story.",
     emptyIntlCta: "Submit your story →",
     trackFilter: "Track",
     resetFilters: "Clear filters",
@@ -601,13 +602,7 @@ export default function AdmissionsBulletinBoard({
 
   const empty = !loading && records.length === 0;
 
-  const showIntlEmpty =
-    empty &&
-    locale === "en" &&
-    appliedTracks !== null &&
-    appliedTracks.some((tr) =>
-      (["international", "gks", "overseas_kr"] as AdmitTrack[]).includes(tr)
-    );
+  const showIntlEmpty = empty && locale === "en";
 
   return (
     <main className="min-h-screen bg-gray-950 text-gray-300">
@@ -633,6 +628,9 @@ export default function AdmissionsBulletinBoard({
       </div>
 
       <div className="container mx-auto max-w-4xl px-4 pt-6">
+        {locale === "en" && (
+          <FeaturedIntlStories locale={locale} hrefForId={detailHref} />
+        )}
         <PopularAdmissionsSection
           records={popular}
           loading={popularLoading}
@@ -771,8 +769,8 @@ export default function AdmissionsBulletinBoard({
             </p>
             {showIntlEmpty ? (
               <Link
-                href={withLang("/admissions/new", locale)}
-                className="mt-6 inline-block rounded-lg bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-orange-600"
+                href={withLang("/admissions/new?lang=en", locale)}
+                className="mt-6 inline-block rounded-lg bg-[#2D5A27] px-6 py-3 text-base font-semibold text-white hover:bg-[#244a20]"
               >
                 {t.emptyIntlCta}
               </Link>
@@ -826,6 +824,11 @@ export default function AdmissionsBulletinBoard({
                           track={record.admitTrack}
                           locale={locale}
                         />
+                        {record.isVerified && (
+                          <span className="text-[10px] font-semibold text-emerald-400 border border-emerald-600/50 rounded-full px-2 py-0.5">
+                            {locale === "en" ? "Verified" : "인증"}
+                          </span>
+                        )}
                         <h2 className="text-sm font-medium text-white line-clamp-2 sm:text-base">
                           {record.title}
                         </h2>

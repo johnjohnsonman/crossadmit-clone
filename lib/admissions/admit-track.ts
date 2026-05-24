@@ -19,6 +19,7 @@ export const SOURCE_TYPE_VALUES = [
   "studyinkorea",
   "university_intl",
   "user_submitted",
+  "user_submitted_intl",
 ] as const;
 
 export type SourceType = (typeof SOURCE_TYPE_VALUES)[number];

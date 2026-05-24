@@ -1,7 +1,9 @@
 "use client";
 
+import InternationalSubmissionForm from "@/components/admissions/InternationalSubmissionForm";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import AutocompleteInput, {
   type AutocompleteItem,
@@ -98,7 +100,7 @@ function statusSelectClass(s: SchoolStatus): string {
   }
 }
 
-export default function AdmissionNewPage() {
+function AdmissionNewPageKo() {
   const router = useRouter();
   const [rows, setRows] = useState<SchoolRow[]>([
     newRow(),
@@ -106,6 +108,7 @@ export default function AdmissionNewPage() {
   ]);
   const [year, setYear] = useState("");
   const [admissionType, setAdmissionType] = useState("");
+  const [admitTrack, setAdmitTrack] = useState("regular_kr");
   const [specOpen, setSpecOpen] = useState(false);
 
   const [nickname, setNickname] = useState("");
@@ -356,6 +359,7 @@ export default function AdmissionNewPage() {
           schools: schoolsPayload.list,
           year: parseInt(year, 10),
           admission_type: admissionType,
+          admit_track: admitTrack,
           nickname: nickname.trim(),
           input_score: csatTotal.trim(),
           input_gpa: gpaGrade.trim(),
@@ -573,6 +577,22 @@ export default function AdmissionNewPage() {
                     ))}
                   </select>
                 </div>
+                <div className="sm:col-span-2">
+                  <label className={labelClass} htmlFor="admit_track">
+                    합격 트랙 (분류)
+                  </label>
+                  <select
+                    id="admit_track"
+                    className={inputClass}
+                    value={admitTrack}
+                    onChange={(e) => setAdmitTrack(e.target.value)}
+                  >
+                    <option value="regular_kr">국내 정시/수시</option>
+                    <option value="overseas_kr">재외국민</option>
+                    <option value="international">외국인 전형</option>
+                    <option value="gks">GKS</option>
+                  </select>
+                </div>
               </div>
             </section>
 
@@ -778,5 +798,27 @@ export default function AdmissionNewPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+function NewAdmissionRouter() {
+  const searchParams = useSearchParams();
+  const isIntl =
+    searchParams.get("lang") === "en" || searchParams.get("intl") === "1";
+  if (isIntl) return <InternationalSubmissionForm />;
+  return <AdmissionNewPageKo />;
+}
+
+export default function AdmissionNewPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen bg-[#FAFAF8] flex items-center justify-center">
+          <p className="text-[#6B7280]">Loading…</p>
+        </main>
+      }
+    >
+      <NewAdmissionRouter />
+    </Suspense>
   );
 }
