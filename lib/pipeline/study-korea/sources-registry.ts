@@ -95,6 +95,14 @@ export const STUDY_KOREA_SOURCE_META: StudyKoreaSourceMeta[] = [
     requiresEnv: ["HONORARY_REPORTERS_PASS_KEY"],
     note: "Honorary Reporters GKS 검색 · passKey 필요",
   },
+  {
+    id: "study_korea_news",
+    label: "Study Korea News",
+    cronPath: "/api/cron/scrape-study-korea-news",
+    color: "bg-lime-100 text-lime-800",
+    status: "active",
+    note: "studykoreanews.com 영문·GKS·인터뷰 → admissions 라우팅",
+  },
 ];
 
 export type StudyKoreaSourceId = (typeof STUDY_KOREA_SOURCE_META)[number]["id"];
