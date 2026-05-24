@@ -32,13 +32,6 @@ export const STUDY_KOREA_SOURCE_META: StudyKoreaSourceMeta[] = [
     note: "공개 RSS · OAuth 불필요",
   },
   {
-    id: "quora",
-    label: "Quora",
-    color: "bg-blue-100 text-blue-800",
-    status: "unavailable",
-    statusLabel: "JS 렌더링 - 지원 불가",
-  },
-  {
     id: "studyinkorea",
     label: "Study in Korea (gov)",
     color: "bg-teal-100 text-teal-800",

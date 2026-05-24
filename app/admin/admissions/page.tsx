@@ -216,6 +216,16 @@ function AdminInner() {
     <main className="min-h-screen bg-[#fafafa] p-6 text-gray-900">
       <div className="mx-auto max-w-6xl">
         <h1 className="text-2xl font-bold">합격 DB 어드민</h1>
+        {key.trim() ? (
+          <p className="mt-2 text-sm">
+            <a
+              href={`/admin/admissions/review?key=${encodeURIComponent(key.trim())}`}
+              className="text-teal-700 underline hover:no-underline"
+            >
+              스크래핑 합격 후기 검토 큐 →
+            </a>
+          </p>
+        ) : null}
         <p className="mt-2 text-sm text-gray-600">
           URL에{" "}
           <code className="rounded bg-gray-200 px-1">?key=비밀번호</code>로

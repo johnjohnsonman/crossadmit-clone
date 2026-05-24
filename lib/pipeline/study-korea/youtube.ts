@@ -14,6 +14,9 @@ export async function scrapeYoutubeStudyKorea(): Promise<ScrapeRunResult> {
     saved: result.saved,
     failed: result.failed,
     skipped: result.skipped,
+    routed_admissions: 0,
+    routed_review: 0,
+    routed_general: 0,
     errors: result.errors ?? [],
   };
 }

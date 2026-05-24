@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminSecret } from "@/lib/admin/verify";
+import { getClassifierUsageStats } from "@/lib/classifiers/classifier-usage";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
@@ -56,6 +57,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: univErr.message }, { status: 500 });
     }
 
+    const { count: reviewPending } = await admin
+      .from("admissions")
+      .select("id", { count: "exact", head: true })
+      .eq("needs_review", true)
+      .eq("published", false);
+
+    const classifier = getClassifierUsageStats();
+
     return NextResponse.json({
       runs: runs ?? [],
       stats: statsByCategory,
@@ -63,6 +72,8 @@ export async function GET(request: NextRequest) {
       posts: posts ?? [],
       totalPosts: (posts ?? []).length,
       universities: universities ?? [],
+      reviewPending: reviewPending ?? 0,
+      classifier,
     });
   } catch (e) {
     console.error("[admin study-korea]", e);

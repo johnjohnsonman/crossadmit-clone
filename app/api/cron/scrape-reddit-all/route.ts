@@ -16,8 +16,15 @@ export async function GET(request: NextRequest) {
 
   try {
     console.log("[Reddit] scrape-reddit-all started");
-    const { batches, totalSaved, totalFailed, errors } =
-      await scrapeRedditAllSubreddits({ feed: "hot", limitPerSubreddit: 10 });
+    const {
+      batches,
+      totalSaved,
+      totalFailed,
+      totalRoutedAdmissions,
+      totalRoutedReview,
+      totalRoutedGeneral,
+      errors,
+    } = await scrapeRedditAllSubreddits({ feed: "hot", limitPerSubreddit: 10 });
 
     const collected = batches.reduce((s, b) => s + b.fetched, 0);
     const processed = batches.reduce((s, b) => s + b.processed, 0);
@@ -34,6 +41,9 @@ export async function GET(request: NextRequest) {
             ? "partial"
             : "success",
       error_message: errors.slice(0, 5).join("; "),
+      routed_admissions: totalRoutedAdmissions,
+      routed_review: totalRoutedReview,
+      routed_general: totalRoutedGeneral,
     });
 
     console.log("[Reddit] scrape-reddit-all done", { totalSaved, totalFailed });
@@ -42,6 +52,9 @@ export async function GET(request: NextRequest) {
       success: true,
       totalSaved,
       totalFailed,
+      routed_admissions: totalRoutedAdmissions,
+      routed_review: totalRoutedReview,
+      routed_general: totalRoutedGeneral,
       batches,
       errors,
       timestamp: new Date().toISOString(),

@@ -15,24 +15,34 @@ export type SubredditConfig = {
   keyword_filter?: string[];
 };
 
+/** 합격 후기 발견 가능성 높음 */
+export const ADMISSION_FOCUSED_SUBREDDITS = [
+  "StudyInKorea",
+  "koreanstudents",
+  "IntltoKorea",
+] as const;
+
+/** 일반 유학·생활 정보 (가끔 합격기 포함) */
+export const GENERAL_INFO_SUBREDDITS = [
+  "Korea",
+  "learnkorean",
+  "IWantOut",
+  "movingtokorea",
+] as const;
+
 export const SUBREDDITS: SubredditConfig[] = [
-  { name: "studyinkorea", priority: 1 },
-  { name: "koreanuniversity", priority: 1 },
-  {
-    name: "korea",
-    priority: 2,
-    keyword_filter: ["admission", "accepted", "gks", "scholarship", "university"],
-  },
-  {
-    name: "Living_in_Korea",
-    priority: 2,
-    keyword_filter: ["student", "visa", "d-2", "admission", "university"],
-  },
-  {
-    name: "KoreanAdvice",
-    priority: 3,
-    keyword_filter: ["study", "university", "admission", "gks"],
-  },
+  ...ADMISSION_FOCUSED_SUBREDDITS.map((name, i) => ({
+    name,
+    priority: 1 + i,
+  })),
+  ...GENERAL_INFO_SUBREDDITS.map((name, i) => ({
+    name,
+    priority: 10 + i,
+    keyword_filter:
+      name === "Korea" || name === "IWantOut"
+        ? ["university", "admission", "accepted", "gks", "scholarship", "student", "study"]
+        : ["university", "admission", "student", "visa", "korea"],
+  })),
 ];
 
 /** 기본은 hot만 (타임아웃 방지). new/top은 feed 파라미터로 */
@@ -256,20 +266,38 @@ export async function fetchSubredditRssFeed(
   }
 }
 
-/** DB에 이미 있는 reddit source_id 집합 */
+/** DB에 이미 있는 reddit source_id / URL 집합 */
 export async function loadExistingRedditSourceIds(): Promise<Set<string>> {
   try {
     const supabase = createAdminClient();
-    const { data, error } = await supabase
-      .from("study_korea_posts")
-      .select("source_id")
-      .eq("source", "reddit");
+    const [{ data: posts, error: postsErr }, { data: admissions, error: admErr }] =
+      await Promise.all([
+        supabase
+          .from("study_korea_posts")
+          .select("source_id, url")
+          .eq("source", "reddit"),
+        supabase
+          .from("admissions")
+          .select("source_url")
+          .like("source_type", "scraped_reddit"),
+      ]);
 
-    if (error) {
-      console.warn("[reddit-rss] existing ids load failed:", error.message);
-      return new Set();
+    if (postsErr) {
+      console.warn("[reddit-rss] existing ids load failed:", postsErr.message);
     }
-    return new Set((data ?? []).map((r) => String(r.source_id)));
+    if (admErr) {
+      console.warn("[reddit-rss] admissions urls load failed:", admErr.message);
+    }
+
+    const out = new Set<string>();
+    for (const r of posts ?? []) {
+      if (r.source_id) out.add(String(r.source_id));
+      if (r.url) out.add(String(r.url));
+    }
+    for (const a of admissions ?? []) {
+      if (a.source_url) out.add(String(a.source_url));
+    }
+    return out;
   } catch (e) {
     console.warn("[reddit-rss] existing ids load error:", e);
     return new Set();
@@ -310,7 +338,7 @@ export async function collectRedditRssForSubreddit(
       skippedDuplicate++;
       continue;
     }
-    if (existingIds.has(item.id)) {
+    if (existingIds.has(item.id) || existingIds.has(item.link)) {
       skippedExisting++;
       continue;
     }

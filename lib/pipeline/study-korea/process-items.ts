@@ -1,13 +1,10 @@
-import { analyzeStudyKoreaContent } from "./claude";
-import { fillEmptySummaries, shouldSavePost } from "./relevance";
+import { resetClassifierRunCounter } from "@/lib/classifiers/classifier-usage";
+import {
+  routeScrapedPost,
+  scrapedPostFromRaw,
+} from "@/lib/scrapers/router";
 import { finishPipelineRun, startPipelineRun } from "./runs";
-import { upsertStudyKoreaPost } from "./save";
-import type {
-  ScrapeRunResult,
-  StudyKoreaCategory,
-  StudyKoreaSource,
-} from "./types";
-import { normalizeUniversitySlug } from "./university-map";
+import type { ScrapeRunResult, StudyKoreaSource } from "./types";
 
 export interface RawStudyKoreaItem {
   source_id: string;
@@ -15,14 +12,13 @@ export interface RawStudyKoreaItem {
   content: string;
   url: string;
   author?: string;
-  category?: StudyKoreaCategory;
-  university?: string;
   university_id?: number | null;
   language?: string;
   upvotes?: number;
   comment_count?: number;
   source_created_at?: string | null;
   skipClaude?: boolean;
+  subreddit?: string;
 }
 
 const ITEM_DELAY_MS = 400;
@@ -31,12 +27,35 @@ function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+function applyRouteResult(
+  result: Awaited<ReturnType<typeof routeScrapedPost>>,
+  counts: ScrapeRunResult
+) {
+  if (result.routed === "admission") {
+    counts.routed_admissions += 1;
+    counts.saved += 1;
+    return;
+  }
+  if (result.routed === "review_needed") {
+    counts.routed_review += 1;
+    counts.saved += 1;
+    return;
+  }
+  if (result.routed === "general") {
+    counts.routed_general += 1;
+    counts.saved += 1;
+    return;
+  }
+  counts.skipped += 1;
+}
+
 export async function processAndSaveItems(
   runSource: string,
   source: StudyKoreaSource,
   items: RawStudyKoreaItem[],
   query = ""
 ): Promise<ScrapeRunResult> {
+  resetClassifierRunCounter();
   const runId = await startPipelineRun(runSource, query);
   const result: ScrapeRunResult = {
     collected: items.length,
@@ -44,6 +63,9 @@ export async function processAndSaveItems(
     saved: 0,
     failed: 0,
     skipped: 0,
+    routed_admissions: 0,
+    routed_review: 0,
+    routed_general: 0,
     errors: [],
   };
 
@@ -60,75 +82,24 @@ export async function processAndSaveItems(
       }
 
       try {
-        let category = item.category ?? "general";
-        let university = item.university ?? "";
-        let ai_summary = title;
-        let ai_summary_kr = title;
-        let ai_title_en = "";
-        let ai_summary_en = "";
-        let ai_content_en = "";
-        let ai_tags: string[] = [];
-
-        if (!item.skipClaude) {
-          const analysis = fillEmptySummaries(
+        const routeResult = await routeScrapedPost(
+          scrapedPostFromRaw({
+            source_id: item.source_id,
             title,
             content,
-            await analyzeStudyKoreaContent(title, content.slice(0, 500), {
-              source,
-              url: item.url,
-              author: item.author,
-            })
-          );
-
-          if (!shouldSavePost(undefined, title, content, analysis)) {
-            result.skipped++;
-            continue;
-          }
-
-          category = analysis.category;
-          university =
-            item.university ||
-            normalizeUniversitySlug(analysis.university, `${title} ${content}`) ||
-            analysis.university;
-          ai_summary = analysis.ai_summary;
-          ai_summary_kr = analysis.ai_summary_kr;
-          ai_title_en = analysis.ai_title_en;
-          ai_summary_en = analysis.ai_summary_en;
-          ai_content_en = analysis.ai_content_en;
-          ai_tags = analysis.ai_tags;
-        } else if (!title) {
-          result.skipped++;
-          continue;
-        }
-
-        const status = await upsertStudyKoreaPost({
-          source,
-          source_id: item.source_id,
-          title: title || content.slice(0, 120),
-          content: content.slice(0, 8000),
-          url: item.url,
-          author: item.author ?? "",
-          upvotes: item.upvotes ?? 0,
-          comment_count: item.comment_count ?? 0,
-          source_created_at: item.source_created_at ?? null,
-          category,
-          university,
-          university_id: item.university_id ?? undefined,
-          language: item.language ?? (source === "naver_blog" ? "ko" : "en"),
-          ai_summary,
-          ai_summary_kr,
-          ai_title_en,
-          ai_summary_en,
-          ai_content_en,
-          ai_tags,
-          is_published: item.skipClaude ? true : analysis.is_relevant,
-        });
-
-        if (status === "saved") result.saved++;
-        else {
-          result.failed++;
-          result.errors.push(`upsert ${item.source_id}`);
-        }
+            url: item.url,
+            author: item.author,
+            subreddit: item.subreddit,
+            language: item.language,
+            source_created_at: item.source_created_at,
+            upvotes: item.upvotes,
+            comment_count: item.comment_count,
+            university_id: item.university_id,
+            skipClaude: item.skipClaude,
+            source,
+          })
+        );
+        applyRouteResult(routeResult, result);
       } catch (e) {
         result.failed++;
         const msg = e instanceof Error ? e.message : String(e);
@@ -150,18 +121,28 @@ export async function processAndSaveItems(
             ? "partial"
             : "success",
       error_message: result.errors.slice(0, 5).join("; "),
+      routed_admissions: result.routed_admissions,
+      routed_review: result.routed_review,
+      routed_general: result.routed_general,
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     result.errors.push(msg);
     await finishPipelineRun(runId, {
-      ...result,
+      collected: result.collected,
+      processed: result.processed,
+      saved: result.saved,
       failed: result.failed + 1,
       status: "failed",
       error_message: msg,
+      routed_admissions: result.routed_admissions,
+      routed_review: result.routed_review,
+      routed_general: result.routed_general,
     });
   }
 
-  console.log(`[${runSource}] saved:`, result.saved);
+  console.log(
+    `[${runSource}] routed admissions=${result.routed_admissions} review=${result.routed_review} general=${result.routed_general}`
+  );
   return result;
 }

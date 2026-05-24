@@ -26,6 +26,9 @@ type PipelineRun = {
   processed: number;
   saved: number;
   failed: number;
+  routed_admissions?: number;
+  routed_review?: number;
+  routed_general?: number;
   status: string;
   error_message: string;
   created_at: string;
@@ -183,6 +186,13 @@ function AdminStudyKoreaInner() {
     { id: number; name_kr: string; name_en: string; reason: string }[]
   >([]);
   const [krIntlLog, setKrIntlLog] = useState<string | null>(null);
+  const [reviewPending, setReviewPending] = useState(0);
+  const [classifierUsage, setClassifierUsage] = useState({
+    dailyCalls: 0,
+    dailyLimit: 500,
+    runCalls: 0,
+    perRunLimit: 100,
+  });
 
   const AI_GUIDE_CATEGORIES = [
     "visa",
@@ -197,11 +207,13 @@ function AdminStudyKoreaInner() {
   ] as const;
 
   const REDDIT_SUBREDDITS = [
-    "studyinkorea",
-    "korea",
-    "Living_in_Korea",
-    "KoreanAdvice",
-    "teachinginkorea",
+    "StudyInKorea",
+    "koreanstudents",
+    "IntltoKorea",
+    "Korea",
+    "learnkorean",
+    "IWantOut",
+    "movingtokorea",
   ] as const;
 
   useEffect(() => {
@@ -682,6 +694,15 @@ function AdminStudyKoreaInner() {
         };
       }
       setUnivEdits(edits);
+      setReviewPending(Number(json.reviewPending ?? 0));
+      if (json.classifier) {
+        setClassifierUsage({
+          dailyCalls: json.classifier.dailyCalls ?? 0,
+          dailyLimit: json.classifier.dailyLimit ?? 500,
+          runCalls: json.classifier.runCalls ?? 0,
+          perRunLimit: json.classifier.perRunLimit ?? 100,
+        });
+      }
       void loadBackfillStatus();
       void loadSlugBackfillStatus();
       void loadReclassifyStatus();
@@ -1076,8 +1097,13 @@ function AdminStudyKoreaInner() {
 
         const fetched = Number(data.fetched ?? 0);
         const saved = Number(data.saved ?? 0);
+        const adm = Number(data.routed_admissions ?? 0);
+        const rev = Number(data.routed_review ?? 0);
+        const gen = Number(data.routed_general ?? 0);
         totalSaved += saved;
-        lines.push(`${sub}: ${fetched}건 수집, ${saved}건 저장`);
+        lines.push(
+          `${sub}: ${fetched} posts → ✅ ${adm} admissions / 📋 ${rev} review / 📚 ${gen} general`
+        );
         setRedditRunLog(lines.join("\n"));
 
         await new Promise((r) => setTimeout(r, 2000));
@@ -1244,7 +1270,7 @@ function AdminStudyKoreaInner() {
             Study Korea Pipeline
           </h1>
           <p className="text-sm text-gray-600 mt-0.5">
-            Furniblog-style · 7 sources · Claude + Supabase
+            Furniblog-style · 6 sources · Claude classifier + Supabase
           </p>
           <div className="flex flex-wrap gap-2 mt-3">
             <input
@@ -1287,6 +1313,30 @@ function AdminStudyKoreaInner() {
       <main className="max-w-6xl mx-auto px-4 py-6 space-y-6">
         {authorized && (
           <>
+            {reviewPending > 0 && (
+              <section className="bg-amber-50 rounded-xl border border-amber-300 p-4 shadow-sm flex flex-wrap items-center justify-between gap-3">
+                <p className="text-sm font-semibold text-amber-900">
+                  ⚠️ 검토 대기 {reviewPending}건
+                </p>
+                <Link
+                  href={
+                    key.trim()
+                      ? `/admin/admissions/review?key=${encodeURIComponent(key.trim())}`
+                      : "/admin/admissions/review"
+                  }
+                  className="text-sm font-medium text-amber-900 underline hover:no-underline"
+                >
+                  검토하러 가기 →
+                </Link>
+              </section>
+            )}
+
+            <p className="text-xs text-gray-600 -mt-2">
+              오늘 LLM 호출 {classifierUsage.dailyCalls}건 / 한도{" "}
+              {classifierUsage.dailyLimit}건 (이번 실행 {classifierUsage.runCalls}/
+              {classifierUsage.perRunLimit})
+            </p>
+
             <section className="bg-orange-50 rounded-xl border border-orange-200 p-4 shadow-sm">
               <h2 className="text-sm font-bold text-orange-900 mb-2">
                 🔍 Reddit 접근 테스트
@@ -2128,6 +2178,9 @@ function AdminStudyKoreaInner() {
                       <th className="p-2">Source</th>
                       <th className="p-2">Col</th>
                       <th className="p-2">Saved</th>
+                      <th className="p-2">Adm</th>
+                      <th className="p-2">Rev</th>
+                      <th className="p-2">Gen</th>
                       <th className="p-2">Fail</th>
                       <th className="p-2">Status</th>
                     </tr>
@@ -2142,6 +2195,15 @@ function AdminStudyKoreaInner() {
                         <td className="p-2">{r.collected}</td>
                         <td className="p-2 text-green-700 font-medium">
                           {r.saved}
+                        </td>
+                        <td className="p-2 text-emerald-700">
+                          {r.routed_admissions ?? "—"}
+                        </td>
+                        <td className="p-2 text-amber-700">
+                          {r.routed_review ?? "—"}
+                        </td>
+                        <td className="p-2 text-blue-700">
+                          {r.routed_general ?? "—"}
                         </td>
                         <td className="p-2">{r.failed}</td>
                         <td className="p-2">

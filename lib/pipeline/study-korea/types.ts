@@ -18,7 +18,6 @@ export type StudyKoreaCategory =
 /** 텍스트 콘텐츠 소스 (YouTube는 university_videos 전용) */
 export type StudyKoreaSource =
   | "reddit"
-  | "quora"
   | "studyinkorea"
   | "university_official"
   | "naver_blog"
@@ -79,5 +78,20 @@ export interface ScrapeRunResult {
   saved: number;
   failed: number;
   skipped: number;
+  routed_admissions: number;
+  routed_review: number;
+  routed_general: number;
   errors: string[];
 }
+
+export const EMPTY_SCRAPE_RESULT: ScrapeRunResult = {
+  collected: 0,
+  processed: 0,
+  saved: 0,
+  failed: 0,
+  skipped: 0,
+  routed_admissions: 0,
+  routed_review: 0,
+  routed_general: 0,
+  errors: [],
+};

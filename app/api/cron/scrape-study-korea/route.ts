@@ -5,17 +5,16 @@ import { scrapeNaverNewsStudyKorea } from "@/lib/pipeline/study-korea/naver-news
 import { scrapeNaverStudyKorea } from "@/lib/pipeline/study-korea/naver";
 import { scrapeUniversitiesIntl } from "@/lib/pipeline/study-korea/universities-intl";
 import { scrapeYoutubeStudyKorea } from "@/lib/pipeline/study-korea/youtube";
-import type { ScrapeRunResult } from "@/lib/pipeline/study-korea/types";
+import {
+  EMPTY_SCRAPE_RESULT,
+  type ScrapeRunResult,
+} from "@/lib/pipeline/study-korea/types";
 
 export const maxDuration = 300;
 export const dynamic = "force-dynamic";
 
 const SKIPPED: ScrapeRunResult = {
-  collected: 0,
-  processed: 0,
-  saved: 0,
-  failed: 0,
-  skipped: 0,
+  ...EMPTY_SCRAPE_RESULT,
   errors: ["source disabled or unavailable"],
 };
 
@@ -63,7 +62,7 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     success: true,
     totalSaved,
-    skipped: ["reddit", "quora", "studyinkorea"],
+    skipped: ["reddit", "studyinkorea"],
     youtube,
     university_official,
     naver_blog,

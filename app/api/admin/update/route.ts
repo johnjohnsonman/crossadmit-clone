@@ -59,14 +59,19 @@ export async function PATCH(request: NextRequest) {
     const allowed = [
       "mysql_original",
       "reddit",
-      "quora",
       "studyinkorea",
       "university_intl",
       "user_submitted",
       "user_submitted_intl",
+      "scraped_reddit",
+      "scraped_naver_blog",
+      "scraped_naver_news",
+      "scraped_naver_webkr",
+      "scraped_university_official",
+      "scraped_studyinkorea",
     ];
     const v = String(value ?? "").trim();
-    if (!allowed.includes(v)) {
+    if (!allowed.includes(v) && !v.startsWith("scraped_")) {
       return NextResponse.json({ error: "source_type 값 오류" }, { status: 400 });
     }
     patch.source_type = v;

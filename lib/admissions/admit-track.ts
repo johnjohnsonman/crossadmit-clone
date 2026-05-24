@@ -15,12 +15,21 @@ export type AdmitTrack = (typeof ADMIT_TRACK_VALUES)[number];
 export const SOURCE_TYPE_VALUES = [
   "mysql_original",
   "reddit",
-  "quora",
   "studyinkorea",
   "university_intl",
   "user_submitted",
   "user_submitted_intl",
+  "scraped_reddit",
+  "scraped_naver_blog",
+  "scraped_naver_news",
+  "scraped_naver_webkr",
+  "scraped_university_official",
+  "scraped_studyinkorea",
 ] as const;
+
+export function isScrapedSourceType(v: string | null | undefined): boolean {
+  return Boolean(v?.startsWith("scraped_"));
+}
 
 export type SourceType = (typeof SOURCE_TYPE_VALUES)[number];
 

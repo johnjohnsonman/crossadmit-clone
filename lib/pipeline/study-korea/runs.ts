@@ -34,6 +34,9 @@ export async function finishPipelineRun(
     failed: number;
     status: "success" | "partial" | "failed";
     error_message?: string;
+    routed_admissions?: number;
+    routed_review?: number;
+    routed_general?: number;
   }
 ) {
   const supabase = admin();
@@ -46,6 +49,9 @@ export async function finishPipelineRun(
       failed: result.failed,
       status: result.status,
       error_message: result.error_message ?? "",
+      routed_admissions: result.routed_admissions ?? 0,
+      routed_review: result.routed_review ?? 0,
+      routed_general: result.routed_general ?? 0,
     })
     .eq("id", id);
 }

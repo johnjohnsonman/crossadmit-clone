@@ -1,5 +1,4 @@
-import { passesInternationalAdmissionFilter } from "./admission-filters";
-import { analyzeStudyKoreaContent } from "./claude";
+import { resetClassifierRunCounter } from "@/lib/classifiers/classifier-usage";
 import {
   collectRedditRssForSubreddit,
   DEFAULT_RSS_FEED,
@@ -7,13 +6,13 @@ import {
   getSubredditNames,
   type RedditRssItem,
 } from "./reddit-rss";
-import { fillEmptySummaries, shouldSavePost } from "./relevance";
 import { finishPipelineRun, startPipelineRun } from "./runs";
-import { upsertStudyKoreaPost } from "./save";
+import {
+  routeScrapedPost,
+  scrapedPostFromRaw,
+} from "@/lib/scrapers/router";
 import type { ScrapeRunResult } from "./types";
-import { normalizeUniversitySlug } from "./university-map";
 
-const CONTENT_FOR_AI_MAX = 500;
 const DEFAULT_BATCH_LIMIT = 10;
 
 export type RedditBatchParams = {
@@ -30,6 +29,9 @@ export type RedditBatchResult = {
   saved: number;
   failed: number;
   skipped: number;
+  routed_admissions: number;
+  routed_review: number;
+  routed_general: number;
   remaining_subreddits: string[];
   errors: string[];
 };
@@ -37,12 +39,27 @@ export type RedditBatchResult = {
 async function processRedditItems(
   items: RedditRssItem[],
   limit: number
-): Promise<Pick<RedditBatchResult, "processed" | "saved" | "failed" | "skipped" | "errors">> {
+): Promise<
+  Pick<
+    RedditBatchResult,
+    | "processed"
+    | "saved"
+    | "failed"
+    | "skipped"
+    | "routed_admissions"
+    | "routed_review"
+    | "routed_general"
+    | "errors"
+  >
+> {
   const result = {
     processed: 0,
     saved: 0,
     failed: 0,
     skipped: 0,
+    routed_admissions: 0,
+    routed_review: 0,
+    routed_general: 0,
     errors: [] as string[],
   };
 
@@ -52,74 +69,36 @@ async function processRedditItems(
     result.processed++;
     const title = item.title.trim();
     const fullContent = item.content.trim();
-    const contentForAi = (fullContent || title).slice(0, CONTENT_FOR_AI_MAX);
     const url = item.link;
-    const subreddit = item.subreddit;
-    const universityFromTitle = normalizeUniversitySlug("", title);
 
     try {
-      let analysis = await analyzeStudyKoreaContent(title, contentForAi, {
-        source: "reddit",
-        url,
-        author: item.author,
-        subreddit,
-        language: "en",
-      });
+      const routeResult = await routeScrapedPost(
+        scrapedPostFromRaw({
+          source_id: item.id,
+          title,
+          content: fullContent,
+          url,
+          author: item.author,
+          subreddit: item.subreddit,
+          language: "en",
+          source_created_at: item.pubDate
+            ? new Date(item.pubDate).toISOString()
+            : null,
+          source: "reddit",
+        })
+      );
 
-      analysis = fillEmptySummaries(title, fullContent, analysis);
-
-      if (!shouldSavePost(subreddit, title, fullContent, analysis)) {
-        result.skipped++;
-        continue;
-      }
-
-      const admissionCandidate =
-        analysis.category === "admission" ||
-        passesInternationalAdmissionFilter(`${title} ${fullContent}`);
-
-      const university =
-        normalizeUniversitySlug(
-          analysis.university || universityFromTitle,
-          `${title} ${fullContent.slice(0, 500)}`
-        ) ||
-        analysis.university ||
-        universityFromTitle;
-
-      const status = await upsertStudyKoreaPost({
-        source: "reddit",
-        source_id: item.id,
-        title,
-        content: fullContent.slice(0, 8000),
-        url,
-        author: item.author,
-        language: "en",
-        upvotes: 0,
-        comment_count: 0,
-        source_created_at: item.pubDate
-          ? new Date(item.pubDate).toISOString()
-          : null,
-        category: analysis.category,
-        university,
-        ai_summary: analysis.ai_summary,
-        ai_summary_kr: analysis.ai_summary_kr,
-        ai_title_en: analysis.ai_title_en || title,
-        ai_summary_en: analysis.ai_summary_en || analysis.ai_summary,
-        ai_content_en: analysis.ai_content_en || fullContent.slice(0, 8000),
-        ai_tags: analysis.ai_tags,
-        is_published: analysis.is_relevant,
-        ...(admissionCandidate
-          ? {
-              is_admission_post: true,
-              moderation_status: "pending",
-              category: "admission",
-            }
-          : {}),
-      });
-
-      if (status === "saved") result.saved++;
-      else {
-        result.failed++;
-        result.errors.push(`upsert failed ${item.id}`);
+      if (routeResult.routed === "admission") {
+        result.routed_admissions += 1;
+        result.saved += 1;
+      } else if (routeResult.routed === "review_needed") {
+        result.routed_review += 1;
+        result.saved += 1;
+      } else if (routeResult.routed === "general") {
+        result.routed_general += 1;
+        result.saved += 1;
+      } else {
+        result.skipped += 1;
       }
     } catch (e) {
       result.failed++;
@@ -136,6 +115,7 @@ async function processRedditItems(
 export async function scrapeRedditSubredditBatch(
   params: RedditBatchParams
 ): Promise<RedditBatchResult> {
+  resetClassifierRunCounter();
   const subreddit = params.subreddit.trim();
   const feed = (params.feed ?? DEFAULT_RSS_FEED).toLowerCase();
   const limit = Math.min(Math.max(params.limit ?? DEFAULT_BATCH_LIMIT, 1), 20);
@@ -159,6 +139,9 @@ export async function scrapeRedditSubredditBatch(
     saved: processResult.saved,
     failed: processResult.failed,
     skipped: skippedCollect + processResult.skipped,
+    routed_admissions: processResult.routed_admissions,
+    routed_review: processResult.routed_review,
+    routed_general: processResult.routed_general,
     remaining_subreddits: getRemainingSubreddits(subreddit),
     errors: processResult.errors,
   };
@@ -172,6 +155,9 @@ export async function scrapeRedditAllSubreddits(options?: {
   batches: RedditBatchResult[];
   totalSaved: number;
   totalFailed: number;
+  totalRoutedAdmissions: number;
+  totalRoutedReview: number;
+  totalRoutedGeneral: number;
   errors: string[];
 }> {
   const feed = options?.feed ?? DEFAULT_RSS_FEED;
@@ -179,6 +165,9 @@ export async function scrapeRedditAllSubreddits(options?: {
   const batches: RedditBatchResult[] = [];
   let totalSaved = 0;
   let totalFailed = 0;
+  let totalRoutedAdmissions = 0;
+  let totalRoutedReview = 0;
+  let totalRoutedGeneral = 0;
   const errors: string[] = [];
 
   for (const name of getSubredditNames()) {
@@ -192,6 +181,9 @@ export async function scrapeRedditAllSubreddits(options?: {
       batches.push(batch);
       totalSaved += batch.saved;
       totalFailed += batch.failed;
+      totalRoutedAdmissions += batch.routed_admissions;
+      totalRoutedReview += batch.routed_review;
+      totalRoutedGeneral += batch.routed_general;
       if (batch.errors.length) errors.push(...batch.errors.slice(0, 2));
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
@@ -205,6 +197,9 @@ export async function scrapeRedditAllSubreddits(options?: {
         saved: 0,
         failed: 1,
         skipped: 0,
+        routed_admissions: 0,
+        routed_review: 0,
+        routed_general: 0,
         remaining_subreddits: getRemainingSubreddits(name),
         errors: [msg],
       });
@@ -212,7 +207,15 @@ export async function scrapeRedditAllSubreddits(options?: {
     }
   }
 
-  return { batches, totalSaved, totalFailed, errors };
+  return {
+    batches,
+    totalSaved,
+    totalFailed,
+    totalRoutedAdmissions,
+    totalRoutedReview,
+    totalRoutedGeneral,
+    errors,
+  };
 }
 
 /** @deprecated 전체 한 번에 — 타임아웃 위험. scrapeRedditAllSubreddits 사용 */
@@ -224,12 +227,22 @@ export async function scrapeRedditStudyKorea(): Promise<ScrapeRunResult> {
     saved: 0,
     failed: 0,
     skipped: 0,
+    routed_admissions: 0,
+    routed_review: 0,
+    routed_general: 0,
     errors: [],
   };
 
   try {
-    const { batches, totalSaved, totalFailed, errors } =
-      await scrapeRedditAllSubreddits();
+    const {
+      batches,
+      totalSaved,
+      totalFailed,
+      totalRoutedAdmissions,
+      totalRoutedReview,
+      totalRoutedGeneral,
+      errors,
+    } = await scrapeRedditAllSubreddits();
 
     for (const b of batches) {
       result.collected += b.fetched;
@@ -238,6 +251,9 @@ export async function scrapeRedditStudyKorea(): Promise<ScrapeRunResult> {
       result.failed += b.failed;
       result.skipped += b.skipped;
     }
+    result.routed_admissions = totalRoutedAdmissions;
+    result.routed_review = totalRoutedReview;
+    result.routed_general = totalRoutedGeneral;
     result.errors = errors;
 
     await finishPipelineRun(runId, {
@@ -252,15 +268,23 @@ export async function scrapeRedditStudyKorea(): Promise<ScrapeRunResult> {
             ? "partial"
             : "success",
       error_message: result.errors.slice(0, 5).join("; "),
+      routed_admissions: result.routed_admissions,
+      routed_review: result.routed_review,
+      routed_general: result.routed_general,
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     result.errors.push(msg);
     await finishPipelineRun(runId, {
-      ...result,
+      collected: result.collected,
+      processed: result.processed,
+      saved: result.saved,
       failed: result.failed + 1,
       status: "failed",
       error_message: msg,
+      routed_admissions: result.routed_admissions,
+      routed_review: result.routed_review,
+      routed_general: result.routed_general,
     });
   }
 
