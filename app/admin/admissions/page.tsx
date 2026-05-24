@@ -10,6 +10,14 @@ import {
 } from "react";
 import { useSearchParams } from "next/navigation";
 
+import {
+  ADMIT_TRACK_VALUES,
+  ADMIT_TRACK_LABEL,
+  SOURCE_TYPE_VALUES,
+  type AdmitTrack,
+  type SourceType,
+} from "@/lib/admissions/admit-track";
+
 type AdminAdmission = {
   id: number;
   title: string;
@@ -18,6 +26,8 @@ type AdminAdmission = {
   published: boolean | null;
   likes_count?: number | null;
   is_featured?: boolean | null;
+  admit_track?: string | null;
+  source_type?: string | null;
 };
 
 type AdminComment = {
@@ -51,6 +61,8 @@ function AdminInner() {
 
   const [likesDraft, setLikesDraft] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState<string | null>(null);
+  const [filterTrack, setFilterTrack] = useState<string>("");
+  const [filterSource, setFilterSource] = useState<string>("");
 
   useEffect(() => {
     if (keyFromUrl && keyFromUrl !== key) {
@@ -182,6 +194,14 @@ function AdminInner() {
     }
   };
 
+  const filteredRows = useMemo(() => {
+    return rows.filter((r) => {
+      if (filterTrack && r.admit_track !== filterTrack) return false;
+      if (filterSource && r.source_type !== filterSource) return false;
+      return true;
+    });
+  }, [rows, filterTrack, filterSource]);
+
   const onSaveLikes = (id: string) => {
     const raw = (likesDraft[id] ?? "").trim();
     const n = parseInt(raw, 10);
@@ -230,6 +250,42 @@ function AdminInner() {
         ) : authorized && rows.length === 0 ? (
           <p className="mt-8 text-gray-500">데이터 없음</p>
         ) : authorized ? (
+          <>
+          <div className="mt-4 flex flex-wrap items-center gap-3 rounded border border-gray-200 bg-white p-3 text-sm">
+            <label className="flex items-center gap-2">
+              <span className="text-gray-600">admit_track</span>
+              <select
+                className="rounded border border-gray-300 px-2 py-1"
+                value={filterTrack}
+                onChange={(e) => setFilterTrack(e.target.value)}
+              >
+                <option value="">전체</option>
+                {ADMIT_TRACK_VALUES.map((v) => (
+                  <option key={v} value={v}>
+                    {ADMIT_TRACK_LABEL[v].ko}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="flex items-center gap-2">
+              <span className="text-gray-600">source_type</span>
+              <select
+                className="rounded border border-gray-300 px-2 py-1"
+                value={filterSource}
+                onChange={(e) => setFilterSource(e.target.value)}
+              >
+                <option value="">전체</option>
+                {SOURCE_TYPE_VALUES.map((v) => (
+                  <option key={v} value={v}>
+                    {v}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <span className="text-gray-500">
+              표시 {filteredRows.length} / {rows.length}
+            </span>
+          </div>
           <div className="mt-6 overflow-x-auto rounded border border-gray-200 bg-white shadow-sm">
             <table className="w-full border-collapse text-left text-sm">
               <thead className="border-b bg-gray-50">
@@ -238,6 +294,8 @@ function AdminInner() {
                   <th className="p-3 font-semibold">제목</th>
                   <th className="p-3 font-semibold">닉네임</th>
                   <th className="p-3 font-semibold">연도</th>
+                  <th className="p-3 font-semibold">admit_track</th>
+                  <th className="p-3 font-semibold">source_type</th>
                   <th className="p-3 font-semibold">공개</th>
                   <th className="p-3 font-semibold">공감수</th>
                   <th className="p-3 font-semibold">오늘의DB</th>
@@ -246,7 +304,7 @@ function AdminInner() {
                 </tr>
               </thead>
               <tbody>
-                {rows.map((r) => {
+                {filteredRows.map((r) => {
                   const lc =
                     typeof r.likes_count === "number" ? r.likes_count : 0;
                   const lcStr =
@@ -269,6 +327,46 @@ function AdminInner() {
                         <td className="p-3 max-w-xs truncate">{r.title}</td>
                         <td className="p-3">{r.user_handle}</td>
                         <td className="p-3">{r.year}</td>
+                        <td className="p-3 min-w-[9rem]">
+                          <select
+                            className="w-full max-w-[10rem] rounded border border-gray-300 px-1 py-1 text-xs"
+                            value={r.admit_track ?? "regular_kr"}
+                            disabled={savingFor === `${r.id}:admit_track`}
+                            onChange={(e) =>
+                              void patchField(
+                                r.id,
+                                "admit_track",
+                                e.target.value as AdmitTrack,
+                              )
+                            }
+                          >
+                            {ADMIT_TRACK_VALUES.map((v) => (
+                              <option key={v} value={v}>
+                                {ADMIT_TRACK_LABEL[v].ko}
+                              </option>
+                            ))}
+                          </select>
+                        </td>
+                        <td className="p-3 min-w-[8rem]">
+                          <select
+                            className="w-full max-w-[9rem] rounded border border-gray-300 px-1 py-1 text-xs"
+                            value={r.source_type ?? "mysql_original"}
+                            disabled={savingFor === `${r.id}:source_type`}
+                            onChange={(e) =>
+                              void patchField(
+                                r.id,
+                                "source_type",
+                                e.target.value as SourceType,
+                              )
+                            }
+                          >
+                            {SOURCE_TYPE_VALUES.map((v) => (
+                              <option key={v} value={v}>
+                                {v}
+                              </option>
+                            ))}
+                          </select>
+                        </td>
                         <td className="p-3">
                           <label className="inline-flex cursor-pointer items-center gap-2">
                             <input
@@ -343,7 +441,7 @@ function AdminInner() {
                       </tr>
                       {isOpen ? (
                         <tr className="border-b bg-[#f9f9f9]">
-                          <td colSpan={9} className="p-4">
+                          <td colSpan={11} className="p-4">
                             {exp === "loading" ? (
                               <p className="text-sm text-gray-500">댓글 로딩…</p>
                             ) : Array.isArray(exp) && exp.length === 0 ? (
@@ -397,6 +495,7 @@ function AdminInner() {
               </tbody>
             </table>
           </div>
+          </>
         ) : null}
       </div>
     </main>

@@ -12,6 +12,13 @@ import AdmissionLikeButton from "@/components/admissions/AdmissionLikeButton";
 import PopularAdmissionsSection, {
   AdmissionsListDivider,
 } from "@/components/admissions/PopularAdmissionsSection";
+import AdmitTrackBadge from "@/components/admissions/AdmitTrackBadge";
+import {
+  ADMIT_TRACK_FILTER_OPTIONS,
+  EN_DEFAULT_ADMIT_TRACKS,
+  parseAdmitTrackList,
+  type AdmitTrack,
+} from "@/lib/admissions/admit-track";
 import type { Dictionary, Locale } from "@/lib/i18n/dictionary";
 import { withLang } from "@/lib/i18n/locale";
 
@@ -33,6 +40,10 @@ const TEXT = {
     sortViews: "조회순",
     sortOldest: "오래된순",
     empty: "조건에 맞는 합격 후기가 없습니다.",
+    emptyIntl:
+      "외국인 학생 합격 데이터를 모으고 있어요. 첫 번째로 등록해주세요.",
+    emptyIntlCta: "후기 등록하기 →",
+    trackFilter: "전형",
     resetFilters: "필터 초기화",
     schoolFilter: "학교 필터",
     more: "더보기 →",
@@ -58,6 +69,10 @@ const TEXT = {
     sortViews: "Most views",
     sortOldest: "Oldest",
     empty: "No stories match your filters.",
+    emptyIntl:
+      "We're collecting admission stories for international students. Be the first to share yours.",
+    emptyIntlCta: "Submit your story →",
+    trackFilter: "Track",
     resetFilters: "Clear filters",
     schoolFilter: "School",
     more: "View more →",
@@ -201,6 +216,24 @@ export default function AdmissionsBulletinBoard({
   const [appliedSort, setAppliedSort] = useState<SortMode>(() =>
     parseSortParam(searchParams.get("sort"))
   );
+
+  const resolveInitialTracks = (
+    sp: URLSearchParams,
+    loc: Locale
+  ): AdmitTrack[] | null => {
+    const raw = sp.get("admit_track");
+    if (raw === "all") return null;
+    if (raw) {
+      const parsed = parseAdmitTrackList(raw);
+      return parsed.length > 0 ? parsed : null;
+    }
+    if (loc === "en") return [...EN_DEFAULT_ADMIT_TRACKS];
+    return null;
+  };
+
+  const [appliedTracks, setAppliedTracks] = useState<AdmitTrack[] | null>(() =>
+    resolveInitialTracks(searchParams, locale)
+  );
   const [appliedUnivId, setAppliedUnivId] = useState<number | null>(() => {
     const raw = searchParams.get("univ_id");
     if (!raw) return null;
@@ -211,7 +244,8 @@ export default function AdmissionsBulletinBoard({
 
   useEffect(() => {
     setAppliedSort(parseSortParam(searchParams.get("sort")));
-  }, [searchParams]);
+    setAppliedTracks(resolveInitialTracks(searchParams, locale));
+  }, [searchParams, locale]);
 
   useEffect(() => {
     const raw = searchParams.get("univ_id");
@@ -248,13 +282,48 @@ export default function AdmissionsBulletinBoard({
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const offset = (page - 1) * PAGE_SIZE;
 
+  const tracksEqual = (a: AdmitTrack[] | null, b: AdmitTrack[] | null) => {
+    if (a === null && b === null) return true;
+    if (a === null || b === null) return false;
+    if (a.length !== b.length) return false;
+    const sa = [...a].sort().join(",");
+    const sb = [...b].sort().join(",");
+    return sa === sb;
+  };
+
+  const enDefaultActive =
+    locale === "en" &&
+    appliedTracks !== null &&
+    tracksEqual(appliedTracks, EN_DEFAULT_ADMIT_TRACKS) &&
+    !searchParams.has("admit_track");
+
   const hasActiveFilters =
     Boolean(appliedSearch) ||
     Boolean(appliedYear) ||
     Boolean(appliedType) ||
     Boolean(appliedStatus) ||
     appliedUnivId !== null ||
-    appliedSort !== "latest";
+    appliedSort !== "latest" ||
+    (appliedTracks !== null &&
+      !tracksEqual(appliedTracks, EN_DEFAULT_ADMIT_TRACKS) &&
+      !enDefaultActive) ||
+    (appliedTracks === null && searchParams.get("admit_track") === "all");
+
+  const syncAdmitTrackInUrl = useCallback(
+    (tracks: AdmitTrack[] | null) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (tracks === null) {
+        params.set("admit_track", "all");
+      } else {
+        params.set("admit_track", tracks.join(","));
+      }
+      const q = params.toString();
+      router.replace(q ? `${basePath}?${q}` : withLang(basePath, locale), {
+        scroll: false,
+      });
+    },
+    [router, searchParams, basePath, locale]
+  );
 
   const syncUnivIdInUrl = useCallback(
     (id: number | null) => {
@@ -282,6 +351,9 @@ export default function AdmissionsBulletinBoard({
       if (appliedType) params.set("admission_type", appliedType);
       if (appliedStatus) params.set("status", appliedStatus);
       if (appliedUnivId !== null) params.set("univ_id", String(appliedUnivId));
+      if (appliedTracks && appliedTracks.length > 0) {
+        params.set("admit_track", appliedTracks.join(","));
+      }
 
       const res = await fetch(`/api/admissions?${params.toString()}`, {
         cache: "no-store",
@@ -308,6 +380,7 @@ export default function AdmissionsBulletinBoard({
     appliedStatus,
     appliedSort,
     appliedUnivId,
+    appliedTracks,
   ]);
 
   useEffect(() => {
@@ -383,7 +456,30 @@ export default function AdmissionsBulletinBoard({
     setAppliedUnivId(null);
     setUnivFilterLabel("");
     syncUnivIdInUrl(null);
+    setAppliedTracks(locale === "en" ? [...EN_DEFAULT_ADMIT_TRACKS] : null);
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("admit_track");
+    const q = params.toString();
+    router.replace(q ? `${basePath}?${q}` : withLang(basePath, locale), {
+      scroll: false,
+    });
     setPage(1);
+  };
+
+  const setTrackFilter = (value: AdmitTrack | "all") => {
+    const next: AdmitTrack[] | null = value === "all" ? null : [value];
+    setAppliedTracks(next);
+    syncAdmitTrackInUrl(next);
+    setPage(1);
+  };
+
+  const isTrackChipActive = (value: AdmitTrack | "all") => {
+    if (value === "all") return appliedTracks === null;
+    return (
+      appliedTracks !== null &&
+      appliedTracks.length === 1 &&
+      appliedTracks[0] === value
+    );
   };
 
   const clearUnivFilter = () => {
@@ -450,6 +546,42 @@ export default function AdmissionsBulletinBoard({
         clear: clearUnivFilter,
       });
     }
+    if (
+      appliedTracks !== null &&
+      !tracksEqual(appliedTracks, EN_DEFAULT_ADMIT_TRACKS)
+    ) {
+      const opt = ADMIT_TRACK_FILTER_OPTIONS.find(
+        (o) => o.value !== "all" && appliedTracks.length === 1 && o.value === appliedTracks[0]
+      );
+      const multi =
+        appliedTracks.length > 1
+          ? appliedTracks
+              .map((tr) =>
+                locale === "en"
+                  ? ADMIT_TRACK_FILTER_OPTIONS.find((o) => o.value === tr)?.en
+                  : ADMIT_TRACK_FILTER_OPTIONS.find((o) => o.value === tr)?.ko
+              )
+              .filter(Boolean)
+              .join(", ")
+          : null;
+      pills.push({
+        key: "track",
+        label:
+          multi ||
+          (locale === "en" ? opt?.en : opt?.ko) ||
+          appliedTracks.join(", "),
+        clear: () => {
+          setAppliedTracks(locale === "en" ? [...EN_DEFAULT_ADMIT_TRACKS] : null);
+          const params = new URLSearchParams(searchParams.toString());
+          params.delete("admit_track");
+          const q = params.toString();
+          router.replace(q ? `${basePath}?${q}` : withLang(basePath, locale), {
+            scroll: false,
+          });
+          setPage(1);
+        },
+      });
+    }
     return pills;
   }, [
     appliedSearch,
@@ -459,11 +591,23 @@ export default function AdmissionsBulletinBoard({
     appliedSort,
     appliedUnivId,
     univFilterLabel,
+    appliedTracks,
     locale,
     t,
+    searchParams,
+    router,
+    basePath,
   ]);
 
   const empty = !loading && records.length === 0;
+
+  const showIntlEmpty =
+    empty &&
+    locale === "en" &&
+    appliedTracks !== null &&
+    appliedTracks.some((tr) =>
+      (["international", "gks", "overseas_kr"] as AdmitTrack[]).includes(tr)
+    );
 
   return (
     <main className="min-h-screen bg-gray-950 text-gray-300">
@@ -501,6 +645,29 @@ export default function AdmissionsBulletinBoard({
 
       <div className="sticky top-14 z-20 border-b border-gray-800 bg-gray-950/95 backdrop-blur shadow-sm">
         <div className="container mx-auto max-w-4xl px-4 py-3">
+          <div className="mb-3 flex flex-wrap gap-1.5">
+            <span className="w-full text-[11px] font-medium text-gray-500 sm:w-auto sm:mr-1 sm:self-center">
+              {t.trackFilter}
+            </span>
+            {ADMIT_TRACK_FILTER_OPTIONS.map((opt) => {
+              const active = isTrackChipActive(opt.value);
+              const label = locale === "en" ? opt.en : opt.ko;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setTrackFilter(opt.value)}
+                  className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                    active
+                      ? "border-orange-500 bg-orange-500/20 text-orange-200"
+                      : "border-gray-700 bg-gray-900 text-gray-400 hover:border-gray-600 hover:text-gray-200"
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:flex-wrap">
             <div className="relative flex-1 min-w-[200px]">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9CA3AF] text-sm pointer-events-none">
@@ -599,14 +766,25 @@ export default function AdmissionsBulletinBoard({
           <AdmissionsListSkeleton count={5} />
         ) : empty ? (
           <div className="rounded-xl border border-gray-800 bg-gray-900 px-6 py-16 text-center">
-            <p className="text-gray-400">{t.empty}</p>
-            <button
-              type="button"
-              onClick={resetFilters}
-              className="mt-4 text-sm font-medium text-orange-400 hover:underline"
-            >
-              {t.resetFilters}
-            </button>
+            <p className="text-gray-400">
+              {showIntlEmpty ? t.emptyIntl : t.empty}
+            </p>
+            {showIntlEmpty ? (
+              <Link
+                href={withLang("/admissions/new", locale)}
+                className="mt-6 inline-block rounded-lg bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-orange-600"
+              >
+                {t.emptyIntlCta}
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={resetFilters}
+                className="mt-4 text-sm font-medium text-orange-400 hover:underline"
+              >
+                {t.resetFilters}
+              </button>
+            )}
           </div>
         ) : (
           <div className="rounded-xl border border-gray-800 bg-gray-900 overflow-hidden">
@@ -643,6 +821,15 @@ export default function AdmissionsBulletinBoard({
                     </div>
 
                     <div className="min-w-0 flex-1">
+                      <div className="mb-2 flex flex-wrap items-center gap-2">
+                        <AdmitTrackBadge
+                          track={record.admitTrack}
+                          locale={locale}
+                        />
+                        <h2 className="text-sm font-medium text-white line-clamp-2 sm:text-base">
+                          {record.title}
+                        </h2>
+                      </div>
                       <div className="flex flex-wrap items-center justify-end gap-3 sm:hidden mb-2">
                         <AdmissionLikeButton
                           admissionId={record.id}

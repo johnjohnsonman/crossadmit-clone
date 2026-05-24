@@ -65,6 +65,8 @@ export function admissionToRecord(
     published: Boolean(row.published),
     source: (row.source ?? "").trim(),
     sourceUrl: row.source_url?.trim() || undefined,
+    admitTrack: row.admit_track ?? "regular_kr",
+    sourceType: row.source_type ?? undefined,
     createdAt: new Date(row.created_at),
     admissionSchools: schools,
     crossComparisons: crosses,

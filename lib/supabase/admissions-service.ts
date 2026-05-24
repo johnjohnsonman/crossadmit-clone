@@ -1,3 +1,4 @@
+import type { AdmitTrack } from "@/lib/admissions/admit-track";
 import { createClient } from "@/lib/supabase/server";
 import type { Admission, CrossComparison } from "@/lib/supabase/types";
 
@@ -12,6 +13,7 @@ export interface GetAdmissionsParams {
   status?: AdmissionStatusFilter;
   search?: string;
   univ_id?: number;
+  admit_track?: AdmitTrack[];
   sort?: AdmissionsSort;
   limit?: number;
   offset?: number;
@@ -43,6 +45,8 @@ const ADMISSION_DETAIL_SELECT = `
   published,
   source,
   source_url,
+  admit_track,
+  source_type,
   created_at,
   admission_schools (*)
 `;
@@ -180,6 +184,10 @@ export async function getAdmissions(
 
   if (schoolIds !== null) {
     query = query.in("id", schoolIds);
+  }
+
+  if (params.admit_track && params.admit_track.length > 0) {
+    query = query.in("admit_track", params.admit_track);
   }
 
   query = applySort(query, sortMode);

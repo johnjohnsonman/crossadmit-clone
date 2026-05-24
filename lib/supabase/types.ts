@@ -18,6 +18,10 @@ export type University = {
   intl_url_verified?: boolean;
 };
 
+import type { AdmitTrack, SourceType } from "@/lib/admissions/admit-track";
+
+export type { AdmitTrack, SourceType };
+
 export type UniversityDepartment = {
   id: number;
   univ_id: number;
@@ -42,6 +46,8 @@ export type Admission = {
   published: boolean;
   source: string;
   source_url?: string | null;
+  admit_track?: AdmitTrack | string | null;
+  source_type?: SourceType | string | null;
   created_at: string;
   admission_schools?: AdmissionSchool[];
 };

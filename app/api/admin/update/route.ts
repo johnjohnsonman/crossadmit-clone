@@ -40,6 +40,35 @@ export async function PATCH(request: NextRequest) {
     patch.is_featured = Boolean(value);
   } else if (field === "published") {
     patch.published = Boolean(value);
+  } else if (field === "admit_track") {
+    const allowed = [
+      "regular_kr",
+      "overseas_kr",
+      "international",
+      "gks",
+      "graduate",
+      "abroad",
+      "unknown",
+    ];
+    const v = String(value ?? "").trim();
+    if (!allowed.includes(v)) {
+      return NextResponse.json({ error: "admit_track 값 오류" }, { status: 400 });
+    }
+    patch.admit_track = v;
+  } else if (field === "source_type") {
+    const allowed = [
+      "mysql_original",
+      "reddit",
+      "quora",
+      "studyinkorea",
+      "university_intl",
+      "user_submitted",
+    ];
+    const v = String(value ?? "").trim();
+    if (!allowed.includes(v)) {
+      return NextResponse.json({ error: "source_type 값 오류" }, { status: 400 });
+    }
+    patch.source_type = v;
   } else {
     return NextResponse.json({ error: "허용되지 않은 field" }, { status: 400 });
   }

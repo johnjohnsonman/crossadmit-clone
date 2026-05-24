@@ -1,3 +1,7 @@
+import type { AdmitTrack, SourceType } from "@/lib/admissions/admit-track";
+
+export type { AdmitTrack, SourceType };
+
 /** UI/API 레이어 (camelCase) */
 export interface AdmissionSchoolRecord {
   id: number;
@@ -43,6 +47,8 @@ export interface AdmissionRecord {
   published: boolean;
   source: string;
   sourceUrl?: string;
+  admitTrack?: AdmitTrack | string;
+  sourceType?: SourceType | string;
   createdAt: Date;
   admissionSchools: AdmissionSchoolRecord[];
   crossComparisons?: CrossComparisonRecord[];

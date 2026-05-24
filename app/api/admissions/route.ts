@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { parseAdmitTrackList } from "@/lib/admissions/admit-track";
 import { getAdmissions } from "@/lib/supabase/admissions-service";
 import type { AdmissionStatusFilter } from "@/lib/supabase/admissions-service";
 import { getDcCommentCounts } from "@/lib/supabase/comment-counts";
@@ -31,6 +32,8 @@ export async function GET(request: NextRequest) {
   const search = searchParams.get("search");
   const status = parseStatus(searchParams.get("status"));
   const sort = parseSort(searchParams.get("sort"));
+  const admitTrackParam = searchParams.get("admit_track");
+  const admit_track = parseAdmitTrackList(admitTrackParam ?? undefined);
   const univIdParam = searchParams.get("univ_id");
   let univ_id: number | undefined;
   if (univIdParam) {
@@ -58,6 +61,7 @@ export async function GET(request: NextRequest) {
       status,
       search: search?.trim() || undefined,
       univ_id,
+      admit_track: admit_track.length > 0 ? admit_track : undefined,
       sort,
       limit: Number.isNaN(limit) ? 20 : limit,
       offset: Number.isNaN(offset) ? 0 : offset,
