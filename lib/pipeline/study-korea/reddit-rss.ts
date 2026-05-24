@@ -17,14 +17,22 @@ export type SubredditConfig = {
 
 export const SUBREDDITS: SubredditConfig[] = [
   { name: "studyinkorea", priority: 1 },
+  { name: "koreanuniversity", priority: 1 },
   {
     name: "korea",
     priority: 2,
-    keyword_filter: ["study", "university", "visa", "admission"],
+    keyword_filter: ["admission", "accepted", "gks", "scholarship", "university"],
   },
-  { name: "Living_in_Korea", priority: 2 },
-  { name: "KoreanAdvice", priority: 3 },
-  { name: "teachinginkorea", priority: 3 },
+  {
+    name: "Living_in_Korea",
+    priority: 2,
+    keyword_filter: ["student", "visa", "d-2", "admission", "university"],
+  },
+  {
+    name: "KoreanAdvice",
+    priority: 3,
+    keyword_filter: ["study", "university", "admission", "gks"],
+  },
 ];
 
 /** 기본은 hot만 (타임아웃 방지). new/top은 feed 파라미터로 */
