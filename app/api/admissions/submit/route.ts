@@ -238,6 +238,10 @@ export async function POST(request: NextRequest) {
       const isVerified = Boolean(body.is_verified);
       const homeCountry = String(body.home_country ?? body.hs_country ?? "").trim();
       const highSchoolType = String(body.high_school_type ?? "").trim();
+      const availableAsMentor = Boolean(
+        body.available_as_mentor ?? body.mentorOptIn
+      );
+      const mentorIntro = String(body.mentor_intro ?? "").trim();
 
       const admissionRow: AdmissionsInsert = {
         original_user_id: 0,
@@ -258,6 +262,8 @@ export async function POST(request: NextRequest) {
         source_type: "user_submitted_intl",
         home_country: homeCountry || null,
         high_school_type: highSchoolType || null,
+        available_as_mentor: availableAsMentor,
+        mentor_intro: mentorIntro || null,
         source_url: String(body.verification_url ?? "").trim() || undefined,
         created_at: new Date().toISOString(),
       };

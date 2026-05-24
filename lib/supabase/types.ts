@@ -50,6 +50,8 @@ export type Admission = {
   source_type?: SourceType | string | null;
   home_country?: string | null;
   high_school_type?: string | null;
+  available_as_mentor?: boolean;
+  mentor_intro?: string | null;
   created_at: string;
   admission_schools?: AdmissionSchool[];
 };

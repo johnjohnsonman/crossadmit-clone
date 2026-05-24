@@ -6,6 +6,8 @@ import {
   getActiveMentorCount,
   MENTOR_PAGE_SIZE,
 } from "@/lib/mentors/queries";
+import { getIntlMentorAdmissions } from "@/lib/supabase/admissions-service";
+import { admissionToRecord } from "@/lib/supabase/map";
 import type { Locale } from "@/lib/i18n/dictionary";
 import { seoAlternates, seoOpenGraph, seoTwitter } from "@/lib/seo/metadata";
 
@@ -43,7 +45,7 @@ export default async function MentorsPage({ searchParams }: Props) {
   const locale: Locale = sp.lang === "en" ? "en" : "ko";
   const page = Math.max(1, parseInt(sp.page ?? "1", 10) || 1);
 
-  const [mentorCount, result] = await Promise.all([
+  const [mentorCount, result, intlRows] = await Promise.all([
     getActiveMentorCount(),
     fetchMentors({
       q: sp.q,
@@ -54,7 +56,10 @@ export default async function MentorsPage({ searchParams }: Props) {
       page,
       limit: MENTOR_PAGE_SIZE,
     }),
+    getIntlMentorAdmissions(48).catch(() => []),
   ]);
+
+  const intlMentors = intlRows.map(admissionToRecord);
 
   return (
     <Suspense
@@ -69,6 +74,7 @@ export default async function MentorsPage({ searchParams }: Props) {
         initialTotal={result.total}
         initialPage={page}
         mentorCount={mentorCount}
+        intlMentors={intlMentors}
         locale={locale}
       />
     </Suspense>

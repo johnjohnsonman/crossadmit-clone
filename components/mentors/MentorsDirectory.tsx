@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import type { Locale } from "@/lib/i18n/dictionary";
 import { withLang } from "@/lib/i18n/locale";
 import type { MentorRow } from "@/lib/mentors/types";
+import type { AdmissionRecord } from "@/lib/types";
+import IntlMentorsSection from "@/components/mentors/IntlMentorsSection";
 import MentorCard from "./MentorCard";
 
 type Props = {
@@ -12,6 +14,7 @@ type Props = {
   initialTotal: number;
   initialPage: number;
   mentorCount: number;
+  intlMentors: AdmissionRecord[];
   locale: Locale;
 };
 
@@ -22,6 +25,7 @@ export default function MentorsDirectory({
   initialTotal,
   initialPage,
   mentorCount,
+  intlMentors,
   locale,
 }: Props) {
   const router = useRouter();
@@ -108,14 +112,37 @@ export default function MentorsDirectory({
       ? "Talk directly with students from SNU, Yonsei, Korea University, KAIST and more"
       : "한국 명문대 재학생/졸업생과 직접 대화하기";
 
+  const showKrMentors = locale === "ko";
+
   return (
     <div className="min-h-screen bg-[#0f0f10] text-white">
       <div className="max-w-6xl mx-auto px-4 py-8">
-        <header className="mb-8">
-          <h1 className="text-3xl font-bold">{title}</h1>
-          <p className="mt-2 text-gray-400">{subtitle}</p>
-        </header>
+        {locale === "en" ? (
+          <>
+            <header className="mb-6">
+              <h1 className="text-3xl font-bold">Mentors</h1>
+              <p className="mt-2 text-gray-400 max-w-2xl">
+                Peer mentors from international, GKS, and overseas Korean admission
+                tracks — reach out through their stories.
+              </p>
+            </header>
+            <IntlMentorsSection mentors={intlMentors} locale={locale} />
+          </>
+        ) : (
+          <>
+            <IntlMentorsSection
+              mentors={intlMentors}
+              locale={locale}
+              compact
+            />
+            <header id="kr-mentors" className="mb-8 pt-4 border-t border-gray-800">
+              <h1 className="text-3xl font-bold">{title}</h1>
+              <p className="mt-2 text-gray-400">{subtitle}</p>
+            </header>
+          </>
+        )}
 
+        {showKrMentors ? (
         <div className="sticky top-14 z-30 bg-[#0f0f10]/95 backdrop-blur border border-gray-800 rounded-lg p-4 mb-6 space-y-3">
           <input
             type="search"
@@ -177,21 +204,21 @@ export default function MentorsDirectory({
             />
           </div>
         </div>
+        ) : null}
 
-        {loading ? (
+        {showKrMentors && loading ? (
           <p className="text-center text-gray-500 py-12">Loading…</p>
-        ) : mentors.length === 0 ? (
-          <p className="text-center text-gray-500 py-12">
-            {locale === "en" ? "No mentors found." : "멘토가 없습니다."}
-          </p>
-        ) : (
+        ) : showKrMentors && mentors.length === 0 ? (
+          <p className="text-center text-gray-500 py-12">멘토가 없습니다.</p>
+        ) : showKrMentors ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {mentors.map((m) => (
               <MentorCard key={m.id} mentor={m} locale={locale} />
             ))}
           </div>
-        )}
+        ) : null}
 
+        {showKrMentors ? (
         <div className="mt-8 flex flex-col items-center gap-4">
           <p className="text-sm text-gray-400">
             {locale === "en"
@@ -222,6 +249,7 @@ export default function MentorsDirectory({
             </PaginationBtn>
           </div>
         </div>
+        ) : null}
       </div>
     </div>
   );

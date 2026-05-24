@@ -71,6 +71,8 @@ const EMPTY_DRAFT: IntlFormDraft = {
     interview: "",
     tips: "",
   },
+  mentorOptIn: false,
+  mentorIntro: "",
 };
 
 export default function InternationalSubmissionForm() {
@@ -79,9 +81,11 @@ export default function InternationalSubmissionForm() {
   const [verificationFile, setVerificationFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<{ id: number; link: string } | null>(
-    null
-  );
+  const [success, setSuccess] = useState<{
+    id: number;
+    link: string;
+    mentorOptIn: boolean;
+  } | null>(null);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -282,6 +286,8 @@ export default function InternationalSubmissionForm() {
           input_specialty: buildIntlSpecialty(draft),
           verification_url: verificationUrl,
           is_verified: Boolean(verificationUrl),
+          available_as_mentor: draft.mentorOptIn,
+          mentor_intro: draft.mentorIntro.trim(),
         }),
       });
       const data = (await res.json()) as {
@@ -296,7 +302,11 @@ export default function InternationalSubmissionForm() {
 
       localStorage.removeItem(INTL_DRAFT_STORAGE_KEY);
       const link = `${window.location.origin}${withLang(`/admissions/${data.id}`, "en")}`;
-      setSuccess({ id: data.id, link });
+      setSuccess({
+        id: data.id,
+        link,
+        mentorOptIn: draft.mentorOptIn,
+      });
     } catch {
       setFormError("Network error. Please try again.");
     } finally {
@@ -316,6 +326,23 @@ export default function InternationalSubmissionForm() {
               Share with the #StudyInKorea community — your experience helps the
               next generation of international students.
             </p>
+            {success.mentorOptIn ? (
+              <div className="mt-4 rounded-lg border border-[#2D5A27]/30 bg-[#2D5A27]/5 px-4 py-3 text-left text-sm text-[#1A1A1A]">
+                <p className="font-semibold text-[#2D5A27]">
+                  🤝 You&apos;re now listed on the Mentors page!
+                </p>
+                <p className="mt-1 text-[#6B7280]">
+                  Future applicants will reach you through your story&apos;s
+                  comments.
+                </p>
+                <Link
+                  href={withLang("/mentors", "en")}
+                  className="mt-2 inline-block font-medium text-[#2D5A27] hover:underline"
+                >
+                  View Mentors page →
+                </Link>
+              </div>
+            ) : null}
             <div className="mt-6 flex flex-col gap-2">
               <input
                 readOnly
@@ -711,6 +738,48 @@ export default function InternationalSubmissionForm() {
                     setVerificationFile(e.target.files?.[0] ?? null)
                   }
                 />
+
+                <div className="mt-6 rounded-lg border border-[#E5E5E0] bg-[#FAFAF8] p-4 space-y-3">
+                  <label className="flex cursor-pointer items-start gap-3">
+                    <input
+                      type="checkbox"
+                      className="mt-1"
+                      checked={draft.mentorOptIn}
+                      onChange={(e) =>
+                        updateDraft({ mentorOptIn: e.target.checked })
+                      }
+                    />
+                    <span className="text-sm text-[#1A1A1A]">
+                      <span className="font-semibold">
+                        I&apos;m open to helping future applicants
+                      </span>
+                      <span className="block mt-1 text-[#6B7280]">
+                        List me on the Mentors page instantly (no admin review).
+                        Others can ask questions in your story comments.
+                      </span>
+                    </span>
+                  </label>
+                  {draft.mentorOptIn ? (
+                    <div>
+                      <label className={labelClass} htmlFor="mentorIntro">
+                        Short message for mentees{" "}
+                        <span className="font-normal text-[#9CA3AF]">
+                          (optional)
+                        </span>
+                      </label>
+                      <textarea
+                        id="mentorIntro"
+                        rows={3}
+                        className={inputClass}
+                        placeholder="e.g. Happy to answer questions about GKS essays and TOPIK prep."
+                        value={draft.mentorIntro}
+                        onChange={(e) =>
+                          updateDraft({ mentorIntro: e.target.value })
+                        }
+                      />
+                    </div>
+                  ) : null}
+                </div>
               </section>
             )}
 

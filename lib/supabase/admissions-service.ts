@@ -48,9 +48,19 @@ const ADMISSION_DETAIL_SELECT = `
   source_url,
   admit_track,
   source_type,
+  home_country,
+  high_school_type,
+  available_as_mentor,
+  mentor_intro,
   created_at,
   admission_schools (*)
 `;
+
+const INTL_MENTOR_TRACKS: AdmitTrack[] = [
+  "international",
+  "overseas_kr",
+  "gks",
+];
 
 function intersectIds(
   current: number[] | null,
@@ -231,6 +241,28 @@ export async function getFeaturedIntlStories(
   });
 
   return rows.slice(0, limit);
+}
+
+/** International track mentors (admission opt-in, instant listing) */
+export async function getIntlMentorAdmissions(
+  limit = 48
+): Promise<Admission[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("admissions")
+    .select(ADMISSION_SELECT)
+    .eq("available_as_mentor", true)
+    .eq("published", true)
+    .in("admit_track", INTL_MENTOR_TRACKS)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error("getIntlMentorAdmissions:", error);
+    throw new Error(error.message);
+  }
+
+  return (data ?? []) as Admission[];
 }
 
 export async function getAdmissionById(

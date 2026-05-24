@@ -83,6 +83,8 @@ export type IntlFormDraft = {
     interview: string;
     tips: string;
   };
+  mentorOptIn: boolean;
+  mentorIntro: string;
 };
 
 export const INTL_DRAFT_STORAGE_KEY = "crossadmit_intl_draft";
@@ -211,6 +213,14 @@ export function mergeIntlDraftFromStorage(
       interview: String(narrativeRaw.interview ?? parsed.interview ?? ""),
       tips: String(narrativeRaw.tips ?? parsed.tips ?? ""),
     },
+    mentorOptIn: Boolean(
+      parsed.mentorOptIn ??
+        parsed.available_as_mentor ??
+        false
+    ),
+    mentorIntro: String(
+      parsed.mentorIntro ?? parsed.mentor_intro ?? ""
+    ).trim(),
   };
 }
 

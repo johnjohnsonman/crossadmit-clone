@@ -49,6 +49,9 @@ export interface AdmissionRecord {
   sourceUrl?: string;
   admitTrack?: AdmitTrack | string;
   sourceType?: SourceType | string;
+  homeCountry?: string;
+  availableAsMentor?: boolean;
+  mentorIntro?: string;
   createdAt: Date;
   admissionSchools: AdmissionSchoolRecord[];
   crossComparisons?: CrossComparisonRecord[];

@@ -14,6 +14,10 @@ import StatusBadge, { statusFromFlags } from "@/components/ui/StatusBadge";
 import AdmissionDetailSidebar from "@/components/admissions/AdmissionDetailSidebar";
 import AdmissionLikeButton from "@/components/admissions/AdmissionLikeButton";
 import AdmissionShareButton from "@/components/admissions/AdmissionShareButton";
+import AdmissionMentorBlock, {
+  AdmissionMentorBadge,
+} from "@/components/admissions/AdmissionMentorBlock";
+import { isAdmitTrack } from "@/lib/admissions/admit-track";
 
 type PageProps = { params: Promise<{ id: string }> };
 
@@ -215,6 +219,12 @@ export default async function AdmissionDetailPage({ params }: PageProps) {
     record.inputSpecialty
   );
 
+  const intlTrack =
+    record.admitTrack &&
+    isAdmitTrack(record.admitTrack) &&
+    ["international", "overseas_kr", "gks"].includes(record.admitTrack);
+  const detailLocale = intlTrack ? "en" : "ko";
+
   return (
     <main className="min-h-screen bg-gray-950 text-gray-300">
       <StructuredData data={structuredData} />
@@ -235,9 +245,18 @@ export default async function AdmissionDetailPage({ params }: PageProps) {
                   <p className="text-lg sm:text-xl font-semibold tracking-tight text-white">
                     {record.year}년 {primaryType}
                   </p>
-                  <p className="mt-1 text-sm text-gray-400">
-                    {record.userHandle?.trim() || "익명"}
+                  <p className="mt-1 text-sm text-gray-400 flex flex-wrap items-center gap-2">
+                    <span>{record.userHandle?.trim() || "익명"}</span>
+                    {record.availableAsMentor ? (
+                      <AdmissionMentorBadge locale={detailLocale} />
+                    ) : null}
                   </p>
+                  {record.availableAsMentor ? (
+                    <AdmissionMentorBlock
+                      mentorIntro={record.mentorIntro}
+                      locale={detailLocale}
+                    />
+                  ) : null}
                   {record.isFeatured && (
                     <span className="mt-2 inline-block text-xs font-medium text-orange-300 bg-orange-500/20 border border-orange-500/30 px-2 py-0.5 rounded">
                       추천 후기
@@ -306,7 +325,17 @@ export default async function AdmissionDetailPage({ params }: PageProps) {
               </section>
             )}
 
-            <section className="rounded-xl border border-gray-800 bg-gray-900 p-5 sm:p-6">
+            <section
+              id="comments"
+              className="rounded-xl border border-gray-800 bg-gray-900 p-5 sm:p-6 scroll-mt-24 ring-1 ring-transparent focus-within:ring-orange-500/20"
+            >
+              {record.availableAsMentor ? (
+                <p className="mb-4 text-sm text-orange-300/90 font-medium">
+                  {detailLocale === "en"
+                    ? "💬 Questions for this mentor — leave a comment below"
+                    : "💬 멘토에게 질문하기 — 아래 댓글을 이용해 주세요"}
+                </p>
+              ) : null}
               <CommentSection admissionId={id} />
             </section>
           </div>
