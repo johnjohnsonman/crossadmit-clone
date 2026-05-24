@@ -1,16 +1,13 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { generateSlug } from "@/lib/utils/slug";
 import { ADMISSION_QUERIES } from "./admission-queries";
-import {
-  FOREIGN_KEYWORDS,
-  passesInternationalAdmissionFilter,
-} from "./admission-filters";
 import { isNaverConfigured } from "./naver-api";
 import { searchNaverWebkr } from "./naver-webkr";
 import { normalizeNaverPostUrl, webkrPostSourceId } from "./naver-url";
 
-/** @deprecated passesInternationalAdmissionFilter 사용 */
-export const ADMISSION_KEYWORD = FOREIGN_KEYWORDS;
+/** 완화된 키워드 — 입시·합격 관련 포괄 */
+export const ADMISSION_KEYWORD =
+  /합격|admitted|accept|입학|등록|수능|수시|정시|편입|GKS|장학|TOPIK|학종|진학/i;
 
 export type CollectedAdmissionPost = {
   id: string;
@@ -135,7 +132,7 @@ export async function collectAdmissionPosts(
         }
 
         const fullText = `${item.title} ${item.description}`;
-        if (!passesInternationalAdmissionFilter(fullText)) {
+        if (!ADMISSION_KEYWORD.test(fullText)) {
           stats.filteredCount++;
           if (stats.filteredCount <= 5) {
             console.log(

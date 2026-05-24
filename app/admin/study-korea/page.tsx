@@ -1314,12 +1314,11 @@ function AdminStudyKoreaInner() {
                 🎯 합격 후기 자동 수집 (Naver webkr)
               </h2>
               <p className="text-xs text-violet-800 mb-3">
-                외국인의 한국 유학 합격·장학금 후기를 영어/한국어/중국어/베트남어로
-                검색해{" "}
+                디시 입시 갤러리·네이버 블로그/카페에서 합격 후기를 검색해{" "}
                 <code className="text-xs bg-white px-1 rounded">study_korea_posts</code>{" "}
-                에 저장합니다. (한국인 수능·수시 입시 후기는 자동 제외) Vercel 로그{" "}
+                에 저장합니다. Vercel 로그에서{" "}
                 <code className="text-xs bg-white px-1 rounded">[ADMISSION]</code>{" "}
-                · Cron: 매일 04:00 UTC
+                로 진단하세요. Cron: 매일 04:00 UTC
               </p>
               <div className="flex gap-2 flex-wrap">
                 <button
