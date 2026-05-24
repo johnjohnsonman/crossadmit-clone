@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+import { buildCrossComparePayload } from "@/lib/crossadmit/comparison-data";
 import {
   getCrossComparisons,
   getCrossComparisonStats,
@@ -32,7 +33,24 @@ export async function GET(request: NextRequest) {
   const locale =
     localeParam === "en" || localeParam === "ko" ? localeParam : undefined;
 
+  const compareMode = searchParams.get("compare") === "1";
+
   try {
+    if (compareMode) {
+      if (univA === undefined || univB === undefined) {
+        return NextResponse.json(
+          { error: "univ_a and univ_b required" },
+          { status: 400 }
+        );
+      }
+      const loc = locale ?? "ko";
+      const payload = await buildCrossComparePayload(univA, univB, loc);
+      return NextResponse.json(
+        { success: true, data: payload },
+        { headers: { "Cache-Control": "no-store, max-age=0" } }
+      );
+    }
+
     if (statsOnly || !univIdParam) {
       const stats = await getCrossComparisonStats({
         sort,

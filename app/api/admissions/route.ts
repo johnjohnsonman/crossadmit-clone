@@ -31,6 +31,12 @@ export async function GET(request: NextRequest) {
   const search = searchParams.get("search");
   const status = parseStatus(searchParams.get("status"));
   const sort = parseSort(searchParams.get("sort"));
+  const univIdParam = searchParams.get("univ_id");
+  let univ_id: number | undefined;
+  if (univIdParam) {
+    const n = parseInt(univIdParam, 10);
+    if (!Number.isNaN(n)) univ_id = n;
+  }
 
   const limit = limitParam ? parseInt(limitParam, 10) : 20;
   const offset = offsetParam ? parseInt(offsetParam, 10) : 0;
@@ -51,6 +57,7 @@ export async function GET(request: NextRequest) {
       admission_type: admissionType?.trim() || undefined,
       status,
       search: search?.trim() || undefined,
+      univ_id,
       sort,
       limit: Number.isNaN(limit) ? 20 : limit,
       offset: Number.isNaN(offset) ? 0 : offset,

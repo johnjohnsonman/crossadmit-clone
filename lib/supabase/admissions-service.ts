@@ -11,6 +11,7 @@ export interface GetAdmissionsParams {
   admission_type?: string;
   status?: AdmissionStatusFilter;
   search?: string;
+  univ_id?: number;
   sort?: AdmissionsSort;
   limit?: number;
   offset?: number;
@@ -86,6 +87,19 @@ async function schoolFilterIds(
   params: GetAdmissionsParams
 ): Promise<number[] | null> {
   let ids: number[] | null = null;
+
+  if (params.univ_id !== undefined && !Number.isNaN(params.univ_id)) {
+    const { data, error } = await supabase
+      .from("admission_schools")
+      .select("admission_id")
+      .eq("univ_id", params.univ_id);
+    if (error) throw new Error(error.message);
+    const found = [
+      ...new Set((data ?? []).map((r: { admission_id: number }) => r.admission_id)),
+    ];
+    ids = intersectIds(ids, found);
+    if (ids?.length === 0) return [];
+  }
 
   if (params.search?.trim()) {
     const safe = escapeIlike(params.search.trim());

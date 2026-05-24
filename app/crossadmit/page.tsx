@@ -4,6 +4,9 @@ import { Suspense, useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import UniversityAutocomplete from "@/components/crossadmit/UniversityAutocomplete";
+import CrossadmitComparisonResult from "@/components/crossadmit/CrossadmitComparisonResult";
+import type { CrossComparePayload } from "@/lib/crossadmit/comparison-data";
+import { buildComparisonSlug } from "@/lib/crossadmit/comparison-utils";
 import { getDictionary, type Locale } from "@/lib/i18n/dictionary";
 import { withLang } from "@/lib/i18n/locale";
 
@@ -85,6 +88,9 @@ function CrossAdmitPageInner() {
   const [univAId, setUnivAId] = useState<number | null>(null);
   const [univBId, setUnivBId] = useState<number | null>(null);
   const [vsCompareActive, setVsCompareActive] = useState(false);
+  const [compareData, setCompareData] = useState<CrossComparePayload | null>(null);
+  const [compareLoading, setCompareLoading] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
 
   const itemsPerPage = 10;
 
@@ -141,21 +147,83 @@ function CrossAdmitPageInner() {
     void fetchPopular();
   }, []);
 
+  const vsCopy =
+    locale === "en"
+      ? {
+          title: "Compare two schools",
+          placeholderA: "School A",
+          placeholderB: "School B",
+          compare: "Compare",
+          clearList: "All comparisons",
+          toastSelect:
+            "Please select schools from the suggestions dropdown",
+          toastSame: "Please choose two different schools",
+          resultHint: "Comparison result",
+        }
+      : {
+          title: "두 대학 직접 비교",
+          placeholderA: "A 대학",
+          placeholderB: "B 대학",
+          compare: "비교하기",
+          clearList: "전체 목록",
+          toastSelect: "자동완성에서 학교를 선택해주세요",
+          toastSame: "서로 다른 두 학교를 선택해주세요",
+          resultHint: "비교 결과",
+        };
+
+  const fetchComparePayload = useCallback(
+    async (aId: number, bId: number) => {
+      setCompareLoading(true);
+      try {
+        const qs = new URLSearchParams({
+          compare: "1",
+          univ_a: String(aId),
+          univ_b: String(bId),
+          locale,
+        });
+        const res = await fetch(`/api/cross-comparisons?${qs.toString()}`, {
+          cache: "no-store",
+        });
+        const json = await res.json();
+        setCompareData((json.data as CrossComparePayload) ?? null);
+      } catch {
+        setCompareData(null);
+      } finally {
+        setCompareLoading(false);
+      }
+    },
+    [locale]
+  );
+
   const handleVsCompare = () => {
-    if (univAId === null || univBId === null) return;
-    if (univAId === univBId) return;
+    if (univAId === null || univBId === null) {
+      setToast(vsCopy.toastSelect);
+      return;
+    }
+    if (univAId === univBId) {
+      setToast(vsCopy.toastSame);
+      return;
+    }
     setVsCompareActive(true);
     setCurrentPage(1);
+    void fetchComparePayload(univAId, univBId);
   };
 
   const clearVsCompare = () => {
     setVsCompareActive(false);
+    setCompareData(null);
     setUnivAName("");
     setUnivBName("");
     setUnivAId(null);
     setUnivBId(null);
     setCurrentPage(1);
   };
+
+  useEffect(() => {
+    if (!toast) return;
+    const t = window.setTimeout(() => setToast(null), 3200);
+    return () => window.clearTimeout(t);
+  }, [toast]);
 
   const filteredComparisons = comparisons.filter((c) => {
     const query = searchQuery.toLowerCase();
@@ -223,11 +291,18 @@ function CrossAdmitPageInner() {
         : "bg-gray-800 text-gray-300 hover:bg-gray-700"
     }`;
 
-  const emptyMessage = vsCompareActive
-    ? "아직 비교 데이터가 없습니다."
-    : searchQuery.trim()
-      ? "검색 결과가 없습니다."
-      : "데이터 준비 중입니다.";
+  const emptyMessage =
+    locale === "en"
+      ? vsCompareActive
+        ? "No comparison data yet."
+        : searchQuery.trim()
+          ? "No results."
+          : "Preparing data…"
+      : vsCompareActive
+        ? "아직 비교 데이터가 없습니다."
+        : searchQuery.trim()
+          ? "검색 결과가 없습니다."
+          : "데이터 준비 중입니다.";
 
   return (
     <>
@@ -263,17 +338,17 @@ function CrossAdmitPageInner() {
               <div className="bg-gray-900 rounded-lg border border-gray-800 p-3 md:p-5">
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="text-sm md:text-base font-bold text-white">
-                    두 대학 직접 비교
+                    {vsCopy.title}
                   </h2>
                   {vsCompareActive && (
                     <button
                       type="button"
                       onClick={clearVsCompare}
                       className="flex items-center gap-1 text-sm text-gray-500 hover:text-orange-400"
-                      aria-label="비교 초기화"
+                      aria-label={vsCopy.clearList}
                     >
                       <span className="text-lg leading-none">×</span>
-                      <span>전체 목록</span>
+                      <span>{vsCopy.clearList}</span>
                     </button>
                   )}
                 </div>
@@ -283,11 +358,16 @@ function CrossAdmitPageInner() {
                     univId={univAId}
                     onChange={setUnivAName}
                     onSelect={(u) => {
-                      setUnivAName(u.name_kr);
+                      setUnivAName(
+                        locale === "en" && u.name_en.trim()
+                          ? u.name_en
+                          : u.name_kr
+                      );
                       setUnivAId(u.id);
                     }}
                     onClearId={() => setUnivAId(null)}
-                    placeholder="A 대학"
+                    placeholder={vsCopy.placeholderA}
+                    locale={locale}
                     variant="dark"
                   />
                   <span className="text-center text-sm font-bold text-orange-400 shrink-0 py-1">
@@ -298,35 +378,69 @@ function CrossAdmitPageInner() {
                     univId={univBId}
                     onChange={setUnivBName}
                     onSelect={(u) => {
-                      setUnivBName(u.name_kr);
+                      setUnivBName(
+                        locale === "en" && u.name_en.trim()
+                          ? u.name_en
+                          : u.name_kr
+                      );
                       setUnivBId(u.id);
                     }}
                     onClearId={() => setUnivBId(null)}
-                    placeholder="B 대학"
+                    placeholder={vsCopy.placeholderB}
+                    locale={locale}
                     variant="dark"
                   />
                   <button
                     type="button"
                     onClick={handleVsCompare}
-                    disabled={
-                      univAId === null ||
-                      univBId === null ||
-                      univAId === univBId
-                    }
-                    className="shrink-0 px-4 py-2 text-sm md:text-base font-semibold rounded-md bg-orange-500 text-white hover:bg-orange-600 disabled:bg-gray-800 disabled:text-gray-600 disabled:cursor-not-allowed transition-colors"
+                    className="shrink-0 px-4 py-2 text-sm md:text-base font-semibold rounded-md bg-orange-500 text-white hover:bg-orange-600 transition-colors"
                   >
-                    비교하기
+                    {vsCopy.compare}
                   </button>
                 </div>
+                {toast && (
+                  <p
+                    role="alert"
+                    className="mt-3 text-xs md:text-sm text-amber-200 bg-amber-500/15 border border-amber-500/30 rounded-md px-3 py-2"
+                  >
+                    {toast}
+                  </p>
+                )}
                 {vsCompareActive && univAName && univBName && (
                   <p className="mt-3 text-xs md:text-sm text-orange-300 bg-orange-500/10 border border-orange-500/20 rounded-md px-3 py-2">
                     <span className="font-semibold">{univAName}</span>
                     {" vs "}
                     <span className="font-semibold">{univBName}</span>
-                    {" "}비교 결과
+                    {" "}
+                    {vsCopy.resultHint}
+                    {univAId !== null && univBId !== null && (
+                      <>
+                        {" · "}
+                        <Link
+                          href={withLang(
+                            `/crossadmit/${buildComparisonSlug(univAId, univBId)}`,
+                            locale
+                          )}
+                          className="underline hover:text-orange-200"
+                        >
+                          {locale === "en" ? "Share link" : "공유 링크"}
+                        </Link>
+                      </>
+                    )}
                   </p>
                 )}
               </div>
+
+              {vsCompareActive && (
+                <div className="rounded-xl border border-[#E5E5E0] bg-[#FAFAF8] p-4 md:p-6">
+                  <CrossadmitComparisonResult
+                    data={compareData}
+                    loading={compareLoading}
+                    locale={locale}
+                    onClear={clearVsCompare}
+                  />
+                </div>
+              )}
 
               {/* 검색 및 정렬 */}
               <div className="bg-gray-900 rounded-lg border border-gray-800 p-3 md:p-4">
@@ -369,6 +483,7 @@ function CrossAdmitPageInner() {
               </div>
 
               {/* 비교 목록 */}
+              {!vsCompareActive && (
               <div className="space-y-2 md:space-y-3">
                 {loading ? (
                   <div className="bg-gray-900 rounded-lg border border-gray-800 p-8 text-center text-gray-500">
@@ -378,7 +493,7 @@ function CrossAdmitPageInner() {
                   paginatedComparisons.map((comparison) => (
                     <Link
                       key={comparison.id}
-                      href={`/crossadmit/${comparison.id}`}
+                      href={withLang(`/crossadmit/${comparison.id}`, locale)}
                       className="block bg-gray-900 rounded-lg border border-gray-800 hover:border-orange-500/40 transition-all"
                     >
                       <div className="flex items-center justify-between p-3 md:p-4">
@@ -428,6 +543,7 @@ function CrossAdmitPageInner() {
                   </div>
                 )}
               </div>
+              )}
 
               {!vsCompareActive && totalPages > 1 && (
                 <div className="flex justify-center items-center gap-2">

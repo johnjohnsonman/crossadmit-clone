@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import type { AdmissionRecord } from "@/lib/types";
 import { schoolDisplayLines, type SchoolDisplayLine } from "@/lib/supabase/map";
 import { formatText } from "@/lib/utils/format-text";
@@ -34,6 +34,7 @@ const TEXT = {
     sortOldest: "오래된순",
     empty: "조건에 맞는 합격 후기가 없습니다.",
     resetFilters: "필터 초기화",
+    schoolFilter: "학교 필터",
     more: "더보기 →",
     prev: "이전",
     next: "다음",
@@ -58,6 +59,7 @@ const TEXT = {
     sortOldest: "Oldest",
     empty: "No stories match your filters.",
     resetFilters: "Clear filters",
+    schoolFilter: "School",
     more: "View more →",
     prev: "Prev",
     next: "Next",
@@ -171,6 +173,7 @@ export default function AdmissionsBulletinBoard({
   };
   const basePath = "/admissions";
   const detailHref = (id: string) => withLang(`/admissions/${id}`, locale);
+  const router = useRouter();
   const searchParams = useSearchParams();
   const listSectionRef = useRef<HTMLDivElement>(null);
 
@@ -198,10 +201,49 @@ export default function AdmissionsBulletinBoard({
   const [appliedSort, setAppliedSort] = useState<SortMode>(() =>
     parseSortParam(searchParams.get("sort"))
   );
+  const [appliedUnivId, setAppliedUnivId] = useState<number | null>(() => {
+    const raw = searchParams.get("univ_id");
+    if (!raw) return null;
+    const n = parseInt(raw, 10);
+    return Number.isNaN(n) ? null : n;
+  });
+  const [univFilterLabel, setUnivFilterLabel] = useState("");
 
   useEffect(() => {
     setAppliedSort(parseSortParam(searchParams.get("sort")));
   }, [searchParams]);
+
+  useEffect(() => {
+    const raw = searchParams.get("univ_id");
+    if (!raw) {
+      setAppliedUnivId(null);
+      setUnivFilterLabel("");
+      return;
+    }
+    const n = parseInt(raw, 10);
+    if (Number.isNaN(n)) return;
+    setAppliedUnivId(n);
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch(`/api/universities?id=${n}`);
+        if (!res.ok || cancelled) return;
+        const json = await res.json();
+        const u = json.university as { name_kr?: string; name_en?: string } | null;
+        if (!u || cancelled) return;
+        const label =
+          locale === "en" && u.name_en?.trim()
+            ? u.name_en.trim()
+            : (u.name_kr?.trim() || u.name_en?.trim() || `#${n}`);
+        setUnivFilterLabel(label);
+      } catch {
+        if (!cancelled) setUnivFilterLabel(`#${n}`);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [searchParams, locale]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const offset = (page - 1) * PAGE_SIZE;
@@ -211,7 +253,21 @@ export default function AdmissionsBulletinBoard({
     Boolean(appliedYear) ||
     Boolean(appliedType) ||
     Boolean(appliedStatus) ||
+    appliedUnivId !== null ||
     appliedSort !== "latest";
+
+  const syncUnivIdInUrl = useCallback(
+    (id: number | null) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (id !== null) params.set("univ_id", String(id));
+      else params.delete("univ_id");
+      const q = params.toString();
+      router.replace(q ? `${basePath}?${q}` : withLang(basePath, locale), {
+        scroll: false,
+      });
+    },
+    [router, searchParams, basePath, locale]
+  );
 
   const fetchList = useCallback(async () => {
     setLoading(true);
@@ -225,6 +281,7 @@ export default function AdmissionsBulletinBoard({
       if (appliedYear) params.set("year", appliedYear);
       if (appliedType) params.set("admission_type", appliedType);
       if (appliedStatus) params.set("status", appliedStatus);
+      if (appliedUnivId !== null) params.set("univ_id", String(appliedUnivId));
 
       const res = await fetch(`/api/admissions?${params.toString()}`, {
         cache: "no-store",
@@ -243,7 +300,15 @@ export default function AdmissionsBulletinBoard({
     } finally {
       setLoading(false);
     }
-  }, [offset, appliedSearch, appliedYear, appliedType, appliedStatus, appliedSort]);
+  }, [
+    offset,
+    appliedSearch,
+    appliedYear,
+    appliedType,
+    appliedStatus,
+    appliedSort,
+    appliedUnivId,
+  ]);
 
   useEffect(() => {
     void fetchList();
@@ -315,6 +380,16 @@ export default function AdmissionsBulletinBoard({
     setAppliedType("");
     setAppliedStatus("");
     setAppliedSort("latest");
+    setAppliedUnivId(null);
+    setUnivFilterLabel("");
+    syncUnivIdInUrl(null);
+    setPage(1);
+  };
+
+  const clearUnivFilter = () => {
+    setAppliedUnivId(null);
+    setUnivFilterLabel("");
+    syncUnivIdInUrl(null);
     setPage(1);
   };
 
@@ -368,8 +443,25 @@ export default function AdmissionsBulletinBoard({
         clear: () => setSort("latest"),
       });
     }
+    if (appliedUnivId !== null) {
+      pills.push({
+        key: "univ",
+        label: univFilterLabel || `${t.schoolFilter} #${appliedUnivId}`,
+        clear: clearUnivFilter,
+      });
+    }
     return pills;
-  }, [appliedSearch, appliedYear, appliedType, appliedStatus, appliedSort, locale, t]);
+  }, [
+    appliedSearch,
+    appliedYear,
+    appliedType,
+    appliedStatus,
+    appliedSort,
+    appliedUnivId,
+    univFilterLabel,
+    locale,
+    t,
+  ]);
 
   const empty = !loading && records.length === 0;
 

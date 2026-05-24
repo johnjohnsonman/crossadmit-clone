@@ -2,6 +2,10 @@ import {
   escapeIlikeForPostgrest,
   safeSearchTerm,
 } from "@/lib/admissions/university-search";
+import {
+  buildComparisonSlug,
+  formatSchoolKeyLabel,
+} from "@/lib/crossadmit/comparison-utils";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import type { CrossComparison, University, UniversityDepartment } from "@/lib/supabase/types";
@@ -496,19 +500,22 @@ async function getCrossComparisonStatsFromSchools(params?: {
 
     const statId =
       agg.lowId != null && agg.highId != null
-        ? `cross-${agg.lowId}-vs-${agg.highId}`
-        : `cross-${agg.keyLow}-vs-${agg.keyHigh}`;
+        ? buildComparisonSlug(agg.lowId, agg.highId)
+        : `legacy-${agg.keyLow}-vs-${agg.keyHigh}`;
+
+    const nameWin = agg.lowId
+      ? resolveUnivDisplayName(agg.lowId, agg.nameLow, nameMap, locale)
+      : formatSchoolKeyLabel(agg.nameLow || agg.keyLow, locale);
+    const nameLose = agg.highId
+      ? resolveUnivDisplayName(agg.highId, agg.nameHigh, nameMap, locale)
+      : formatSchoolKeyLabel(agg.nameHigh || agg.keyHigh, locale);
 
     stats.push({
       id: statId,
       univ_id_win: agg.lowId ?? 0,
       univ_id_lose: agg.highId ?? 0,
-      univ_name_win: agg.lowId
-        ? resolveUnivDisplayName(agg.lowId, agg.nameLow, nameMap, locale)
-        : agg.nameLow,
-      univ_name_lose: agg.highId
-        ? resolveUnivDisplayName(agg.highId, agg.nameHigh, nameMap, locale)
-        : agg.nameHigh,
+      univ_name_win: nameWin,
+      univ_name_lose: nameLose,
       dept_name_win: "",
       dept_name_lose: "",
       count,

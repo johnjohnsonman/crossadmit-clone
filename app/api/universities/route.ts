@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   getUniversities,
+  getUniversityById,
   getUniversityDepartments,
 } from "@/lib/supabase/universities-service";
 
@@ -14,6 +15,16 @@ export async function GET(request: NextRequest) {
     localeParam === "en" || localeParam === "ko" ? localeParam : undefined;
 
   try {
+    const singleIdParam = searchParams.get("id");
+    if (singleIdParam) {
+      const id = parseInt(singleIdParam, 10);
+      if (Number.isNaN(id)) {
+        return NextResponse.json({ error: "invalid id" }, { status: 400 });
+      }
+      const university = await getUniversityById(id);
+      return NextResponse.json({ university });
+    }
+
     if (univIdParam) {
       const univId = parseInt(univIdParam, 10);
       if (Number.isNaN(univId)) {
