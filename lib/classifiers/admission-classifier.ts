@@ -1,4 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
+import type { DegreeLevel } from "@/lib/admissions/degree-level";
+import { isDegreeLevel } from "@/lib/admissions/degree-level";
 import { loadAllUniversities } from "@/lib/pipeline/study-korea/university-id";
 import {
   cacheUrlClassifier,
@@ -55,8 +57,9 @@ export type ExtractedAdmissionData = {
     | "overseas_kr"
     | "gks"
     | "regular_kr"
-    | "graduate"
+    | "abroad"
     | "unknown";
+  degree_level: DegreeLevel;
   home_country: string | null;
   high_school_type: string | null;
   universities: ExtractedUniversity[];
@@ -183,7 +186,8 @@ Return ONLY valid JSON (no markdown fence):
   "extracted": {
     "display_name": string | null,
     "year_admitted": number | null,
-    "admit_track": "international" | "overseas_kr" | "gks" | "regular_kr" | "graduate" | "unknown",
+    "admit_track": "international" | "overseas_kr" | "gks" | "regular_kr" | "abroad" | "unknown",
+    "degree_level": "undergraduate" | "graduate" | "mba" | "law" | "unknown",
     "home_country": string | null,
     "high_school_type": "international" | "local_home_country" | "korean_overseas" | "online" | "other" | null,
     "universities": [
@@ -218,17 +222,71 @@ Rules:
 - is_admission_story=true ONLY for personal share of own admission outcome.
 - is_korean_university=true ONLY if admitted to a university physically in Korea.
 - confidence < 0.7 means uncertain (review queue).
-- If scores/fields not mentioned, use null. Don't fabricate.`;
+- If scores/fields not mentioned, use null. Don't fabricate.
+- admit_track: who they are
+  * international = non-Korean citizen at Korean university
+  * overseas_kr = Korean citizen with overseas education
+  * gks = Global Korea Scholarship recipient (any nationality)
+  * regular_kr = Korean citizen regular admission
+  * abroad = Korean citizen going to foreign university
+- degree_level: what they applied for
+  * undergraduate = Bachelor's program
+  * graduate = Master's or PhD (not MBA, not Law)
+  * mba = MBA program
+  * law = Law school (Korean LEET system or J.D.)
+- The two fields are independent. Example: international PhD = admit_track:international + degree_level:graduate
+- GradCafe posts are almost always graduate (use undergraduate only if clearly a bachelor's result).`;
+}
+
+const ADMIT_TRACK_EXTRACTED = [
+  "international",
+  "overseas_kr",
+  "gks",
+  "regular_kr",
+  "abroad",
+  "unknown",
+] as const;
+
+type ExtractedAdmitTrack = (typeof ADMIT_TRACK_EXTRACTED)[number];
+
+function coerceAdmitTrackAndDegree(
+  rawTrack?: string,
+  rawLevel?: string
+): { admit_track: ExtractedAdmitTrack; degree_level: DegreeLevel } {
+  let admit_track = (rawTrack ?? "unknown") as string;
+  let degree_level: DegreeLevel =
+    rawLevel && isDegreeLevel(rawLevel) ? rawLevel : "unknown";
+
+  if (admit_track === "graduate") {
+    admit_track = "regular_kr";
+    if (degree_level === "unknown") degree_level = "graduate";
+  }
+
+  if (
+    !(ADMIT_TRACK_EXTRACTED as readonly string[]).includes(admit_track)
+  ) {
+    admit_track = "unknown";
+  }
+
+  return {
+    admit_track: admit_track as ExtractedAdmitTrack,
+    degree_level,
+  };
 }
 
 function normalizeExtracted(
   raw: Partial<ExtractedAdmissionData> | undefined
 ): ExtractedAdmissionData {
   const scores = raw?.scores ?? {};
+  const { admit_track, degree_level } = coerceAdmitTrackAndDegree(
+    raw?.admit_track,
+    raw?.degree_level
+  );
   return {
     display_name: raw?.display_name ?? null,
     year_admitted: raw?.year_admitted ?? null,
-    admit_track: raw?.admit_track ?? "unknown",
+    admit_track,
+    degree_level,
     home_country: raw?.home_country ?? null,
     high_school_type: raw?.high_school_type ?? null,
     universities: Array.isArray(raw?.universities) ? raw!.universities! : [],

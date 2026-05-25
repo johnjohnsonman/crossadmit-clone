@@ -1,6 +1,7 @@
 import type { AdmitTrack, SourceType } from "@/lib/admissions/admit-track";
+import type { DegreeLevel } from "@/lib/admissions/degree-level";
 
-export type { AdmitTrack, SourceType };
+export type { AdmitTrack, SourceType, DegreeLevel };
 
 /** UI/API 레이어 (camelCase) */
 export interface AdmissionSchoolRecord {
@@ -48,6 +49,7 @@ export interface AdmissionRecord {
   source: string;
   sourceUrl?: string;
   admitTrack?: AdmitTrack | string;
+  degreeLevel?: DegreeLevel | string;
   sourceType?: SourceType | string;
   homeCountry?: string;
   availableAsMentor?: boolean;

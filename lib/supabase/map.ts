@@ -66,6 +66,7 @@ export function admissionToRecord(
     source: (row.source ?? "").trim(),
     sourceUrl: row.source_url?.trim() || undefined,
     admitTrack: row.admit_track ?? "regular_kr",
+    degreeLevel: row.degree_level ?? "unknown",
     sourceType: row.source_type ?? undefined,
     homeCountry: row.home_country?.trim() || undefined,
     availableAsMentor: Boolean(row.available_as_mentor),

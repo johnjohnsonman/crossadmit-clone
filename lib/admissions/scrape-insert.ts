@@ -4,6 +4,8 @@ import type { ExtractedAdmissionData } from "@/lib/classifiers/admission-classif
 import { matchUniversities } from "@/lib/admissions/university-match";
 import type { AdmitTrack } from "@/lib/admissions/admit-track";
 import { isAdmitTrack } from "@/lib/admissions/admit-track";
+import type { DegreeLevel } from "@/lib/admissions/degree-level";
+import { isDegreeLevel } from "@/lib/admissions/degree-level";
 import type { ScrapedPost } from "@/lib/scrapers/types";
 
 export function formatScores(
@@ -38,9 +40,19 @@ export function formatSpecialty(data: ExtractedAdmissionData): string {
 }
 
 function mapAdmitTrack(raw: string | undefined): AdmitTrack {
+  if (raw === "graduate") return "regular_kr";
   if (raw && isAdmitTrack(raw)) return raw;
   if (raw === "unknown") return "international";
   return "international";
+}
+
+function resolveDegreeLevel(
+  raw: string | undefined,
+  source: string
+): DegreeLevel {
+  if (raw && isDegreeLevel(raw)) return raw;
+  if (source === "gradcafe") return "graduate";
+  return "unknown";
 }
 
 function mapSchoolStatus(
@@ -74,6 +86,7 @@ export async function insertAdmissionFromScrape(
 
   const year = data.year_admitted ?? new Date().getFullYear();
   const admitTrack = mapAdmitTrack(data.admit_track);
+  const degreeLevel = resolveDegreeLevel(data.degree_level, post.source);
   const univName = primary?.name ?? "University";
 
   const title = generateAdmissionTitle({
@@ -104,6 +117,7 @@ export async function insertAdmissionFromScrape(
       source_type: `scraped_${post.source}`,
       source_url: post.url,
       admit_track: admitTrack,
+      degree_level: degreeLevel,
       home_country: data.home_country,
       high_school_type: data.high_school_type,
       raw_content: post.body.slice(0, 12000),
