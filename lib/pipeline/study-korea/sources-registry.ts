@@ -111,6 +111,14 @@ export const STUDY_KOREA_SOURCE_META: StudyKoreaSourceMeta[] = [
     status: "active",
     note: "thegradcafe.com 한국 대학 석박사 합격 결과 → graduate 트랙",
   },
+  {
+    id: "duhoc_vn",
+    label: "Duhoc Vietnam (베트남 유학)",
+    cronPath: "/api/cron/scrape-duhoc-vn",
+    color: "bg-red-100 text-red-800",
+    status: "active",
+    note: "베트남 유학 에이전시 학생 후기 → 다국어 admissions 라우팅",
+  },
 ];
 
 export type StudyKoreaSourceId = (typeof STUDY_KOREA_SOURCE_META)[number]["id"];
