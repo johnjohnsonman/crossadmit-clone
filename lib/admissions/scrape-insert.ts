@@ -6,6 +6,7 @@ import type { AdmitTrack } from "@/lib/admissions/admit-track";
 import { isAdmitTrack } from "@/lib/admissions/admit-track";
 import type { DegreeLevel } from "@/lib/admissions/degree-level";
 import { isDegreeLevel } from "@/lib/admissions/degree-level";
+import { normalizeOriginalLanguage } from "@/lib/admissions/original-language";
 import type { ScrapedPost } from "@/lib/scrapers/types";
 
 export function formatScores(
@@ -87,6 +88,10 @@ export async function insertAdmissionFromScrape(
   const year = data.year_admitted ?? new Date().getFullYear();
   const admitTrack = mapAdmitTrack(data.admit_track);
   const degreeLevel = resolveDegreeLevel(data.degree_level, post.source);
+  const originalLanguage = normalizeOriginalLanguage(
+    data.original_language,
+    `${post.title}\n${post.body}`
+  );
   const univName = primary?.name ?? "University";
 
   const title = generateAdmissionTitle({
@@ -118,6 +123,9 @@ export async function insertAdmissionFromScrape(
       source_url: post.url,
       admit_track: admitTrack,
       degree_level: degreeLevel,
+      original_language: originalLanguage,
+      original_title: post.title.slice(0, 1000),
+      original_content: post.body.slice(0, 12000),
       home_country: data.home_country,
       high_school_type: data.high_school_type,
       raw_content: post.body.slice(0, 12000),

@@ -20,8 +20,9 @@ export type University = {
 
 import type { AdmitTrack, SourceType } from "@/lib/admissions/admit-track";
 import type { DegreeLevel } from "@/lib/admissions/degree-level";
+import type { OriginalLanguage } from "@/lib/admissions/original-language";
 
-export type { AdmitTrack, SourceType, DegreeLevel };
+export type { AdmitTrack, SourceType, DegreeLevel, OriginalLanguage };
 
 export type UniversityDepartment = {
   id: number;
@@ -49,6 +50,9 @@ export type Admission = {
   source_url?: string | null;
   admit_track?: AdmitTrack | string | null;
   degree_level?: DegreeLevel | string | null;
+  original_language?: OriginalLanguage | string | null;
+  original_content?: string | null;
+  original_title?: string | null;
   source_type?: SourceType | string | null;
   home_country?: string | null;
   high_school_type?: string | null;

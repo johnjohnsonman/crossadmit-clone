@@ -1,6 +1,8 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { DegreeLevel } from "@/lib/admissions/degree-level";
 import { isDegreeLevel } from "@/lib/admissions/degree-level";
+import type { OriginalLanguage } from "@/lib/admissions/original-language";
+import { normalizeOriginalLanguage } from "@/lib/admissions/original-language";
 import { loadAllUniversities } from "@/lib/pipeline/study-korea/university-id";
 import {
   cacheUrlClassifier,
@@ -12,21 +14,81 @@ import {
 const MODEL = "claude-haiku-4-5-20251001";
 
 const UNIV_ALIASES: Record<string, string[]> = {
-  SNU: ["서울대", "서울대학교", "Seoul National University", "SNU"],
-  KU: ["고려대", "고려대학교", "Korea University", "KU"],
-  Yonsei: ["연세대", "연세대학교", "Yonsei University", "Yonsei"],
-  KAIST: ["KAIST", "카이스트", "Korea Advanced Institute of Science"],
-  POSTECH: ["POSTECH", "포항공대", "Pohang University of Science"],
-  SKKU: ["성균관대", "성균관대학교", "Sungkyunkwan University", "SKKU"],
-  Hanyang: ["한양대", "한양대학교", "Hanyang University"],
+  SNU: [
+    "서울대",
+    "서울대학교",
+    "Seoul National University",
+    "SNU",
+    "Dai hoc Quoc gia Seoul",
+    "Đại học Quốc gia Seoul",
+    "首尔大学",
+    "首尔国立大学",
+  ],
+  KU: [
+    "고려대",
+    "고려대학교",
+    "Korea University",
+    "KU",
+    "Đại học Korea",
+    "Dai hoc Korea",
+    "高丽大学",
+  ],
+  Yonsei: [
+    "연세대",
+    "연세대학교",
+    "Yonsei University",
+    "Yonsei",
+    "Đại học Yonsei",
+    "Dai hoc Yonsei",
+    "延世大学",
+  ],
+  KAIST: [
+    "KAIST",
+    "카이스트",
+    "Korea Advanced Institute of Science",
+    "Viện Khoa học và Công nghệ Tiên tiến Hàn Quốc",
+    "韩国科学技术院",
+  ],
+  POSTECH: [
+    "POSTECH",
+    "포항공대",
+    "Pohang University of Science",
+    "Đại học Khoa học và Công nghệ Pohang",
+    "浦项工科大学",
+  ],
+  SKKU: [
+    "성균관대",
+    "성균관대학교",
+    "Sungkyunkwan University",
+    "SKKU",
+    "Đại học Sungkyunkwan",
+    "成均馆大学",
+  ],
+  Hanyang: [
+    "한양대",
+    "한양대학교",
+    "Hanyang University",
+    "Đại học Hanyang",
+    "汉阳大学",
+  ],
   Sogang: ["서강대", "Sogang University"],
-  Ewha: ["이화여대", "Ewha Womans University", "Ewha"],
+  Ewha: [
+    "이화여대",
+    "Ewha Womans University",
+    "Ewha",
+    "Đại học Nữ Ewha",
+    "梨花女子大学",
+  ],
   HUFS: ["외대", "한국외대", "Hankuk University of Foreign Studies"],
 };
 
 const ADMISSION_VERB =
   /\b(accepted|admitted|got into|enrolled|matriculated|acceptance|got in|made it|i'm in|i am in)\b/i;
 const ADMISSION_VERB_KO = /(합격|입학|붙었|어드밋|어떻게 들어갔)/;
+const ADMISSION_VERB_VI =
+  /(trúng tuyển|đậu|duoc nhan|được nhận|được chấp nhận)/i;
+const ADMISSION_VERB_ZH = /(录取|考上|申请成功|拿到offer|拿到 offer)/i;
+const ADMISSION_VERB_JA = /(合格|受かった)/;
 const REJECT_MAIN =
   /\b(rejected|denied|didn't get in|did not get in|got rejected|waitlisted only)\b/i;
 
@@ -60,6 +122,7 @@ export type ExtractedAdmissionData = {
     | "abroad"
     | "unknown";
   degree_level: DegreeLevel;
+  original_language: OriginalLanguage;
   home_country: string | null;
   high_school_type: string | null;
   universities: ExtractedUniversity[];
@@ -80,6 +143,7 @@ export type ClassificationResult = {
   classification: "admission" | "general" | "review_needed";
   data: ExtractedAdmissionData | null;
   confidence: number;
+  original_language: OriginalLanguage;
   track_evidence: string;
   reasoning: string;
 };
@@ -127,7 +191,11 @@ export async function runStage1Filter(
 
   const unique = [...new Set(matched)];
   const hasAdmissionVerb =
-    ADMISSION_VERB.test(text) || ADMISSION_VERB_KO.test(text);
+    ADMISSION_VERB.test(text) ||
+    ADMISSION_VERB_KO.test(text) ||
+    ADMISSION_VERB_VI.test(text) ||
+    ADMISSION_VERB_ZH.test(text) ||
+    ADMISSION_VERB_JA.test(text);
   const rejectInLead = REJECT_MAIN.test(firstParagraph(text));
 
   if (unique.length === 0) {
@@ -159,6 +227,7 @@ type LlmPayload = {
   is_admission_story?: boolean;
   is_korean_university?: boolean;
   confidence?: number;
+  original_language?: string;
   extracted?: Partial<ExtractedAdmissionData>;
   track_evidence?: string;
   reasoning?: string;
@@ -172,6 +241,9 @@ function buildClassifierPrompt(
 ): string {
   return `You are extracting structured admission data from a social media post.
 Output must match the schema below precisely. If a field is uncertain, use null.
+The post may be in any language (English, Korean, Vietnamese, Chinese, etc).
+Detect the language and set "original_language" field.
+Output ALL extracted fields in English (translate if needed).
 
 Post title: ${title}
 Post body: ${body.slice(0, 3000)}
@@ -183,6 +255,7 @@ Return ONLY valid JSON (no markdown fence):
   "is_admission_story": boolean,
   "is_korean_university": boolean,
   "confidence": 0.0-1.0,
+  "original_language": "en" | "ko" | "vi" | "zh" | "mn" | "uz" | "ne" | "my" | "ja" | "ru" | "es" | "ar" | "other",
   "extracted": {
     "display_name": string | null,
     "year_admitted": number | null,
@@ -235,7 +308,8 @@ Rules:
   * mba = MBA program
   * law = Law school (Korean LEET system or J.D.)
 - The two fields are independent. Example: international PhD = admit_track:international + degree_level:graduate
-- GradCafe posts are almost always graduate (use undergraduate only if clearly a bachelor's result).`;
+- GradCafe posts are almost always graduate (use undergraduate only if clearly a bachelor's result).
+- For "extracurriculars", "essays", and "tips", provide concise English summaries, not raw untranslated text.`;
 }
 
 const ADMIT_TRACK_EXTRACTED = [
@@ -275,7 +349,9 @@ function coerceAdmitTrackAndDegree(
 }
 
 function normalizeExtracted(
-  raw: Partial<ExtractedAdmissionData> | undefined
+  raw: Partial<ExtractedAdmissionData> | undefined,
+  originalLanguage: string | null | undefined,
+  fallbackText: string
 ): ExtractedAdmissionData {
   const scores = raw?.scores ?? {};
   const { admit_track, degree_level } = coerceAdmitTrackAndDegree(
@@ -287,6 +363,7 @@ function normalizeExtracted(
     year_admitted: raw?.year_admitted ?? null,
     admit_track,
     degree_level,
+    original_language: normalizeOriginalLanguage(originalLanguage, fallbackText),
     home_country: raw?.home_country ?? null,
     high_school_type: raw?.high_school_type ?? null,
     universities: Array.isArray(raw?.universities) ? raw!.universities! : [],
@@ -323,6 +400,7 @@ export async function runStage2Classifier(
       classification: "general",
       data: null,
       confidence: 0,
+      original_language: "en",
       track_evidence: "",
       reasoning: "LLM skipped: url_cached_24h",
     };
@@ -335,6 +413,7 @@ export async function runStage2Classifier(
       classification: "general",
       data: null,
       confidence: 0,
+      original_language: "en",
       track_evidence: "",
       reasoning: `LLM skipped: ${limit.reason}`,
     };
@@ -347,6 +426,7 @@ export async function runStage2Classifier(
       classification: "general",
       data: null,
       confidence: 0,
+      original_language: "en",
       track_evidence: "",
       reasoning: "ANTHROPIC_API_KEY missing",
     };
@@ -383,7 +463,15 @@ export async function runStage2Classifier(
     }
 
     const confidence = Math.min(1, Math.max(0, parsed.confidence ?? 0));
-    const data = normalizeExtracted(parsed.extracted);
+    const original_language = normalizeOriginalLanguage(
+      parsed.original_language,
+      `${title}\n${body}`
+    );
+    const data = normalizeExtracted(
+      parsed.extracted,
+      parsed.original_language,
+      `${title}\n${body}`
+    );
     const track_evidence = parsed.track_evidence ?? "";
     const reasoning = parsed.reasoning ?? "";
 
@@ -404,6 +492,7 @@ export async function runStage2Classifier(
         classification: "general",
         data,
         confidence,
+        original_language,
         track_evidence,
         reasoning,
       };
@@ -414,6 +503,7 @@ export async function runStage2Classifier(
         classification: "admission",
         data,
         confidence,
+        original_language,
         track_evidence,
         reasoning,
       };
@@ -423,6 +513,7 @@ export async function runStage2Classifier(
       classification: "review_needed",
       data,
       confidence,
+      original_language,
       track_evidence,
       reasoning,
     };
@@ -445,6 +536,7 @@ export async function classifyAdmissionPost(
       classification: "general",
       data: null,
       confidence: 0,
+      original_language: "en",
       track_evidence: "",
       reasoning: `Stage1: ${stage1.reason}`,
     };
