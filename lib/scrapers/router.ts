@@ -1,4 +1,7 @@
 import {
+  type ClassificationResult,
+  type ExtractedAdmissionData,
+  type ExtractedScores,
   runStage1Filter,
   runStage2Classifier,
 } from "@/lib/classifiers/admission-classifier";
@@ -100,6 +103,184 @@ export async function insertGeneralPost(
   }
 }
 
+function decodeBasicHtmlEntities(text: string): string {
+  return text
+    .replace(/&#x27;|&#39;/gi, "'")
+    .replace(/&quot;/gi, '"')
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .trim();
+}
+
+function pickGradCafeField(body: string, label: string): string | null {
+  const re = new RegExp(`^${label}:\\s*(.+)$`, "im");
+  const m = body.match(re);
+  return m?.[1] ? decodeBasicHtmlEntities(m[1]) : null;
+}
+
+function parseGradCafeYear(post: ScrapedPost, season: string | null): number | null {
+  const seasonYear = season?.match(/\b(20\d{2})\b/)?.[1];
+  if (seasonYear) return parseInt(seasonYear, 10);
+  if (post.source_created_at) {
+    const d = new Date(post.source_created_at);
+    if (!Number.isNaN(d.getTime())) return d.getUTCFullYear();
+  }
+  return null;
+}
+
+function buildEmptyScores(): ExtractedScores {
+  return {
+    sat: null,
+    act: null,
+    ib: null,
+    ap: null,
+    a_level: null,
+    topik: null,
+    toefl: null,
+    ielts: null,
+    gpa: null,
+    other: null,
+  };
+}
+
+function parseGradCafeResult(decision: string | null): "admitted" | "enrolled" | "rejected" | "waitlisted" {
+  const d = (decision ?? "").toLowerCase();
+  if (/enrolled|matriculat/.test(d)) return "enrolled";
+  if (/accept|admit/.test(d)) return "admitted";
+  if (/wait/.test(d) || /interview/.test(d)) return "waitlisted";
+  if (/reject|denied/.test(d)) return "rejected";
+  return "admitted";
+}
+
+function buildGradCafeFallbackData(post: ScrapedPost): ExtractedAdmissionData {
+  const institution = pickGradCafeField(post.body, "Institution") || "University";
+  const program = pickGradCafeField(post.body, "Program");
+  const degree = pickGradCafeField(post.body, "Degree");
+  const decision = pickGradCafeField(post.body, "Decision");
+  const season = pickGradCafeField(post.body, "Season");
+  const gpa = pickGradCafeField(post.body, "GPA");
+  const comments = pickGradCafeField(post.body, "Comments");
+
+  const scores = buildEmptyScores();
+  scores.gpa = gpa;
+
+  const greParts: string[] = [];
+  for (const label of ["GRE Q", "GRE V", "GRE AW", "GRE Subject"]) {
+    const v = pickGradCafeField(post.body, label);
+    if (v) greParts.push(`${label}: ${v}`);
+  }
+  if (greParts.length > 0) {
+    scores.other = greParts.join("\n");
+  }
+
+  return {
+    display_name: null,
+    year_admitted: parseGradCafeYear(post, season),
+    admit_track: "international",
+    degree_level: "graduate",
+    original_language: "en",
+    home_country: null,
+    high_school_type: null,
+    universities: [
+      {
+        name: institution,
+        department: decodeBasicHtmlEntities(program || degree || "") || null,
+        result: parseGradCafeResult(decision),
+      },
+    ],
+    scores,
+    extracurriculars: null,
+    essays: null,
+    interview:
+      decision && /interview/i.test(decision)
+        ? `GradCafe decision field indicates interview stage: ${decision}`
+        : null,
+    tips: comments || null,
+  };
+}
+
+function mergeGradCafeAdmissionData(
+  classified: ExtractedAdmissionData | null,
+  fallback: ExtractedAdmissionData
+): ExtractedAdmissionData {
+  if (!classified) return fallback;
+  return {
+    ...fallback,
+    ...classified,
+    universities:
+      classified.universities && classified.universities.length > 0
+        ? classified.universities
+        : fallback.universities,
+    scores: {
+      ...fallback.scores,
+      ...classified.scores,
+    },
+    degree_level: classified.degree_level || fallback.degree_level,
+    original_language: classified.original_language || fallback.original_language,
+  };
+}
+
+async function routeGradCafeToAdmissions(
+  post: ScrapedPost,
+  stage1: Awaited<ReturnType<typeof runStage1Filter>>
+): Promise<RouteResult> {
+  let classification: ClassificationResult | null = null;
+  try {
+    classification = await runStage2Classifier(
+      post.title.trim(),
+      post.body.trim(),
+      post.source,
+      post.url
+    );
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error("[router] gradcafe classifier failed:", msg);
+  }
+
+  const fallback = buildGradCafeFallbackData(post);
+  const data = mergeGradCafeAdmissionData(classification?.data ?? null, fallback);
+  const confidence = classification?.confidence ?? 0;
+  const shouldPublish =
+    classification?.classification === "admission" && confidence >= 0.7;
+  const reasoning = [
+    "gradcafe_forced_admission",
+    `stage1=${stage1.pass ? "pass" : stage1.reason}`,
+    classification?.reasoning ?? "stage2_unavailable",
+  ]
+    .filter(Boolean)
+    .join(" | ");
+
+  const id = await insertAdmissionFromScrape(post, data, {
+    needs_review: !shouldPublish,
+    published: shouldPublish,
+    confidence,
+    reasoning,
+  });
+
+  console.log(
+    `[router] inserted gradcafe to: admissions (id=${id}, ${
+      shouldPublish ? "published" : "review_needed"
+    })`
+  );
+
+  if (shouldPublish) {
+    return {
+      routed: "admission",
+      admissionId: id,
+      classification: "admission",
+      confidence,
+    };
+  }
+
+  return {
+    routed: "review_needed",
+    admissionId: id,
+    classification: "review_needed",
+    confidence,
+  };
+}
+
 export async function routeScrapedPost(post: ScrapedPost): Promise<RouteResult> {
   console.log(`[router] processing post: ${post.url}`);
 
@@ -115,6 +296,10 @@ export async function routeScrapedPost(post: ScrapedPost): Promise<RouteResult> 
   }
 
   const stage1 = await runStage1Filter(title, body);
+
+  if (post.source === "gradcafe") {
+    return routeGradCafeToAdmissions(post, stage1);
+  }
 
   if (!stage1.pass) {
     const status = await insertGeneralPost(post, stage1.reason);

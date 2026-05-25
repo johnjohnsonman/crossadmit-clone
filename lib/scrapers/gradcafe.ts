@@ -93,109 +93,55 @@ type GradCafePagePayload = {
   };
 };
 
-type KoreanSchoolRule = {
-  test: (school: string) => boolean;
-  exclude?: RegExp;
-};
+const KOREAN_INCLUDE_KEYWORDS = [
+  /\bkorea\b/i,
+  /\bseoul\b/i,
+  /\byonsei\b/i,
+  /\bkaist\b/i,
+  /\bsnu\b/i,
+  /\bpostech\b/i,
+  /\bpohang\b/i,
+  /\bskku\b/i,
+  /\bsungkyunkwan\b/i,
+  /\bhanyang\b/i,
+  /\bewha\b/i,
+  /\bunist\b/i,
+  /\bulsan\b/i,
+  /\bgist\b/i,
+  /gwangju institute/i,
+  /\bdgist\b/i,
+  /daegu gyeongbuk/i,
+  /\bsogang\b/i,
+  /\bkonkuk\b/i,
+  /korea univ/i,
+  /korea university/i,
+  /chung[\s-]?ang/i,
+  /kyung[\s-]?hee/i,
+  /\bdongguk\b/i,
+  /\bhongik\b/i,
+  /\bsookmyung\b/i,
+  /\bpusan\b/i,
+  /\bbusan\b/i,
+  /\bkyungpook\b/i,
+  /\bchonnam\b/i,
+  /\bchungnam\b/i,
+  /\bchungbuk\b/i,
+  /\bjeonbuk\b/i,
+  /\binha\b/i,
+  /\bajou\b/i,
+  /\bsungshin\b/i,
+  /kdi school/i,
+  /\bkoreatech\b/i,
+] as const;
 
-/** Keep only rows that refer to a Korean university (drop KAUST/Kaiser etc.). */
-const KOREAN_SCHOOL_RULES: KoreanSchoolRule[] = [
-  {
-    test: (s) =>
-      /\bKAIST\b/i.test(s) ||
-      /Korea Advanced Institute of Science/i.test(s),
-    exclude: /King Abdullah|KAUST|Kaiser/i,
-  },
-  {
-    test: (s) =>
-      /Seoul National University|Seoul Nat(?:ional)?(?: Univ(?:ersity)?)?|\bSNU\b/i.test(
-        s
-      ),
-    exclude: /Kaiser/i,
-  },
-  {
-    test: (s) =>
-      /POSTECH|Pohang University of Science(?: and Technology)?|Pohang\b/i.test(
-        s
-      ),
-  },
-  { test: (s) => /Yonsei University|Yonsei\b/i.test(s) },
-  {
-    test: (s) => /Korea University|Korea Univ\b/i.test(s),
-    exclude: /King Abdullah|Study in Korea|Honorary/i,
-  },
-  {
-    test: (s) =>
-      /\bUNIST\b/i.test(s) ||
-      /Ulsan National Institute of Science/i.test(s),
-  },
-  {
-    test: (s) =>
-      /\bGIST\b/i.test(s) ||
-      /Gwangju Institute of Science/i.test(s),
-  },
-  {
-    test: (s) =>
-      /Sungkyunkwan University|Sungkyunkwan\b|\bSKKU\b/i.test(s),
-  },
-  { test: (s) => /Hanyang University|Hanyang Univ\b|Hanyang\b/i.test(s) },
-  { test: (s) => /Ewha Womans University|\bEwha\b/i.test(s) },
-  { test: (s) => /Sogang University|Sogang Univ\b|Sogang\b/i.test(s) },
-  {
-    test: (s) =>
-      /Chung[\s-]?Ang University|Chung[\s-]?Ang Univ\b|Chung[\s-]?Ang\b/i.test(
-        s
-      ),
-  },
-  { test: (s) => /Konkuk University|Konkuk Univ\b|Konkuk\b/i.test(s) },
-  {
-    test: (s) =>
-      /Kyung Hee University|Kyung Hee Univ\b|Kyung Hee\b/i.test(s),
-  },
-  { test: (s) => /Dongguk University|Dongguk Univ\b|Dongguk\b/i.test(s) },
-  { test: (s) => /Hongik University|Hongik Univ\b|Hongik\b/i.test(s) },
-  {
-    test: (s) =>
-      /Sookmyung(?: Women's| Womans)? University|Sookmyung\b/i.test(s),
-  },
-  {
-    test: (s) =>
-      /Pusan National University|Busan National University|\bPNU\b/i.test(s),
-    exclude: /Punjab|Pennsylvania/i,
-  },
-  {
-    test: (s) =>
-      /Kyungpook National University|Kyungpook Univ\b|Kyungpook\b/i.test(s),
-  },
-  {
-    test: (s) =>
-      /Chonnam National University|Chonnam Univ\b|Chonnam\b/i.test(s),
-  },
-  {
-    test: (s) =>
-      /Chungnam National University|Chungnam Univ\b|Chungnam\b/i.test(s),
-  },
-  {
-    test: (s) =>
-      /Chungbuk National University|Chungbuk Univ\b|Chungbuk\b/i.test(s),
-  },
-  {
-    test: (s) =>
-      /Jeonbuk National University|Jeonbuk Univ\b|Jeonbuk\b/i.test(s),
-  },
-  {
-    test: (s) =>
-      /\bDGIST\b|Daegu Gyeongbuk Institute of Science(?: and Technology)?/i.test(
-        s
-      ),
-  },
-  {
-    test: (s) =>
-      /Sungshin(?: Women's| Womans)? University|Sungshin\b/i.test(s),
-  },
-  { test: (s) => /Inha University|Inha Univ\b|Inha\b/i.test(s) },
-  { test: (s) => /Ajou University|Ajou Univ\b|Ajou\b/i.test(s) },
-];
+const KOREAN_EXCLUDE_KEYWORDS = [
+  /\bkaust\b/i,
+  /\bpunjab\b/i,
+  /\bpennsylvania\b/i,
+  /north korea/i,
+  /korea,\s*north/i,
+  /seoul,\s*ohio/i,
+] as const;
 
 function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
@@ -230,10 +176,8 @@ export function buildGradCafeSearchUrl(query: string, page = 1): string {
 export function isKoreanGradCafeSchool(school: string): boolean {
   const s = school.trim();
   if (!s) return false;
-  return KOREAN_SCHOOL_RULES.some((rule) => {
-    if (rule.exclude?.test(s)) return false;
-    return rule.test(s);
-  });
+  if (KOREAN_EXCLUDE_KEYWORDS.some((re) => re.test(s))) return false;
+  return KOREAN_INCLUDE_KEYWORDS.some((re) => re.test(s));
 }
 
 export function parseGradCafeSearchPage(html: string): GradCafePagePayload {
