@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAdmitTrack } from "@/lib/admissions/admit-track";
+import { isDegreeLevel } from "@/lib/admissions/degree-level";
 import { generateAdmissionTitle } from "@/lib/admissions/auto-title";
 import {
   normalizeUnivId,
@@ -224,6 +225,11 @@ export async function POST(request: NextRequest) {
         ? admitTrackRaw
         : "international";
 
+      const degreeLevelRaw = String(body.degree_level ?? "undergraduate").trim();
+      const degree_level = isDegreeLevel(degreeLevelRaw)
+        ? degreeLevelRaw
+        : "undergraduate";
+
       const registered = schools.filter((s) => s.status === "등록");
       const primary = registered[0] ?? schools.find((s) => s.status === "합격") ?? schools[0];
       const autoTitle = generateAdmissionTitle({
@@ -259,6 +265,7 @@ export async function POST(request: NextRequest) {
         published: true,
         source: "crossadmit_intl_form",
         admit_track,
+        degree_level,
         source_type: "user_submitted_intl",
         home_country: homeCountry || null,
         high_school_type: highSchoolType || null,

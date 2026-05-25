@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { AdmissionRecord } from "@/lib/types";
 import AdmitTrackBadge from "@/components/admissions/AdmitTrackBadge";
+import DegreeLevelBadge from "@/components/admissions/DegreeLevelBadge";
 type Props = {
   locale: "ko" | "en";
   hrefForId: (id: string) => string;
@@ -40,6 +41,7 @@ function FeaturedCard({
     >
       <div className="flex flex-wrap items-center gap-2">
         <AdmitTrackBadge track={record.admitTrack} locale={locale} />
+        <DegreeLevelBadge level={record.degreeLevel} locale={locale} />
         {record.isVerified && (
           <span className="text-[10px] font-semibold text-[#2D5A27] border border-[#2D5A27] rounded-full px-2 py-0.5">
             Verified

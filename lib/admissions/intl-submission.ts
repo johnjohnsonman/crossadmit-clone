@@ -1,4 +1,6 @@
 import type { AdmitTrack } from "@/lib/admissions/admit-track";
+import type { DegreeLevel } from "@/lib/admissions/degree-level";
+import { isDegreeLevel } from "@/lib/admissions/degree-level";
 
 export type IntlSchoolStatus =
   | "admitted"
@@ -65,6 +67,7 @@ export type IntlFormDraft = {
   year: string;
   track: IntlAdmissionTrack;
   trackOther: string;
+  degreeLevel: DegreeLevel;
   hsCountry: string;
   highSchoolType: string;
   schools: Array<{
@@ -191,10 +194,16 @@ export function mergeIntlDraftFromStorage(
     ? (trackRaw as IntlAdmissionTrack)
     : empty.track;
 
+  const degreeRaw = String(parsed.degreeLevel ?? parsed.degree_level ?? "");
+  const degreeLevel = isDegreeLevel(degreeRaw)
+    ? degreeRaw
+    : empty.degreeLevel;
+
   return {
     ...empty,
     ...parsed,
     track,
+    degreeLevel,
     trackOther: String(parsed.trackOther ?? "").trim(),
     handle: String(parsed.handle ?? parsed.displayName ?? "").trim(),
     year: String(parsed.year ?? parsed.yearAdmitted ?? "").trim(),

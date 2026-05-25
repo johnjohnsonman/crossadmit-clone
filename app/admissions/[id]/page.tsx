@@ -17,6 +17,8 @@ import AdmissionShareButton from "@/components/admissions/AdmissionShareButton";
 import AdmissionMentorBlock, {
   AdmissionMentorBadge,
 } from "@/components/admissions/AdmissionMentorBlock";
+import AdmitTrackBadge from "@/components/admissions/AdmitTrackBadge";
+import DegreeLevelBadge from "@/components/admissions/DegreeLevelBadge";
 import { isAdmitTrack } from "@/lib/admissions/admit-track";
 
 type PageProps = { params: Promise<{ id: string }> };
@@ -247,6 +249,16 @@ export default async function AdmissionDetailPage({ params }: PageProps) {
                   </p>
                   <p className="mt-1 text-sm text-gray-400 flex flex-wrap items-center gap-2">
                     <span>{record.userHandle?.trim() || "익명"}</span>
+                    {record.admitTrack && isAdmitTrack(record.admitTrack) ? (
+                      <AdmitTrackBadge
+                        track={record.admitTrack}
+                        locale={detailLocale}
+                      />
+                    ) : null}
+                    <DegreeLevelBadge
+                      level={record.degreeLevel}
+                      locale={detailLocale}
+                    />
                     {record.availableAsMentor ? (
                       <AdmissionMentorBadge locale={detailLocale} />
                     ) : null}

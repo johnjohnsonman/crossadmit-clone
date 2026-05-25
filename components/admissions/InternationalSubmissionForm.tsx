@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react
 import AutocompleteInput, {
   type AutocompleteItem,
 } from "@/components/AutocompleteInput";
+import type { DegreeLevel } from "@/lib/admissions/degree-level";
 import {
   buildIntlInputGpa,
   buildIntlInputScore,
@@ -63,6 +64,7 @@ const EMPTY_DRAFT: IntlFormDraft = {
   year: "",
   track: "international",
   trackOther: "",
+  degreeLevel: "undergraduate",
   hsCountry: "",
   highSchoolType: "",
   schools: [newSchoolRow(), newSchoolRow()],
@@ -280,6 +282,7 @@ export default function InternationalSubmissionForm() {
           year: parseInt(draft.year, 10),
           nickname: draft.handle.trim(),
           admit_track: trackToAdmitTrack(draft.track, draft.trackOther),
+          degree_level: draft.degreeLevel,
           track: draft.track,
           track_other: draft.trackOther.trim(),
           home_country: draft.hsCountry,
@@ -503,6 +506,48 @@ export default function InternationalSubmissionForm() {
                       }
                     />
                   )}
+                </fieldset>
+                <fieldset>
+                  <legend className={labelClass}>
+                    Degree level <span className="text-red-600">*</span>
+                  </legend>
+                  <div className="mt-2 space-y-2">
+                    {(
+                      [
+                        {
+                          value: "undergraduate" as DegreeLevel,
+                          label: "Undergraduate (Bachelor's)",
+                        },
+                        {
+                          value: "graduate" as DegreeLevel,
+                          label: "Graduate (Master's or PhD)",
+                        },
+                        { value: "mba" as DegreeLevel, label: "MBA" },
+                        {
+                          value: "law" as DegreeLevel,
+                          label: "Law school",
+                        },
+                      ] as const
+                    ).map((opt) => (
+                      <label
+                        key={opt.value}
+                        className="flex cursor-pointer items-start gap-2 rounded-lg border border-[#E5E5E0] px-3 py-2 hover:border-[#2D5A27]"
+                      >
+                        <input
+                          type="radio"
+                          name="degreeLevel"
+                          className="mt-1"
+                          checked={draft.degreeLevel === opt.value}
+                          onChange={() =>
+                            updateDraft({ degreeLevel: opt.value })
+                          }
+                        />
+                        <span className="text-sm text-[#1A1A1A]">
+                          {opt.label}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
                 </fieldset>
                 <div>
                   <label className={labelClass} htmlFor="hsCountry">

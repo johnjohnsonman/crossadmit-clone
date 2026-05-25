@@ -13,6 +13,7 @@ import PopularAdmissionsSection, {
   AdmissionsListDivider,
 } from "@/components/admissions/PopularAdmissionsSection";
 import AdmitTrackBadge from "@/components/admissions/AdmitTrackBadge";
+import DegreeLevelBadge from "@/components/admissions/DegreeLevelBadge";
 import FeaturedIntlStories from "@/components/admissions/FeaturedIntlStories";
 import {
   ADMIT_TRACK_FILTER_OPTIONS,
@@ -20,6 +21,12 @@ import {
   parseAdmitTrackList,
   type AdmitTrack,
 } from "@/lib/admissions/admit-track";
+import {
+  DEGREE_LEVEL_FILTER_OPTIONS,
+  parseDegreeLevelList,
+  type DegreeLevel,
+  type DegreeLevelFilterValue,
+} from "@/lib/admissions/degree-level";
 import type { Dictionary, Locale } from "@/lib/i18n/dictionary";
 import { withLang } from "@/lib/i18n/locale";
 
@@ -49,6 +56,7 @@ const TEXT = {
       "외국인 학생 합격 데이터를 모으고 있어요. 첫 번째로 등록해주세요.",
     emptyIntlCta: "후기 등록하기 →",
     trackFilter: "전형",
+    degreeFilter: "학위",
     resetFilters: "필터 초기화",
     schoolFilter: "학교 필터",
     more: "더보기 →",
@@ -80,6 +88,7 @@ const TEXT = {
     emptyIntlCta: "Share Your Story →",
     emptyIntlWhy: "Why share?",
     trackFilter: "Track",
+    degreeFilter: "Degree",
     resetFilters: "Clear filters",
     schoolFilter: "School",
     more: "View more →",
@@ -242,6 +251,20 @@ export default function AdmissionsBulletinBoard({
   const [appliedTracks, setAppliedTracks] = useState<AdmitTrack[] | null>(() =>
     resolveInitialTracks(searchParams, locale)
   );
+
+  const resolveInitialDegreeLevel = (
+    sp: URLSearchParams
+  ): DegreeLevelFilterValue => {
+    const raw = sp.get("degree_level");
+    if (!raw || raw === "all") return "all";
+    const parsed = parseDegreeLevelList(raw);
+    return parsed.length === 1 ? parsed[0]! : "all";
+  };
+
+  const [appliedDegreeLevel, setAppliedDegreeLevel] =
+    useState<DegreeLevelFilterValue>(() =>
+      resolveInitialDegreeLevel(searchParams)
+    );
   const [appliedUnivId, setAppliedUnivId] = useState<number | null>(() => {
     const raw = searchParams.get("univ_id");
     if (!raw) return null;
@@ -253,6 +276,7 @@ export default function AdmissionsBulletinBoard({
   useEffect(() => {
     setAppliedSort(parseSortParam(searchParams.get("sort")));
     setAppliedTracks(resolveInitialTracks(searchParams, locale));
+    setAppliedDegreeLevel(resolveInitialDegreeLevel(searchParams));
   }, [searchParams, locale]);
 
   useEffect(() => {
@@ -315,7 +339,8 @@ export default function AdmissionsBulletinBoard({
     (appliedTracks !== null &&
       !tracksEqual(appliedTracks, EN_DEFAULT_ADMIT_TRACKS) &&
       !enDefaultActive) ||
-    (appliedTracks === null && searchParams.get("admit_track") === "all");
+    (appliedTracks === null && searchParams.get("admit_track") === "all") ||
+    appliedDegreeLevel !== "all";
 
   const syncAdmitTrackInUrl = useCallback(
     (tracks: AdmitTrack[] | null) => {
@@ -324,6 +349,22 @@ export default function AdmissionsBulletinBoard({
         params.set("admit_track", "all");
       } else {
         params.set("admit_track", tracks.join(","));
+      }
+      const q = params.toString();
+      router.replace(q ? `${basePath}?${q}` : withLang(basePath, locale), {
+        scroll: false,
+      });
+    },
+    [router, searchParams, basePath, locale]
+  );
+
+  const syncDegreeLevelInUrl = useCallback(
+    (level: DegreeLevelFilterValue) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (level === "all") {
+        params.delete("degree_level");
+      } else {
+        params.set("degree_level", level);
       }
       const q = params.toString();
       router.replace(q ? `${basePath}?${q}` : withLang(basePath, locale), {
@@ -362,6 +403,9 @@ export default function AdmissionsBulletinBoard({
       if (appliedTracks && appliedTracks.length > 0) {
         params.set("admit_track", appliedTracks.join(","));
       }
+      if (appliedDegreeLevel !== "all") {
+        params.set("degree_level", appliedDegreeLevel);
+      }
 
       const res = await fetch(`/api/admissions?${params.toString()}`, {
         cache: "no-store",
@@ -389,6 +433,7 @@ export default function AdmissionsBulletinBoard({
     appliedSort,
     appliedUnivId,
     appliedTracks,
+    appliedDegreeLevel,
   ]);
 
   useEffect(() => {
@@ -512,8 +557,10 @@ export default function AdmissionsBulletinBoard({
     setUnivFilterLabel("");
     syncUnivIdInUrl(null);
     setAppliedTracks(locale === "en" ? [...EN_DEFAULT_ADMIT_TRACKS] : null);
+    setAppliedDegreeLevel("all");
     const params = new URLSearchParams(searchParams.toString());
     params.delete("admit_track");
+    params.delete("degree_level");
     const q = params.toString();
     router.replace(q ? `${basePath}?${q}` : withLang(basePath, locale), {
       scroll: false,
@@ -536,6 +583,15 @@ export default function AdmissionsBulletinBoard({
       appliedTracks[0] === value
     );
   };
+
+  const setDegreeFilter = (value: DegreeLevelFilterValue) => {
+    setAppliedDegreeLevel(value);
+    syncDegreeLevelInUrl(value);
+    setPage(1);
+  };
+
+  const isDegreeChipActive = (value: DegreeLevelFilterValue) =>
+    appliedDegreeLevel === value;
 
   const clearUnivFilter = () => {
     setAppliedUnivId(null);
@@ -637,6 +693,20 @@ export default function AdmissionsBulletinBoard({
         },
       });
     }
+    if (appliedDegreeLevel !== "all") {
+      const opt = DEGREE_LEVEL_FILTER_OPTIONS.find(
+        (o) => o.value === appliedDegreeLevel
+      );
+      pills.push({
+        key: "degree",
+        label: locale === "en" ? opt?.en ?? appliedDegreeLevel : opt?.ko ?? appliedDegreeLevel,
+        clear: () => {
+          setAppliedDegreeLevel("all");
+          syncDegreeLevelInUrl("all");
+          setPage(1);
+        },
+      });
+    }
     return pills;
   }, [
     appliedSearch,
@@ -647,11 +717,13 @@ export default function AdmissionsBulletinBoard({
     appliedUnivId,
     univFilterLabel,
     appliedTracks,
+    appliedDegreeLevel,
     locale,
     t,
     searchParams,
     router,
     basePath,
+    syncDegreeLevelInUrl,
   ]);
 
   const empty = !loading && records.length === 0;
@@ -732,6 +804,29 @@ export default function AdmissionsBulletinBoard({
                   key={opt.value}
                   type="button"
                   onClick={() => setTrackFilter(opt.value)}
+                  className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                    active
+                      ? "border-[#2D5A27] bg-[#2D5A27] text-white"
+                      : "border-[#E5E5E0] bg-white text-[#1A1A1A] hover:border-[#2D5A27]/40"
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+          <div className="mb-3 flex flex-wrap gap-1.5">
+            <span className="w-full text-[11px] font-medium text-[#6B7280] sm:w-auto sm:mr-1 sm:self-center">
+              {t.degreeFilter}
+            </span>
+            {DEGREE_LEVEL_FILTER_OPTIONS.map((opt) => {
+              const active = isDegreeChipActive(opt.value);
+              const label = locale === "en" ? opt.en : opt.ko;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setDegreeFilter(opt.value)}
                   className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors ${
                     active
                       ? "border-[#2D5A27] bg-[#2D5A27] text-white"
@@ -918,6 +1013,10 @@ export default function AdmissionsBulletinBoard({
                       <div className="mb-2 flex flex-wrap items-center gap-2">
                         <AdmitTrackBadge
                           track={record.admitTrack}
+                          locale={locale}
+                        />
+                        <DegreeLevelBadge
+                          level={record.degreeLevel}
                           locale={locale}
                         />
                         {record.isVerified && (

@@ -1,5 +1,6 @@
 import type { AdmitTrack } from "@/lib/admissions/admit-track";
 import { EN_DEFAULT_ADMIT_TRACKS } from "@/lib/admissions/admit-track";
+import type { DegreeLevel } from "@/lib/admissions/degree-level";
 import { createClient } from "@/lib/supabase/server";
 import type { Admission, CrossComparison } from "@/lib/supabase/types";
 
@@ -15,6 +16,7 @@ export interface GetAdmissionsParams {
   search?: string;
   univ_id?: number;
   admit_track?: AdmitTrack[];
+  degree_level?: DegreeLevel[];
   sort?: AdmissionsSort;
   limit?: number;
   offset?: number;
@@ -47,6 +49,7 @@ const ADMISSION_DETAIL_SELECT = `
   source,
   source_url,
   admit_track,
+  degree_level,
   source_type,
   home_country,
   high_school_type,
@@ -199,6 +202,10 @@ export async function getAdmissions(
 
   if (params.admit_track && params.admit_track.length > 0) {
     query = query.in("admit_track", params.admit_track);
+  }
+
+  if (params.degree_level && params.degree_level.length > 0) {
+    query = query.in("degree_level", params.degree_level);
   }
 
   query = applySort(query, sortMode);
