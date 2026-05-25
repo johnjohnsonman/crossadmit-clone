@@ -1,18 +1,43 @@
 import type { Metadata } from "next";
 import { DEFAULT_KEYWORDS, SITE_NAME, SITE_URL } from "./constants";
 
-/** Canonical without lang; hreflang en/ko/x-default */
-export function seoAlternates(pathname: string): NonNullable<Metadata["alternates"]> {
+const GSC_VERIFICATION = process.env.NEXT_PUBLIC_GSC_VERIFICATION?.trim();
+
+export function localizedUrls(pathname: string) {
   const path = pathname.startsWith("/") ? pathname : `/${pathname}`;
   const canonical =
     path === "/" ? SITE_URL : `${SITE_URL}${path}`.replace(/\/$/, "");
 
   return {
     canonical,
+    ko: canonical,
+    en: `${canonical}?lang=en`,
+    xDefault: canonical,
+  };
+}
+
+/** Canonical without lang; hreflang en/ko/x-default */
+export function seoAlternates(pathname: string): NonNullable<Metadata["alternates"]> {
+  const urls = localizedUrls(pathname);
+
+  return {
+    canonical: urls.canonical,
     languages: {
-      en: `${canonical}?lang=en`,
-      ko: canonical,
-      "x-default": canonical,
+      en: urls.en,
+      ko: urls.ko,
+      "x-default": urls.xDefault,
+    },
+  };
+}
+
+export function sitemapAlternates(pathname: string) {
+  const urls = localizedUrls(pathname);
+
+  return {
+    languages: {
+      en: urls.en,
+      ko: urls.ko,
+      "x-default": urls.xDefault,
     },
   };
 }
@@ -85,7 +110,7 @@ export const rootMetadata: Metadata = {
       "max-snippet": -1,
     },
   },
-  verification: {},
+  verification: GSC_VERIFICATION ? { google: GSC_VERIFICATION } : {},
   category: "education",
 };
 

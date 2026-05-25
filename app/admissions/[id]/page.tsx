@@ -20,6 +20,7 @@ import AdmissionMentorBlock, {
 import AdmitTrackBadge from "@/components/admissions/AdmitTrackBadge";
 import DegreeLevelBadge from "@/components/admissions/DegreeLevelBadge";
 import { isAdmitTrack } from "@/lib/admissions/admit-track";
+import { seoAlternates } from "@/lib/seo/metadata";
 
 type PageProps = { params: Promise<{ id: string }> };
 
@@ -156,6 +157,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     return {
       title,
       description: row.title ?? `${row.year}년 합격 후기`,
+      alternates: seoAlternates(`/admissions/${id}`),
       openGraph: {
         title,
         type: "article",

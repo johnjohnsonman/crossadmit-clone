@@ -1,7 +1,9 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import AdmissionsBulletinBoard from "@/components/admissions/AdmissionsBulletinBoard";
 import { getDictionary } from "@/lib/i18n/dictionary";
 import { resolveLocale } from "@/lib/i18n/locale";
+import { seoAlternates } from "@/lib/seo/metadata";
 
 function AdmissionsFallback() {
   return (
@@ -14,6 +16,12 @@ function AdmissionsFallback() {
 type Props = {
   searchParams: Promise<{ lang?: string }>;
 };
+
+export function generateMetadata(): Metadata {
+  return {
+    alternates: seoAlternates("/admissions"),
+  };
+}
 
 export default async function AdmissionsPage({ searchParams }: Props) {
   const sp = await searchParams;

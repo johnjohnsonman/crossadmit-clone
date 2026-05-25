@@ -1,11 +1,16 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import StudyKoreaGuide from "@/components/study-korea/StudyKoreaGuide";
 import { resolveLocale } from "@/lib/i18n/locale";
+import { seoAlternates } from "@/lib/seo/metadata";
 
-export const metadata = {
-  title: "한국 유학 가이드 | CrossAdmit",
-  description: "Study in Korea tips from Reddit, Naver, and official sources",
-};
+export function generateMetadata(): Metadata {
+  return {
+    title: "한국 유학 가이드 | CrossAdmit",
+    description: "Study in Korea tips from Reddit, Naver, and official sources",
+    alternates: seoAlternates("/study-korea"),
+  };
+}
 
 function StudyKoreaFallback() {
   return (

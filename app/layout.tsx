@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import "./globals.css";
 import SiteChrome from "@/components/SiteChrome";
 import StructuredData from "@/components/StructuredData";
@@ -7,9 +8,53 @@ import {
   rootMetadata,
   websiteJsonLd,
 } from "@/lib/seo/metadata";
-import { SITE_URL } from "@/lib/seo/constants";
 
 export const metadata: Metadata = rootMetadata;
+
+const GA_ID = process.env.NEXT_PUBLIC_GA_ID?.trim();
+const SHOULD_LOAD_GA =
+  process.env.NODE_ENV === "production" && Boolean(GA_ID);
+
+function buildGaInitScript(gaId: string) {
+  return `
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    window.gtag = gtag;
+    gtag('js', new Date());
+    gtag('config', '${gaId}', { send_page_view: false });
+  `;
+}
+
+function buildGaPageviewScript(gaId: string) {
+  return `
+    (function () {
+      if (typeof window.gtag !== 'function') return;
+      const GA_ID = '${gaId}';
+      const sendPageView = function () {
+        window.gtag('event', 'page_view', {
+          page_title: document.title,
+          page_path: window.location.pathname + window.location.search,
+          page_location: window.location.href,
+        });
+      };
+
+      const wrapHistoryMethod = function (type) {
+        const original = history[type];
+        if (typeof original !== 'function') return;
+        history[type] = function () {
+          const result = original.apply(this, arguments);
+          window.setTimeout(sendPageView, 0);
+          return result;
+        };
+      };
+
+      wrapHistoryMethod('pushState');
+      wrapHistoryMethod('replaceState');
+      window.addEventListener('popstate', sendPageView);
+      sendPageView();
+    })();
+  `;
+}
 
 export default function RootLayout({
   children,
@@ -32,15 +77,22 @@ export default function RootLayout({
         />
         <StructuredData data={organizationJsonLd} />
         <StructuredData data={websiteJsonLd} />
-        <link rel="alternate" hrefLang="ko" href={SITE_URL} />
-        <link rel="alternate" hrefLang="en" href={`${SITE_URL}?lang=en`} />
-        <link rel="alternate" hrefLang="zh-CN" href={`${SITE_URL}/zh`} />
-        <link rel="alternate" hrefLang="zh-TW" href={`${SITE_URL}/zh-tw`} />
-        <link rel="alternate" hrefLang="es" href={`${SITE_URL}/es`} />
-        <link rel="alternate" hrefLang="ja" href={`${SITE_URL}/ja`} />
-        <link rel="alternate" hrefLang="x-default" href={SITE_URL} />
       </head>
       <body className="antialiased">
+        {SHOULD_LOAD_GA && GA_ID ? (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
+              strategy="afterInteractive"
+            />
+            <Script id="ga4-init" strategy="afterInteractive">
+              {buildGaInitScript(GA_ID)}
+            </Script>
+            <Script id="ga4-pageviews" strategy="afterInteractive">
+              {buildGaPageviewScript(GA_ID)}
+            </Script>
+          </>
+        ) : null}
         <SiteChrome>{children}</SiteChrome>
       </body>
     </html>

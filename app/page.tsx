@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import { Suspense } from "react";
+import { seoAlternates, seoOpenGraph, seoTwitter } from "@/lib/seo/metadata";
 import CrossAdmitPage from "./crossadmit/page";
 
 export const metadata: Metadata = {
@@ -35,26 +36,18 @@ export const metadata: Metadata = {
     "Yonsei University",
     "Korea University",
   ],
-  alternates: {
-    canonical: "https://crossadmit.com",
-    languages: {
-      ko: "https://crossadmit.com",
-      en: "https://crossadmit.com?lang=en",
-      "zh-CN": "https://crossadmit.com/zh",
-      "zh-TW": "https://crossadmit.com/zh-tw",
-      es: "https://crossadmit.com/es",
-      ja: "https://crossadmit.com/ja",
-    },
-  },
-  openGraph: {
+  alternates: seoAlternates("/"),
+  openGraph: seoOpenGraph({
     title: "크로스어드밋 | 대학 선택 통계 | CrossAdmit | 交叉录取",
     description:
       "두 대학에 동시에 합격했을 때 학생들의 선택 통계를 확인하세요. Compare university admission statistics. 比较大学录取统计。",
     type: "website",
     url: "https://crossadmit.com",
-    locale: "ko_KR",
-    alternateLocale: ["en_US", "zh_CN", "zh_TW", "es_ES", "ja_JP"],
-  },
+  }),
+  twitter: seoTwitter(
+    "크로스어드밋 | 대학 선택 통계 | CrossAdmit",
+    "두 대학에 동시에 합격했을 때 학생들의 선택 통계를 확인하세요."
+  ),
 };
 
 export default function Home() {

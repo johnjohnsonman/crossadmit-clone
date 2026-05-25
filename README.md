@@ -35,6 +35,8 @@ Supabase와 Vercel 배포를 위해 로컬 환경변수를 설정합니다.
 |------|------|
 | `NEXT_PUBLIC_SUPABASE_URL` | 프로젝트 URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | anon(public) 키 — 브라우저·서버 클라이언트용 |
+| `NEXT_PUBLIC_GA_ID` | Google Analytics 4 측정 ID (`G-XXXXXXXXXX`) |
+| `NEXT_PUBLIC_GSC_VERIFICATION` | Google Search Console 사이트 검증 코드 |
 | `SUPABASE_SERVICE_ROLE_KEY` | service_role 키 — 마이그레이션 스크립트 등 서버 전용 (절대 클라이언트에 노출 금지) |
 
 ```bash
@@ -69,6 +71,8 @@ npm run scheduler
 2. **Environment Variables**에 다음을 등록합니다:
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `NEXT_PUBLIC_GA_ID`
+   - `NEXT_PUBLIC_GSC_VERIFICATION`
    - `SUPABASE_SERVICE_ROLE_KEY` (서버/API 전용)
 3. Framework Preset: **Next.js** (자동 감지)
 4. Deploy 후 제공된 URL로 접속합니다.
