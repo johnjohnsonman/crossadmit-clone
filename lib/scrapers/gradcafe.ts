@@ -38,11 +38,49 @@ export const GRADCAFE_TARGET_QUERIES = [
   "Hanyang University",
   "Ewha",
   "Ewha Womans University",
+  "Sogang",
+  "Sogang University",
+  "Chung-Ang",
+  "Chung-Ang University",
+  "Konkuk",
+  "Konkuk University",
+  "Kyung Hee",
+  "Kyung Hee University",
+  "Dongguk",
+  "Dongguk University",
+  "Hongik",
+  "Hongik University",
+  "Sookmyung",
+  "Sookmyung Women's University",
+  "Pusan National University",
+  "PNU",
+  "Kyungpook National University",
+  "Chonnam National University",
+  "Chungnam National University",
+  "Chungbuk National University",
+  "Jeonbuk National University",
+  "DGIST",
+  "Daegu Gyeongbuk Institute of Science",
+  "KDI School",
+  "Korea University of Technology",
+  "KAIST CS",
+  "KAIST EE",
+  "KAIST AI",
+  "KAIST Biology",
+  "SNU CS",
+  "SNU EE",
+  "SNU MS",
+  "POSTECH CS",
+  "Yonsei CS",
+  "Yonsei EE",
+  "Korea University CS",
+  "Seoul Korea",
+  "Korea graduate school",
 ] as const;
 
 const FETCH_DELAY_MS = 1000;
 const PER_PAGE = 250;
-const MAX_PAGES_PER_QUERY = 30;
+const MAX_PAGES_PER_QUERY = 10;
 
 type GradCafeRow = {
   id: number;
@@ -89,16 +127,21 @@ const KOREAN_SCHOOL_RULES: KoreanSchoolRule[] = [
     exclude: /King Abdullah|KAUST|Kaiser/i,
   },
   {
-    test: (s) => /Seoul National University|\bSNU\b/i.test(s),
+    test: (s) =>
+      /Seoul National University|Seoul Nat(?:ional)?(?: Univ(?:ersity)?)?|\bSNU\b/i.test(
+        s
+      ),
     exclude: /Kaiser/i,
   },
   {
     test: (s) =>
-      /POSTECH|Pohang University of Science and Technology/i.test(s),
+      /POSTECH|Pohang University of Science(?: and Technology)?|Pohang\b/i.test(
+        s
+      ),
   },
   { test: (s) => /Yonsei University|Yonsei\b/i.test(s) },
   {
-    test: (s) => /Korea University/i.test(s),
+    test: (s) => /Korea University|Korea Univ\b/i.test(s),
     exclude: /King Abdullah|Study in Korea|Honorary/i,
   },
   {
@@ -115,8 +158,62 @@ const KOREAN_SCHOOL_RULES: KoreanSchoolRule[] = [
     test: (s) =>
       /Sungkyunkwan University|Sungkyunkwan\b|\bSKKU\b/i.test(s),
   },
-  { test: (s) => /Hanyang University|Hanyang\b/i.test(s) },
+  { test: (s) => /Hanyang University|Hanyang Univ\b|Hanyang\b/i.test(s) },
   { test: (s) => /Ewha Womans University|\bEwha\b/i.test(s) },
+  { test: (s) => /Sogang University|Sogang Univ\b|Sogang\b/i.test(s) },
+  {
+    test: (s) =>
+      /Chung[\s-]?Ang University|Chung[\s-]?Ang Univ\b|Chung[\s-]?Ang\b/i.test(
+        s
+      ),
+  },
+  { test: (s) => /Konkuk University|Konkuk Univ\b|Konkuk\b/i.test(s) },
+  {
+    test: (s) =>
+      /Kyung Hee University|Kyung Hee Univ\b|Kyung Hee\b/i.test(s),
+  },
+  { test: (s) => /Dongguk University|Dongguk Univ\b|Dongguk\b/i.test(s) },
+  { test: (s) => /Hongik University|Hongik Univ\b|Hongik\b/i.test(s) },
+  {
+    test: (s) =>
+      /Sookmyung(?: Women's| Womans)? University|Sookmyung\b/i.test(s),
+  },
+  {
+    test: (s) =>
+      /Pusan National University|Busan National University|\bPNU\b/i.test(s),
+    exclude: /Punjab|Pennsylvania/i,
+  },
+  {
+    test: (s) =>
+      /Kyungpook National University|Kyungpook Univ\b|Kyungpook\b/i.test(s),
+  },
+  {
+    test: (s) =>
+      /Chonnam National University|Chonnam Univ\b|Chonnam\b/i.test(s),
+  },
+  {
+    test: (s) =>
+      /Chungnam National University|Chungnam Univ\b|Chungnam\b/i.test(s),
+  },
+  {
+    test: (s) =>
+      /Chungbuk National University|Chungbuk Univ\b|Chungbuk\b/i.test(s),
+  },
+  {
+    test: (s) =>
+      /Jeonbuk National University|Jeonbuk Univ\b|Jeonbuk\b/i.test(s),
+  },
+  {
+    test: (s) =>
+      /\bDGIST\b|Daegu Gyeongbuk Institute of Science(?: and Technology)?/i.test(
+        s
+      ),
+  },
+  { test: (s) => /KDI School/i.test(s) },
+  {
+    test: (s) =>
+      /Korea University of Technology(?: and Education)?|KOREATECH/i.test(s),
+  },
 ];
 
 function sleep(ms: number) {
