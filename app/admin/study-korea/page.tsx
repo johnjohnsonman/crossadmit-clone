@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   Suspense,
   useCallback,
@@ -17,6 +18,8 @@ import {
   type SourceStatus,
 } from "@/lib/pipeline/study-korea/sources-registry";
 import { ADMISSION_QUERY_COUNT } from "@/lib/pipeline/study-korea/admission-queries";
+
+const SHOW_KR_INTL_AUTO_VERIFY = false;
 
 type PipelineRun = {
   id: string;
@@ -709,7 +712,9 @@ function AdminStudyKoreaInner() {
       void loadMentorTranslateStatus();
       void loadMentorViewStats();
       void loadAdmissionPendingCount();
-      void loadKrIntlStats();
+      if (SHOW_KR_INTL_AUTO_VERIFY) {
+        void loadKrIntlStats();
+      }
     } catch (e) {
       setAuthorized(false);
       setLoadErr(e instanceof Error ? e.message : "오류");
@@ -1492,6 +1497,7 @@ function AdminStudyKoreaInner() {
             </section>
             )}
 
+            {SHOW_KR_INTL_AUTO_VERIFY && (
             <section className="bg-sky-50 rounded-xl border border-sky-200 p-4 shadow-sm">
               <h2 className="text-sm font-bold text-sky-900 mb-2">
                 한국 대학 국제처 자동 verify
@@ -1547,6 +1553,7 @@ function AdminStudyKoreaInner() {
                 </div>
               )}
             </section>
+            )}
 
             <section className="bg-violet-50 rounded-xl border border-violet-200 p-4 shadow-sm">
               <h2 className="text-sm font-bold text-violet-900 mb-2">
