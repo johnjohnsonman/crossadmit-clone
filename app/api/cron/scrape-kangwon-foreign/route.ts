@@ -13,9 +13,11 @@ export async function GET(request: NextRequest) {
 
   try {
     const limitRaw = request.nextUrl.searchParams.get("limit");
-    const maxArticles = limitRaw
-      ? Math.min(Math.max(parseInt(limitRaw, 10), 1), 100)
-      : undefined;
+    const parsedLimit = limitRaw ? parseInt(limitRaw, 10) : NaN;
+    const maxArticles =
+      !Number.isNaN(parsedLimit) && parsedLimit > 0
+        ? Math.min(parsedLimit, 500)
+        : 100;
 
     console.log("[kangwon-foreign] cron started", { maxArticles });
     const result = await scrapeKangwonForeign({ maxArticles });

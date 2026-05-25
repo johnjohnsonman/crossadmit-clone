@@ -47,6 +47,10 @@ type OfficialSeriesConfig = {
   ) => ParsedOfficialSeriesArticle | null;
 };
 
+const DEFAULT_MAX_PAGES = 15;
+const DEFAULT_MAX_ARTICLES = 100;
+const HARD_MAX_ARTICLES = 500;
+
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -118,8 +122,15 @@ export async function runOfficialSeriesScraper(
   };
 
   try {
-    const items = await config.collect(options.maxPages ?? config.defaultMaxPages);
-    const toProcess = options.maxArticles ? items.slice(0, options.maxArticles) : items;
+    const maxPages =
+      options.maxPages ?? Math.max(config.defaultMaxPages, DEFAULT_MAX_PAGES);
+    const maxArticles = Math.min(
+      Math.max(options.maxArticles ?? DEFAULT_MAX_ARTICLES, 1),
+      HARD_MAX_ARTICLES
+    );
+
+    const items = await config.collect(maxPages);
+    const toProcess = items.slice(0, maxArticles);
 
     result.articles_found = items.length;
     result.collected = toProcess.length;
