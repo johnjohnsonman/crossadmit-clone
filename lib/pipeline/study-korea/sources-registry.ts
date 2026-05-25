@@ -79,6 +79,14 @@ export const STUDY_KOREA_SOURCE_META: StudyKoreaSourceMeta[] = [
     note: "UIC [Student Interview] 공식 시리즈 → admissions 라우팅",
   },
   {
+    id: "ku_insights",
+    label: "KU Insights",
+    cronPath: "/api/cron/scrape-ku-insights",
+    color: "bg-fuchsia-100 text-fuchsia-800",
+    status: "active",
+    note: "Korea University 공식 국제학생 인터뷰/캠퍼스 스토리 → admissions 라우팅",
+  },
+  {
     id: "kaist_herald",
     label: "KAIST Herald interviews",
     cronPath: "/api/cron/scrape-kaist-herald",
