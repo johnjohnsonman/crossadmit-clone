@@ -8,7 +8,7 @@ export function Shimmer({ className = "" }: { className?: string }) {
 
 export function AdmissionsListSkeleton({ count = 5 }: { count?: number }) {
   return (
-    <div className="divide-y divide-[#E5E5E0] rounded-xl border border-[#E5E5E0] bg-white overflow-hidden">
+    <div className="divide-y divide-[#343536] rounded-xl border border-[#343536] bg-[#1A1A1B] overflow-hidden">
       {Array.from({ length: count }).map((_, i) => (
         <div key={i} className="px-5 py-5 flex gap-6">
           <div className="w-20 space-y-2 shrink-0">

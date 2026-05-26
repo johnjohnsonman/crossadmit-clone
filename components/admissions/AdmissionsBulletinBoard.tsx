@@ -112,12 +112,12 @@ const TYPE_OPTIONS: { value: string; ko: string; en: string }[] = [
 ];
 
 const selectClass =
-  "rounded-lg border border-[#E5E5E0] bg-white px-3 py-2 text-sm text-[#1A1A1A] " +
-  "focus:outline-none focus:ring-2 focus:ring-[#2D5A27]";
+  "rounded-lg border border-[#343536] bg-[#272729] px-3 py-2 text-sm text-[#D7DADC] " +
+  "focus:outline-none focus:ring-2 focus:ring-orange-500/40";
 
 const inputClass =
-  "w-full rounded-lg border border-[#E5E5E0] bg-white px-3 py-2 pl-9 text-sm text-[#1A1A1A] " +
-  "placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#2D5A27]";
+  "w-full rounded-lg border border-[#343536] bg-[#272729] px-3 py-2 pl-9 text-sm text-[#D7DADC] " +
+  "placeholder:text-[#7C7C7C] focus:outline-none focus:ring-2 focus:ring-orange-500/40";
 
 function specPills(record: AdmissionRecord, locale: "ko" | "en"): string[] {
   const t = TEXT[locale];
@@ -169,7 +169,7 @@ function PageNumbers({
     <div className="flex flex-wrap items-center justify-center gap-1">
       {deduped.map((p, i) =>
         p === "ellipsis" ? (
-          <span key={`e-${i}`} className="px-2 text-[#9CA3AF]">
+          <span key={`e-${i}`} className="px-2 text-[#7C7C7C]">
             ...
           </span>
         ) : (
@@ -180,7 +180,7 @@ function PageNumbers({
             className={`min-w-[2.25rem] rounded-md px-2 py-1 text-sm transition-colors ${
               p === current
                 ? "bg-orange-500 font-semibold text-white"
-                : "border border-[#E5E5E0] bg-white text-[#1A1A1A] hover:bg-[#F5F5F4]"
+                : "border border-[#343536] bg-[#1A1A1B] text-[#D7DADC] hover:bg-[#272729]"
             }`}
           >
             {p}
@@ -739,29 +739,29 @@ export default function AdmissionsBulletinBoard({
   const showIntlEmpty = empty && locale === "en" && isIntlGksOnlyFilter;
 
   return (
-    <main className="min-h-screen bg-[#FAFAF8] text-[#1A1A1A]">
-      <div className="border-b border-[#E5E5E0] bg-white">
+    <main className="min-h-screen bg-gray-950 text-[#D7DADC]">
+      <div className="border-b border-[#343536] bg-[#1A1A1B]">
         <div className="container mx-auto max-w-4xl px-4 py-8 sm:py-10">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-[#1A1A1A]">
+              <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-[#D7DADC]">
                 {t.title}
               </h1>
               {locale === "en" ? (
                 <>
-                  <p className="mt-2 text-base sm:text-lg font-semibold text-[#1A1A1A] leading-relaxed">
+                  <p className="mt-2 text-base sm:text-lg font-semibold text-[#D7DADC] leading-relaxed">
                     🌏{" "}
                     {(intlSummary?.total ?? 0).toLocaleString()} international
                     admission stories
                   </p>
-                  <p className="mt-1 text-sm text-[#6B7280] leading-relaxed">
+                  <p className="mt-1 text-sm text-[#7C7C7C] leading-relaxed">
                     {intlSummary?.countries?.length
                       ? `From around the world: ${intlSummary.countries.join(", ")}`
                       : "From around the world: Vietnam, Nepal, Kyrgyzstan, Indonesia..."}
                   </p>
                 </>
               ) : (
-                <p className="mt-2 text-sm text-[#6B7280] leading-relaxed">
+                <p className="mt-2 text-sm text-[#7C7C7C] leading-relaxed">
                   {t.subtitle(total)}
                 </p>
               )}
@@ -790,10 +790,10 @@ export default function AdmissionsBulletinBoard({
         />
       </div>
 
-      <div className="sticky top-14 z-20 border-b border-[#E5E5E0] bg-white/95 backdrop-blur shadow-sm">
+      <div className="sticky top-14 z-20 border-b border-[#343536] bg-[#1A1A1B]/95 backdrop-blur">
         <div className="container mx-auto max-w-4xl px-4 py-3">
           <div className="mb-3 flex flex-wrap gap-1.5">
-            <span className="w-full text-[11px] font-medium text-[#6B7280] sm:w-auto sm:mr-1 sm:self-center">
+            <span className="w-full text-[11px] font-medium text-[#7C7C7C] sm:w-auto sm:mr-1 sm:self-center">
               {t.trackFilter}
             </span>
             {ADMIT_TRACK_FILTER_OPTIONS.map((opt) => {
@@ -806,8 +806,8 @@ export default function AdmissionsBulletinBoard({
                   onClick={() => setTrackFilter(opt.value)}
                   className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors ${
                     active
-                      ? "border-[#2D5A27] bg-[#2D5A27] text-white"
-                      : "border-[#E5E5E0] bg-white text-[#1A1A1A] hover:border-[#2D5A27]/40"
+                      ? "border-orange-500 bg-orange-500 text-white"
+                      : "border-[#343536] bg-[#1A1A1B] text-[#D7DADC] hover:border-orange-500/40 hover:bg-[#272729]"
                   }`}
                 >
                   {label}
@@ -816,7 +816,7 @@ export default function AdmissionsBulletinBoard({
             })}
           </div>
           <div className="mb-3 flex flex-wrap gap-1.5">
-            <span className="w-full text-[11px] font-medium text-[#6B7280] sm:w-auto sm:mr-1 sm:self-center">
+            <span className="w-full text-[11px] font-medium text-[#7C7C7C] sm:w-auto sm:mr-1 sm:self-center">
               {t.degreeFilter}
             </span>
             {DEGREE_LEVEL_FILTER_OPTIONS.map((opt) => {
@@ -829,8 +829,8 @@ export default function AdmissionsBulletinBoard({
                   onClick={() => setDegreeFilter(opt.value)}
                   className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors ${
                     active
-                      ? "border-[#2D5A27] bg-[#2D5A27] text-white"
-                      : "border-[#E5E5E0] bg-white text-[#1A1A1A] hover:border-[#2D5A27]/40"
+                      ? "border-orange-500 bg-orange-500 text-white"
+                      : "border-[#343536] bg-[#1A1A1B] text-[#D7DADC] hover:border-orange-500/40 hover:bg-[#272729]"
                   }`}
                 >
                   {label}
@@ -840,7 +840,7 @@ export default function AdmissionsBulletinBoard({
           </div>
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:flex-wrap">
             <div className="relative flex-1 min-w-[200px]">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9CA3AF] text-sm pointer-events-none">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7C7C7C] text-sm pointer-events-none">
                 🔍
               </span>
               <input
@@ -889,7 +889,7 @@ export default function AdmissionsBulletinBoard({
               <option value="regist">{locale === "en" ? "Enrolled" : "등록"}</option>
               <option value="reject">{locale === "en" ? "Rejected" : "불합격"}</option>
             </select>
-            <div className="flex items-center gap-2 text-sm text-[#6B7280]">
+            <div className="flex items-center gap-2 text-sm text-[#7C7C7C]">
               <span className="shrink-0">{t.sortLabel}:</span>
               <select
                 className={selectClass}
@@ -911,7 +911,7 @@ export default function AdmissionsBulletinBoard({
                   key={p.key}
                   type="button"
                   onClick={p.clear}
-                  className="inline-flex items-center gap-1 rounded-full bg-orange-50 border border-orange-200 px-2.5 py-1 text-xs font-medium text-[#D97706] hover:bg-orange-100"
+                  className="inline-flex items-center gap-1 rounded-full border border-orange-500/30 bg-orange-500/10 px-2.5 py-1 text-xs font-medium text-orange-300 hover:bg-orange-500/15"
                 >
                   {p.label}
                   <span aria-hidden>×</span>
@@ -920,7 +920,7 @@ export default function AdmissionsBulletinBoard({
               <button
                 type="button"
                 onClick={resetFilters}
-                className="text-xs font-medium text-gray-400 hover:text-orange-400 underline-offset-2 hover:underline"
+                className="text-xs font-medium text-[#7C7C7C] hover:text-orange-400 underline-offset-2 hover:underline"
               >
                 {t.resetFilters}
               </button>
@@ -935,16 +935,16 @@ export default function AdmissionsBulletinBoard({
         {loading ? (
           <AdmissionsListSkeleton count={5} />
         ) : empty ? (
-          <div className="rounded-xl border border-[#E5E5E0] bg-white px-6 py-16 text-center shadow-sm">
+          <div className="rounded-xl border border-[#343536] bg-[#1A1A1B] px-6 py-16 text-center">
             {showIntlEmpty ? (
               <>
                 <p className="text-4xl" aria-hidden>
                   🌏
                 </p>
-                <p className="mt-4 text-lg font-semibold text-[#1A1A1A]">
+                <p className="mt-4 text-lg font-semibold text-[#D7DADC]">
                   {TEXT.en.emptyIntlTitle}
                 </p>
-                <p className="mt-2 text-sm text-[#6B7280] max-w-md mx-auto">
+                <p className="mt-2 text-sm text-[#7C7C7C] max-w-md mx-auto">
                   {TEXT.en.emptyIntlSub}
                 </p>
                 <Link
@@ -956,7 +956,7 @@ export default function AdmissionsBulletinBoard({
                 <p className="mt-4">
                   <Link
                     href={withLang("/about-stories", locale)}
-                    className="text-sm font-medium text-[#6B7280] hover:text-[#D97706] underline-offset-2 hover:underline"
+                    className="text-sm font-medium text-[#7C7C7C] hover:text-orange-400 underline-offset-2 hover:underline"
                   >
                     {TEXT.en.emptyIntlWhy}
                   </Link>
@@ -964,11 +964,11 @@ export default function AdmissionsBulletinBoard({
               </>
             ) : (
               <>
-                <p className="text-[#6B7280]">{t.empty}</p>
+                <p className="text-[#7C7C7C]">{t.empty}</p>
                 <button
                   type="button"
                   onClick={resetFilters}
-                  className="mt-4 text-sm font-medium text-[#D97706] hover:underline"
+                  className="mt-4 text-sm font-medium text-orange-400 hover:underline"
                 >
                   {t.resetFilters}
                 </button>
@@ -976,7 +976,7 @@ export default function AdmissionsBulletinBoard({
             )}
           </div>
         ) : (
-          <div className="rounded-xl border border-[#E5E5E0] bg-white overflow-hidden shadow-sm">
+          <div className="rounded-xl border border-[#343536] bg-[#1A1A1B] overflow-hidden">
             {records.map((record, idx) => {
               const nick = record.userHandle?.trim() || t.anonymous;
               const lines = schoolDisplayLines(record, locale);
@@ -990,23 +990,23 @@ export default function AdmissionsBulletinBoard({
               return (
                 <article
                   key={record.id}
-                  className={`group px-4 sm:px-5 py-5 transition-colors hover:bg-[#F5F5F4] ${
+                  className={`group px-4 sm:px-5 py-5 transition-colors hover:bg-[#232326] ${
                     record.isFeatured ? "border-l-2 border-l-orange-500" : ""
-                  } ${idx < records.length - 1 ? "border-b border-[#E5E5E0]" : ""}`}
+                  } ${idx < records.length - 1 ? "border-b border-[#343536]" : ""}`}
                 >
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
                     <div className="flex sm:flex-col gap-4 sm:gap-0 sm:w-24 shrink-0">
                       <div>
-                        <p className="text-2xl font-bold tracking-tight text-[#1A1A1A] tabular-nums">
+                        <p className="text-2xl font-bold tracking-tight text-[#D7DADC] tabular-nums">
                           {record.year}
                         </p>
                         {primaryType ? (
-                          <p className="mt-0.5 text-xs text-[#6B7280]">
+                          <p className="mt-0.5 text-xs text-[#7C7C7C]">
                             {primaryType}
                           </p>
                         ) : null}
                       </div>
-                      <p className="text-xs text-[#6B7280] sm:mt-2">{nick}</p>
+                      <p className="text-xs text-[#7C7C7C] sm:mt-2">{nick}</p>
                     </div>
 
                     <div className="min-w-0 flex-1">
@@ -1020,11 +1020,11 @@ export default function AdmissionsBulletinBoard({
                           locale={locale}
                         />
                         {record.isVerified && (
-                          <span className="text-[10px] font-semibold text-[#2D5A27] border border-[#2D5A27]/40 rounded-full px-2 py-0.5">
+                          <span className="text-[10px] font-semibold text-orange-300 border border-orange-500/30 rounded-full px-2 py-0.5">
                             {locale === "en" ? "Verified" : "인증"}
                           </span>
                         )}
-                        <h2 className="text-sm font-medium text-[#1A1A1A] line-clamp-2 sm:text-base">
+                        <h2 className="text-sm font-medium text-[#D7DADC] line-clamp-2 sm:text-base">
                           {record.title}
                         </h2>
                       </div>
@@ -1033,7 +1033,7 @@ export default function AdmissionsBulletinBoard({
                           admissionId={record.id}
                           initialCount={record.likesCount ?? 0}
                         />
-                        <span className="text-sm text-[#6B7280] tabular-nums">
+                        <span className="text-sm text-[#7C7C7C] tabular-nums">
                           💬 {record.dcCommentCount ?? 0}
                         </span>
                       </div>
@@ -1052,10 +1052,10 @@ export default function AdmissionsBulletinBoard({
                               <span
                                 className={
                                   line.badge === "등록"
-                                    ? "font-semibold text-[#1A1A1A]"
+                                    ? "font-semibold text-[#D7DADC]"
                                     : line.badge === "합격"
-                                      ? "font-medium text-[#1A1A1A]"
-                                      : "text-[#9CA3AF] line-through"
+                                      ? "font-medium text-[#D7DADC]"
+                                      : "text-[#7C7C7C] line-through"
                                 }
                               >
                                 {line.univ}
@@ -1064,10 +1064,10 @@ export default function AdmissionsBulletinBoard({
                                 <span
                                   className={
                                     line.badge === "등록"
-                                      ? "text-sm text-[#6B7280]"
+                                      ? "text-sm text-[#9CA3AF]"
                                       : line.badge === "합격"
-                                        ? "text-sm text-[#6B7280]"
-                                        : "text-sm text-[#9CA3AF] line-through"
+                                        ? "text-sm text-[#9CA3AF]"
+                                        : "text-sm text-[#7C7C7C] line-through"
                                   }
                                 >
                                   {line.dept}
@@ -1076,7 +1076,7 @@ export default function AdmissionsBulletinBoard({
                             </div>
                           ))
                         ) : (
-                          <p className="text-sm text-[#9CA3AF]">—</p>
+                          <p className="text-sm text-[#7C7C7C]">—</p>
                         )}
                       </div>
 
@@ -1085,7 +1085,7 @@ export default function AdmissionsBulletinBoard({
                           {pills.map((pill) => (
                             <span
                               key={pill}
-                              className="rounded-full bg-[#FAFAF8] border border-[#E5E5E0] px-2 py-0.5 text-[11px] text-[#6B7280]"
+                              className="rounded-full bg-[#272729] border border-[#343536] px-2 py-0.5 text-[11px] text-[#9CA3AF]"
                             >
                               {pill}
                             </span>
@@ -1100,13 +1100,13 @@ export default function AdmissionsBulletinBoard({
                           admissionId={record.id}
                           initialCount={record.likesCount ?? 0}
                         />
-                        <span className="text-[#6B7280] tabular-nums">
+                        <span className="text-[#7C7C7C] tabular-nums">
                           💬 {record.dcCommentCount ?? 0}
                         </span>
                       </div>
                       <Link
                         href={detailHref(record.id)}
-                        className="text-sm font-medium text-[#D97706] hover:underline opacity-80 group-hover:opacity-100"
+                        className="text-sm font-medium text-orange-400 hover:underline opacity-80 group-hover:opacity-100"
                       >
                         {t.more}
                       </Link>
@@ -1116,7 +1116,7 @@ export default function AdmissionsBulletinBoard({
                   <div className="mt-2 sm:hidden">
                     <Link
                       href={detailHref(record.id)}
-                      className="text-sm font-medium text-[#D97706] hover:underline"
+                      className="text-sm font-medium text-orange-400 hover:underline"
                     >
                       {t.more}
                     </Link>
@@ -1133,7 +1133,7 @@ export default function AdmissionsBulletinBoard({
               type="button"
               disabled={page <= 1}
               onClick={() => setPage((p) => Math.max(1, p - 1))}
-              className="rounded-lg border border-[#E5E5E0] bg-white px-4 py-2 text-sm text-[#1A1A1A] hover:bg-[#F5F5F4] disabled:opacity-40"
+              className="rounded-lg border border-[#343536] bg-[#1A1A1B] px-4 py-2 text-sm text-[#D7DADC] hover:bg-[#272729] disabled:opacity-40"
             >
               {t.prev}
             </button>
@@ -1146,7 +1146,7 @@ export default function AdmissionsBulletinBoard({
               type="button"
               disabled={page >= totalPages}
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              className="rounded-lg border border-[#E5E5E0] bg-white px-4 py-2 text-sm text-[#1A1A1A] hover:bg-[#F5F5F4] disabled:opacity-40"
+              className="rounded-lg border border-[#343536] bg-[#1A1A1B] px-4 py-2 text-sm text-[#D7DADC] hover:bg-[#272729] disabled:opacity-40"
             >
               {t.next}
             </button>

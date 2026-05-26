@@ -37,23 +37,23 @@ function FeaturedCard({
   return (
     <Link
       href={href}
-      className="flex flex-col rounded-xl border border-[#E5E5E0] bg-white p-5 shadow-sm transition-all hover:border-[#2D5A27] hover:shadow-md min-h-[180px]"
+      className="flex flex-col rounded-xl border border-[#343536] bg-[#1A1A1B] p-5 transition-all hover:border-orange-500/40 hover:bg-[#232326] min-h-[180px]"
     >
       <div className="flex flex-wrap items-center gap-2">
         <AdmitTrackBadge track={record.admitTrack} locale={locale} />
         <DegreeLevelBadge level={record.degreeLevel} locale={locale} />
         {record.isVerified && (
-          <span className="text-[10px] font-semibold text-[#2D5A27] border border-[#2D5A27] rounded-full px-2 py-0.5">
+          <span className="text-[10px] font-semibold text-orange-300 border border-orange-500/30 rounded-full px-2 py-0.5">
             Verified
           </span>
         )}
       </div>
-      <p className="mt-3 text-lg font-bold text-[#1A1A1A] line-clamp-2">{top}</p>
-      <p className="mt-1 text-sm text-[#6B7280] tabular-nums">{record.year}</p>
-      <p className="mt-3 text-xs text-[#4B5563] font-mono bg-[#FAFAF8] rounded px-2 py-1">
+      <p className="mt-3 text-lg font-bold text-[#D7DADC] line-clamp-2">{top}</p>
+      <p className="mt-1 text-sm text-[#7C7C7C] tabular-nums">{record.year}</p>
+      <p className="mt-3 text-xs text-[#9CA3AF] font-mono bg-[#272729] rounded px-2 py-1 border border-[#343536]">
         {scoreSnippet(record)}
       </p>
-      <p className="mt-auto pt-4 text-sm font-semibold text-[#2D5A27]">
+      <p className="mt-auto pt-4 text-sm font-semibold text-orange-400">
         Read full story →
       </p>
     </Link>
@@ -95,8 +95,8 @@ export default function FeaturedIntlStories({ locale, hrefForId }: Props) {
 
   return (
     <section className="mb-8">
-      <h2 className="text-lg font-bold text-[#1A1A1A]">Featured stories</h2>
-      <p className="mt-1 text-sm text-[#6B7280]">
+      <h2 className="text-lg font-bold text-[#D7DADC]">Featured stories</h2>
+      <p className="mt-1 text-sm text-[#7C7C7C]">
         International & overseas Korean admission journeys
       </p>
       {loading ? (
@@ -104,7 +104,7 @@ export default function FeaturedIntlStories({ locale, hrefForId }: Props) {
           {[1, 2, 3, 4].map((i) => (
             <div
               key={i}
-              className="h-[180px] rounded-xl border border-[#E5E5E0] bg-white animate-pulse"
+              className="h-[180px] rounded-xl border border-[#343536] bg-[#1A1A1B] animate-pulse"
             />
           ))}
         </div>
@@ -120,11 +120,11 @@ export default function FeaturedIntlStories({ locale, hrefForId }: Props) {
               />
             ))}
           </div>
-          <div className="mt-4 rounded-xl border border-[#E5E5E0] bg-[#FFFBF5] px-4 py-3 text-sm text-[#6B7280] flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="mt-4 rounded-xl border border-[#343536] bg-[#1A1A1B] px-4 py-3 text-sm text-[#7C7C7C] flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <p>Want to share your journey?</p>
             <Link
               href="/admissions/new?lang=en"
-              className="font-semibold text-[#D97706] hover:underline"
+              className="font-semibold text-orange-400 hover:underline"
             >
               Submit your story →
             </Link>

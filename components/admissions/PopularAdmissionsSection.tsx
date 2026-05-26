@@ -36,37 +36,37 @@ function PopularCard({
   return (
     <Link
       href={href}
-      className="group flex min-w-[240px] max-w-[280px] shrink-0 flex-col rounded-xl border border-[#E5E5E0] bg-white p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#2D5A27]/40 sm:min-w-0 sm:max-w-none sm:flex-1"
+      className="group flex min-w-[240px] max-w-[280px] shrink-0 flex-col rounded-xl border border-[#343536] bg-[#1A1A1B] p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-orange-500/40 hover:bg-[#232326] sm:min-w-0 sm:max-w-none sm:flex-1"
     >
       <div className="flex justify-end">
-        <span className="text-sm font-semibold text-[#D97706] tabular-nums">
+        <span className="text-sm font-semibold text-orange-300 tabular-nums">
           👍 {likes}
         </span>
       </div>
 
       <div className="mt-3 flex-1">
-        <p className="text-base font-semibold tracking-tight text-[#1A1A1A]">
+        <p className="text-base font-semibold tracking-tight text-[#D7DADC]">
           {record.year}
           {locale === "ko" ? "년" : ""}{" "}
           {primaryType && (
-            <span className="font-normal text-[#6B7280]">{primaryType}</span>
+            <span className="font-normal text-[#7C7C7C]">{primaryType}</span>
           )}
         </p>
 
         {regist ? (
           <div className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
             <StatusBadge status="enroll" label={regist.badgeLabel} />
-            <span className="font-semibold text-[#1A1A1A]">{regist.univ}</span>
+            <span className="font-semibold text-[#D7DADC]">{regist.univ}</span>
             {regist.dept ? (
-              <span className="text-sm text-[#6B7280]">{regist.dept}</span>
+              <span className="text-sm text-[#9CA3AF]">{regist.dept}</span>
             ) : null}
           </div>
         ) : (
-          <p className="mt-3 text-sm text-[#9CA3AF]">—</p>
+          <p className="mt-3 text-sm text-[#7C7C7C]">—</p>
         )}
       </div>
 
-      <p className="mt-4 text-sm font-medium text-[#D97706] group-hover:underline">
+      <p className="mt-4 text-sm font-medium text-orange-400 group-hover:underline">
         {moreLabel}
       </p>
     </Link>
@@ -89,7 +89,7 @@ export default function PopularAdmissionsSection({
     return (
       <section className="mb-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-semibold tracking-tight text-[#1A1A1A]">
+          <h2 className="text-base font-semibold tracking-tight text-[#D7DADC]">
             {title}
           </h2>
         </div>
@@ -97,7 +97,7 @@ export default function PopularAdmissionsSection({
           {[0, 1, 2].map((i) => (
             <div
               key={i}
-              className="min-w-[240px] h-40 rounded-xl border border-[#E5E5E0] bg-white animate-pulse sm:min-w-0"
+              className="min-w-[240px] h-40 rounded-xl border border-[#343536] bg-[#1A1A1B] animate-pulse sm:min-w-0"
             />
           ))}
         </div>
@@ -110,13 +110,13 @@ export default function PopularAdmissionsSection({
   return (
     <section className="mb-8">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-base font-semibold tracking-tight text-[#1A1A1A]">
+        <h2 className="text-base font-semibold tracking-tight text-[#D7DADC]">
           {title}
         </h2>
         <button
           type="button"
           onClick={onViewAll}
-          className="text-sm font-medium text-[#D97706] hover:underline"
+          className="text-sm font-medium text-orange-400 hover:underline"
         >
           {viewAll}
         </button>
@@ -150,11 +150,11 @@ export function AdmissionsListDivider({
 
   return (
     <div className="relative flex items-center my-8">
-      <div className="flex-1 border-t border-[#E5E5E0]" />
-      <span className="px-4 text-xs font-medium text-[#6B7280] whitespace-nowrap">
+      <div className="flex-1 border-t border-[#343536]" />
+      <span className="px-4 text-xs font-medium text-[#7C7C7C] whitespace-nowrap">
         {label}
       </span>
-      <div className="flex-1 border-t border-[#E5E5E0]" />
+      <div className="flex-1 border-t border-[#343536]" />
     </div>
   );
 }
