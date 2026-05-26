@@ -11,6 +11,10 @@ import AutocompleteInput, {
 } from "@/components/AutocompleteInput";
 import { KOREAN_MAJORS } from "@/lib/data/korean-majors";
 import {
+  FILTERABLE_NATIONALITIES,
+  GENDER_OPTIONS,
+} from "@/lib/i18n/nationalities";
+import {
   KOREAN_UNIVERSITIES,
   resolveUniversityInput,
 } from "@/lib/data/korean-universities";
@@ -82,11 +86,31 @@ const majorOptions: AutocompleteItem[] = KOREAN_MAJORS.map((label) => ({
   label,
 }));
 
+const koNationalityOptions: AutocompleteItem[] = FILTERABLE_NATIONALITIES.map((item) => ({
+  label: `${item.flag} ${item.name_ko}`,
+  hint: `${item.name_en} · ${item.code}`,
+}));
+
 const inputBase =
   "block w-full rounded-lg border border-gray-800 bg-gray-900 px-3 py-2 text-sm text-white shadow-sm " +
   "placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500";
 const inputClass = `mt-1 ${inputBase}`;
 const labelClass = "block text-sm font-medium text-gray-300";
+
+function matchNationalityInput(raw: string) {
+  const normalized = raw.trim().toLowerCase();
+  if (!normalized) return undefined;
+  return FILTERABLE_NATIONALITIES.find((item) => {
+    const values = [
+      item.code,
+      item.name_ko,
+      item.name_en,
+      `${item.flag} ${item.name_ko}`,
+      `${item.flag} ${item.name_en}`,
+    ];
+    return values.some((value) => value.trim().toLowerCase() === normalized);
+  });
+}
 
 function statusSelectClass(s: SchoolStatus): string {
   switch (s) {
@@ -113,7 +137,9 @@ function AdmissionNewPageKo() {
   const [specOpen, setSpecOpen] = useState(false);
 
   const [nickname, setNickname] = useState("");
-  const [nationality, setNationality] = useState("");
+  const [nationalityInput, setNationalityInput] = useState("");
+  const [nationalityCode, setNationalityCode] = useState("");
+  const [gender, setGender] = useState("");
   const [csatTotal, setCsatTotal] = useState("");
   const [csatKorean, setCsatKorean] = useState("");
   const [csatMath, setCsatMath] = useState("");
@@ -362,6 +388,8 @@ function AdmissionNewPageKo() {
           admission_type: admissionType,
           admit_track: admitTrack,
           nickname: nickname.trim(),
+          nationality_code: nationalityCode || undefined,
+          gender: gender || undefined,
           input_score: csatTotal.trim(),
           input_gpa: gpaGrade.trim(),
           input_specialty: [satAct.trim(), englishTest.trim()]
@@ -630,19 +658,52 @@ function AdmissionNewPageKo() {
                       />
                     </div>
                     <div>
-                      <label className={labelClass} htmlFor="nationality">
-                        국적
+                    <label className={labelClass} htmlFor="nationality">
+                      국적 (선택사항)
                       </label>
-                      <input
+                    <AutocompleteInput
                         id="nationality"
-                        type="text"
-                        className={inputClass}
-                        placeholder="예: Korean, Vietnamese"
-                        value={nationality}
-                        onChange={(e) => setNationality(e.target.value)}
+                      options={koNationalityOptions}
+                      value={nationalityInput}
+                      onChange={(value) => {
+                        setNationalityInput(value);
+                        setNationalityCode(matchNationalityInput(value)?.code ?? "");
+                      }}
+                      onSelect={(value) => {
+                        setNationalityInput(value);
+                        setNationalityCode(matchNationalityInput(value)?.code ?? "");
+                      }}
+                      placeholder="국적 검색 또는 선택"
+                      className={inputClass}
                       />
                     </div>
                   </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className={labelClass} htmlFor="gender">
+                      성별 (선택사항)
+                    </label>
+                    <select
+                      id="gender"
+                      className={inputClass}
+                      value={gender}
+                      onChange={(e) => setGender(e.target.value)}
+                    >
+                      <option value="">선택 안 함</option>
+                      {GENDER_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.name_ko}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <p className="rounded-lg border border-gray-800 bg-gray-900/70 px-3 py-2 text-xs text-gray-400">
+                  다른 학생들이 비슷한 배경의 합격 사례를 찾는 데 도움이 됩니다.
+                  선택사항이며 언제든 변경할 수 있습니다.
+                </p>
 
                   <div>
                     <label className={labelClass} htmlFor="csat_total">

@@ -17,12 +17,18 @@ import {
   type AdmitTrack,
   type SourceType,
 } from "@/lib/admissions/admit-track";
+import {
+  FILTERABLE_NATIONALITIES,
+  GENDER_OPTIONS,
+} from "@/lib/i18n/nationalities";
 
 type AdminAdmission = {
   id: number;
   title: string;
   user_handle: string;
   year: number;
+  nationality_code?: string | null;
+  gender?: string | null;
   published: boolean | null;
   likes_count?: number | null;
   is_featured?: boolean | null;
@@ -304,6 +310,8 @@ function AdminInner() {
                   <th className="p-3 font-semibold">제목</th>
                   <th className="p-3 font-semibold">닉네임</th>
                   <th className="p-3 font-semibold">연도</th>
+                  <th className="p-3 font-semibold">국적</th>
+                  <th className="p-3 font-semibold">성별</th>
                   <th className="p-3 font-semibold">admit_track</th>
                   <th className="p-3 font-semibold">source_type</th>
                   <th className="p-3 font-semibold">공개</th>
@@ -337,6 +345,44 @@ function AdminInner() {
                         <td className="p-3 max-w-xs truncate">{r.title}</td>
                         <td className="p-3">{r.user_handle}</td>
                         <td className="p-3">{r.year}</td>
+                        <td className="p-3 min-w-[10rem]">
+                          <select
+                            className="w-full max-w-[11rem] rounded border border-gray-300 px-1 py-1 text-xs"
+                            value={r.nationality_code ?? ""}
+                            disabled={savingFor === `${r.id}:nationality_code`}
+                            onChange={(e) =>
+                              void patchField(
+                                r.id,
+                                "nationality_code",
+                                e.target.value,
+                              )
+                            }
+                          >
+                            <option value="">미입력</option>
+                            {FILTERABLE_NATIONALITIES.map((item) => (
+                              <option key={item.code} value={item.code}>
+                                {item.flag} {item.name_ko}
+                              </option>
+                            ))}
+                          </select>
+                        </td>
+                        <td className="p-3 min-w-[8rem]">
+                          <select
+                            className="w-full max-w-[9rem] rounded border border-gray-300 px-1 py-1 text-xs"
+                            value={r.gender ?? ""}
+                            disabled={savingFor === `${r.id}:gender`}
+                            onChange={(e) =>
+                              void patchField(r.id, "gender", e.target.value)
+                            }
+                          >
+                            <option value="">미입력</option>
+                            {GENDER_OPTIONS.map((option) => (
+                              <option key={option.value} value={option.value}>
+                                {option.name_ko}
+                              </option>
+                            ))}
+                          </select>
+                        </td>
                         <td className="p-3 min-w-[9rem]">
                           <select
                             className="w-full max-w-[10rem] rounded border border-gray-300 px-1 py-1 text-xs"
@@ -451,7 +497,7 @@ function AdminInner() {
                       </tr>
                       {isOpen ? (
                         <tr className="border-b bg-[#f9f9f9]">
-                          <td colSpan={11} className="p-4">
+                          <td colSpan={13} className="p-4">
                             {exp === "loading" ? (
                               <p className="text-sm text-gray-500">댓글 로딩…</p>
                             ) : Array.isArray(exp) && exp.length === 0 ? (

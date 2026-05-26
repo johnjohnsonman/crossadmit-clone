@@ -54,6 +54,9 @@ export type Admission = {
   original_content?: string | null;
   original_title?: string | null;
   source_type?: SourceType | string | null;
+  nationality_code?: string | null;
+  nationality_region?: string | null;
+  gender?: string | null;
   home_country?: string | null;
   high_school_type?: string | null;
   available_as_mentor?: boolean;

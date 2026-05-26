@@ -27,6 +27,11 @@ import {
   type DegreeLevel,
   type DegreeLevelFilterValue,
 } from "@/lib/admissions/degree-level";
+import {
+  FILTERABLE_NATIONALITIES,
+  getNationalityFlag,
+  GENDER_OPTIONS,
+} from "@/lib/i18n/nationalities";
 import type { Dictionary, Locale } from "@/lib/i18n/dictionary";
 import { withLang } from "@/lib/i18n/locale";
 
@@ -57,6 +62,8 @@ const TEXT = {
     emptyIntlCta: "후기 등록하기 →",
     trackFilter: "전형",
     degreeFilter: "학위",
+    nationalityFilter: "국적",
+    genderFilter: "성별",
     resetFilters: "필터 초기화",
     schoolFilter: "학교 필터",
     more: "더보기 →",
@@ -89,6 +96,8 @@ const TEXT = {
     emptyIntlWhy: "Why share?",
     trackFilter: "Track",
     degreeFilter: "Degree",
+    nationalityFilter: "Nationality",
+    genderFilter: "Gender",
     resetFilters: "Clear filters",
     schoolFilter: "School",
     more: "View more →",
@@ -110,6 +119,10 @@ const TYPE_OPTIONS: { value: string; ko: string; en: string }[] = [
   { value: "논술", ko: "논술", en: "Essay" },
   { value: "기타", ko: "기타", en: "Other" },
 ];
+
+const GENDER_FILTER_OPTIONS = GENDER_OPTIONS.filter(
+  (option) => option.value === "male" || option.value === "female"
+);
 
 const selectClass =
   "rounded-lg border border-[#343536] bg-[#272729] px-3 py-2 text-sm text-[#D7DADC] " +
@@ -221,6 +234,8 @@ export default function AdmissionsBulletinBoard({
   const [appliedYear, setAppliedYear] = useState("");
   const [appliedType, setAppliedType] = useState("");
   const [appliedStatus, setAppliedStatus] = useState("");
+  const [appliedNationalityCode, setAppliedNationalityCode] = useState("");
+  const [appliedGender, setAppliedGender] = useState("");
   type SortMode = "latest" | "likes" | "views" | "oldest";
 
   const parseSortParam = (s: string | null): SortMode => {
@@ -334,6 +349,8 @@ export default function AdmissionsBulletinBoard({
     Boolean(appliedYear) ||
     Boolean(appliedType) ||
     Boolean(appliedStatus) ||
+    Boolean(appliedNationalityCode) ||
+    Boolean(appliedGender) ||
     appliedUnivId !== null ||
     appliedSort !== "latest" ||
     (appliedTracks !== null &&
@@ -399,6 +416,10 @@ export default function AdmissionsBulletinBoard({
       if (appliedYear) params.set("year", appliedYear);
       if (appliedType) params.set("admission_type", appliedType);
       if (appliedStatus) params.set("status", appliedStatus);
+      if (appliedNationalityCode) {
+        params.set("nationality_code", appliedNationalityCode);
+      }
+      if (appliedGender) params.set("gender", appliedGender);
       if (appliedUnivId !== null) params.set("univ_id", String(appliedUnivId));
       if (appliedTracks && appliedTracks.length > 0) {
         params.set("admit_track", appliedTracks.join(","));
@@ -430,6 +451,8 @@ export default function AdmissionsBulletinBoard({
     appliedYear,
     appliedType,
     appliedStatus,
+    appliedNationalityCode,
+    appliedGender,
     appliedSort,
     appliedUnivId,
     appliedTracks,
@@ -541,6 +564,14 @@ export default function AdmissionsBulletinBoard({
     setAppliedStatus(v);
     setPage(1);
   };
+  const setNationality = (v: string) => {
+    setAppliedNationalityCode(v);
+    setPage(1);
+  };
+  const setGender = (v: string) => {
+    setAppliedGender(v);
+    setPage(1);
+  };
   const setSort = (v: SortMode) => {
     setAppliedSort(v);
     setPage(1);
@@ -552,6 +583,8 @@ export default function AdmissionsBulletinBoard({
     setAppliedYear("");
     setAppliedType("");
     setAppliedStatus("");
+    setAppliedNationalityCode("");
+    setAppliedGender("");
     setAppliedSort("latest");
     setAppliedUnivId(null);
     setUnivFilterLabel("");
@@ -637,6 +670,27 @@ export default function AdmissionsBulletinBoard({
         clear: () => setStatus(""),
       });
     }
+    if (appliedNationalityCode) {
+      const opt = FILTERABLE_NATIONALITIES.find(
+        (item) => item.code === appliedNationalityCode
+      );
+      pills.push({
+        key: "nationality",
+        label:
+          locale === "en"
+            ? opt?.name_en ?? appliedNationalityCode
+            : opt?.name_ko ?? appliedNationalityCode,
+        clear: () => setNationality(""),
+      });
+    }
+    if (appliedGender) {
+      const opt = GENDER_OPTIONS.find((item) => item.value === appliedGender);
+      pills.push({
+        key: "gender",
+        label: locale === "en" ? opt?.name_en ?? appliedGender : opt?.name_ko ?? appliedGender,
+        clear: () => setGender(""),
+      });
+    }
     if (appliedSort !== "latest") {
       const sortLabels: Record<SortMode, string> = {
         likes: t.sortLikes,
@@ -713,6 +767,8 @@ export default function AdmissionsBulletinBoard({
     appliedYear,
     appliedType,
     appliedStatus,
+    appliedNationalityCode,
+    appliedGender,
     appliedSort,
     appliedUnivId,
     univFilterLabel,
@@ -889,6 +945,32 @@ export default function AdmissionsBulletinBoard({
               <option value="regist">{locale === "en" ? "Enrolled" : "등록"}</option>
               <option value="reject">{locale === "en" ? "Rejected" : "불합격"}</option>
             </select>
+            <select
+              className={selectClass}
+              value={appliedNationalityCode}
+              onChange={(e) => setNationality(e.target.value)}
+              aria-label={t.nationalityFilter}
+            >
+              <option value="">{t.nationalityFilter}</option>
+              {FILTERABLE_NATIONALITIES.map((item) => (
+                <option key={item.code} value={item.code}>
+                  {locale === "en" ? item.name_en : item.name_ko}
+                </option>
+              ))}
+            </select>
+            <select
+              className={selectClass}
+              value={appliedGender}
+              onChange={(e) => setGender(e.target.value)}
+              aria-label={t.genderFilter}
+            >
+              <option value="">{t.genderFilter}</option>
+              {GENDER_FILTER_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {locale === "en" ? option.name_en : option.name_ko}
+                </option>
+              ))}
+            </select>
             <div className="flex items-center gap-2 text-sm text-[#7C7C7C]">
               <span className="shrink-0">{t.sortLabel}:</span>
               <select
@@ -985,6 +1067,7 @@ export default function AdmissionsBulletinBoard({
                 record.admissionSchools.find((s) => s.isAccept)?.admissionType ||
                 record.admissionSchools[0]?.admissionType ||
                 "";
+              const nationalityFlag = getNationalityFlag(record.nationalityCode);
               const pills = specPills(record, locale);
 
               return (
@@ -1006,7 +1089,10 @@ export default function AdmissionsBulletinBoard({
                           </p>
                         ) : null}
                       </div>
-                      <p className="text-xs text-[#7C7C7C] sm:mt-2">{nick}</p>
+                      <p className="text-xs text-[#7C7C7C] sm:mt-2">
+                        {nationalityFlag ? `${nationalityFlag} ` : ""}
+                        {nick}
+                      </p>
                     </div>
 
                     <div className="min-w-0 flex-1">

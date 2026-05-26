@@ -20,6 +20,11 @@ import AdmissionMentorBlock, {
 import AdmitTrackBadge from "@/components/admissions/AdmitTrackBadge";
 import DegreeLevelBadge from "@/components/admissions/DegreeLevelBadge";
 import { isAdmitTrack } from "@/lib/admissions/admit-track";
+import {
+  getGenderLabel,
+  getNationalityFlag,
+  getNationalityLabel,
+} from "@/lib/i18n/nationalities";
 import { seoAlternates } from "@/lib/seo/metadata";
 
 type PageProps = { params: Promise<{ id: string }> };
@@ -102,6 +107,21 @@ function splitInputSpecialty(raw: string | undefined): {
     testScores: lines[0],
     extraActivities: lines.slice(1).join("\n"),
   };
+}
+
+function formatGenderStudentLabel(
+  gender: string | undefined,
+  locale: "ko" | "en"
+): string | undefined {
+  if (!gender) return undefined;
+  if (locale === "ko") {
+    if (gender === "male") return "남학생";
+    if (gender === "female") return "여학생";
+    if (gender === "other") return "기타 성별";
+    if (gender === "prefer_not_to_say") return "성별 비공개";
+    return undefined;
+  }
+  return getGenderLabel(gender, "en");
 }
 
 function ResultRow({ school }: { school: AdmissionSchoolRecord }) {
@@ -228,6 +248,21 @@ export default async function AdmissionDetailPage({ params }: PageProps) {
     isAdmitTrack(record.admitTrack) &&
     ["international", "overseas_kr", "gks"].includes(record.admitTrack);
   const detailLocale = intlTrack ? "en" : "ko";
+  const nationalityLabel = getNationalityLabel(record.nationalityCode, detailLocale);
+  const nationalityFlag = getNationalityFlag(record.nationalityCode);
+  const genderLabel = formatGenderStudentLabel(record.gender, detailLocale);
+  const demographicLine =
+    detailLocale === "en"
+      ? [nationalityLabel, genderLabel, `Admitted in ${record.year}`]
+          .filter(Boolean)
+          .join(" / ")
+      : [
+          nationalityLabel ? `${nationalityLabel} 출신` : "",
+          genderLabel ?? "",
+          `${record.year}년 합격`,
+        ]
+          .filter(Boolean)
+          .join(" / ");
 
   return (
     <main className="min-h-screen bg-gray-950 text-gray-300">
@@ -250,7 +285,10 @@ export default async function AdmissionDetailPage({ params }: PageProps) {
                     {record.year}년 {primaryType}
                   </p>
                   <p className="mt-1 text-sm text-gray-400 flex flex-wrap items-center gap-2">
-                    <span>{record.userHandle?.trim() || "익명"}</span>
+                    <span>
+                      {nationalityFlag ? `${nationalityFlag} ` : ""}
+                      {record.userHandle?.trim() || "익명"}
+                    </span>
                     {record.admitTrack && isAdmitTrack(record.admitTrack) ? (
                       <AdmitTrackBadge
                         track={record.admitTrack}
@@ -265,6 +303,11 @@ export default async function AdmissionDetailPage({ params }: PageProps) {
                       <AdmissionMentorBadge locale={detailLocale} />
                     ) : null}
                   </p>
+                  {(nationalityLabel || genderLabel) && (
+                    <p className="mt-2 text-sm text-gray-400">
+                      {demographicLine}
+                    </p>
+                  )}
                   {record.availableAsMentor ? (
                     <AdmissionMentorBlock
                       mentorIntro={record.mentorIntro}

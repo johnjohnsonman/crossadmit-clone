@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAdmitTrack } from "@/lib/admissions/admit-track";
 import { isDegreeLevel } from "@/lib/admissions/degree-level";
+import {
+  getNationalityRegion,
+  type AdmissionGender,
+} from "@/lib/i18n/nationalities";
 import { generateAdmissionTitle } from "@/lib/admissions/auto-title";
 import {
   normalizeUnivId,
@@ -37,6 +41,27 @@ function statusToFlags(status: SchoolSubmitPayload["status"]) {
 
 function toFkId(id: number | null | undefined): number | null {
   return id != null && id > 0 ? id : null;
+}
+
+function normalizeNationalityCode(raw: unknown): string | null {
+  const code = String(raw ?? "").trim().toUpperCase();
+  if (!code || code === "PREFER_NOT") return null;
+  if (code === "OTHER") return "OTHER";
+  if (/^[A-Z]{2}$/.test(code)) return code;
+  return null;
+}
+
+function normalizeGender(raw: unknown): AdmissionGender | null {
+  const value = String(raw ?? "").trim();
+  if (
+    value === "male" ||
+    value === "female" ||
+    value === "other" ||
+    value === "prefer_not_to_say"
+  ) {
+    return value;
+  }
+  return null;
 }
 
 function isSchool(x: unknown): x is SchoolSubmitPayload {
@@ -244,6 +269,9 @@ export async function POST(request: NextRequest) {
       const isVerified = Boolean(body.is_verified);
       const homeCountry = String(body.home_country ?? body.hs_country ?? "").trim();
       const highSchoolType = String(body.high_school_type ?? "").trim();
+      const nationalityCode = normalizeNationalityCode(body.nationality_code);
+      const nationalityRegion = getNationalityRegion(nationalityCode) ?? null;
+      const gender = normalizeGender(body.gender);
       const availableAsMentor = Boolean(
         body.available_as_mentor ?? body.mentorOptIn
       );
@@ -267,6 +295,9 @@ export async function POST(request: NextRequest) {
         admit_track,
         degree_level,
         source_type: "user_submitted_intl",
+        nationality_code: nationalityCode,
+        nationality_region: nationalityRegion,
+        gender,
         home_country: homeCountry || null,
         high_school_type: highSchoolType || null,
         available_as_mentor: availableAsMentor,
@@ -318,6 +349,9 @@ export async function POST(request: NextRequest) {
     const input_score = String(body.input_score ?? body.csat_total ?? "").trim();
     const input_gpa = String(body.input_gpa ?? body.gpa_grade ?? "").trim();
     const input_specialty = String(body.input_specialty ?? "").trim();
+    const nationalityCode = normalizeNationalityCode(body.nationality_code);
+    const nationalityRegion = getNationalityRegion(nationalityCode) ?? null;
+    const gender = normalizeGender(body.gender);
 
     const year =
       typeof yearRaw === "number"
@@ -372,6 +406,9 @@ export async function POST(request: NextRequest) {
         ? String(body.admit_track)
         : "regular_kr",
       source_type: "user_submitted",
+      nationality_code: nationalityCode,
+      nationality_region: nationalityRegion,
+      gender,
       created_at: new Date().toISOString(),
     };
 

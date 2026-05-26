@@ -28,6 +28,18 @@ function parseSort(raw: string | null) {
   return "latest" as const;
 }
 
+function parseGender(raw: string | null): string | undefined {
+  if (
+    raw === "male" ||
+    raw === "female" ||
+    raw === "other" ||
+    raw === "prefer_not_to_say"
+  ) {
+    return raw;
+  }
+  return undefined;
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
   const yearParam = searchParams.get("year");
@@ -41,6 +53,8 @@ export async function GET(request: NextRequest) {
   const admit_track = parseAdmitTrackList(admitTrackParam ?? undefined);
   const degreeLevelParam = searchParams.get("degree_level");
   const degree_level = parseDegreeLevelList(degreeLevelParam ?? undefined);
+  const nationality_code = searchParams.get("nationality_code")?.trim().toUpperCase() || undefined;
+  const gender = parseGender(searchParams.get("gender"));
   const univIdParam = searchParams.get("univ_id");
   let univ_id: number | undefined;
   if (univIdParam) {
@@ -95,6 +109,8 @@ export async function GET(request: NextRequest) {
       univ_id,
       admit_track: admit_track.length > 0 ? admit_track : undefined,
       degree_level: degree_level.length > 0 ? degree_level : undefined,
+      nationality_code,
+      gender,
       sort,
       limit: Number.isNaN(limit) ? 20 : limit,
       offset: Number.isNaN(offset) ? 0 : offset,

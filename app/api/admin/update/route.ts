@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminSecret } from "@/lib/admin/verify";
+import { getNationalityRegion } from "@/lib/i18n/nationalities";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
@@ -75,6 +76,31 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "source_type 값 오류" }, { status: 400 });
     }
     patch.source_type = v;
+  } else if (field === "nationality_code") {
+    const v = String(value ?? "").trim().toUpperCase();
+    if (!v) {
+      patch.nationality_code = null;
+      patch.nationality_region = null;
+    } else if (v === "OTHER" || /^[A-Z]{2}$/.test(v)) {
+      patch.nationality_code = v;
+      patch.nationality_region = getNationalityRegion(v) ?? "other";
+    } else {
+      return NextResponse.json({ error: "nationality_code 값 오류" }, { status: 400 });
+    }
+  } else if (field === "gender") {
+    const v = String(value ?? "").trim();
+    if (!v) {
+      patch.gender = null;
+    } else if (
+      v === "male" ||
+      v === "female" ||
+      v === "other" ||
+      v === "prefer_not_to_say"
+    ) {
+      patch.gender = v;
+    } else {
+      return NextResponse.json({ error: "gender 값 오류" }, { status: 400 });
+    }
   } else {
     return NextResponse.json({ error: "허용되지 않은 field" }, { status: 400 });
   }

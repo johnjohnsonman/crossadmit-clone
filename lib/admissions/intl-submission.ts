@@ -68,6 +68,8 @@ export type IntlFormDraft = {
   track: IntlAdmissionTrack;
   trackOther: string;
   degreeLevel: DegreeLevel;
+  nationalityCode: string;
+  gender: string;
   hsCountry: string;
   highSchoolType: string;
   schools: Array<{
@@ -207,6 +209,12 @@ export function mergeIntlDraftFromStorage(
     trackOther: String(parsed.trackOther ?? "").trim(),
     handle: String(parsed.handle ?? parsed.displayName ?? "").trim(),
     year: String(parsed.year ?? parsed.yearAdmitted ?? "").trim(),
+    nationalityCode: String(
+      parsed.nationalityCode ?? parsed.nationality_code ?? ""
+    )
+      .trim()
+      .toUpperCase(),
+    gender: String(parsed.gender ?? "").trim(),
     hsCountry: String(parsed.hsCountry ?? parsed.homeCountry ?? "").trim(),
     highSchoolType: String(parsed.highSchoolType ?? "").trim(),
     schools,

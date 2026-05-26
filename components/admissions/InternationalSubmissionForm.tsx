@@ -24,6 +24,11 @@ import {
   type IntlFormDraft,
   type IntlSchoolStatus,
 } from "@/lib/admissions/intl-submission";
+import {
+  FILTERABLE_NATIONALITIES,
+  GENDER_OPTIONS,
+  getNationality,
+} from "@/lib/i18n/nationalities";
 import { withLang } from "@/lib/i18n/locale";
 
 const CURRENT_YEAR = new Date().getFullYear();
@@ -46,6 +51,32 @@ const inputClass =
   "placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#2D5A27]";
 const labelClass = "block text-sm font-medium text-[#1A1A1A]";
 
+const intlNationalityOptions: AutocompleteItem[] = FILTERABLE_NATIONALITIES.map((item) => ({
+  label: `${item.flag} ${item.name_en}`,
+  hint: `${item.name_ko} · ${item.code}`,
+}));
+
+function matchNationalityInput(raw: string) {
+  const normalized = raw.trim().toLowerCase();
+  if (!normalized) return undefined;
+  return FILTERABLE_NATIONALITIES.find((item) => {
+    const values = [
+      item.code,
+      item.name_ko,
+      item.name_en,
+      `${item.flag} ${item.name_ko}`,
+      `${item.flag} ${item.name_en}`,
+    ];
+    return values.some((value) => value.trim().toLowerCase() === normalized);
+  });
+}
+
+function formatNationalityInput(code: string): string {
+  const nationality = getNationality(code);
+  if (!nationality || nationality.code === "PREFER_NOT") return "";
+  return `${nationality.flag} ${nationality.name_en}`;
+}
+
 function newSchoolRow(): IntlFormDraft["schools"][0] {
   return {
     id:
@@ -65,6 +96,8 @@ const EMPTY_DRAFT: IntlFormDraft = {
   track: "international",
   trackOther: "",
   degreeLevel: "undergraduate",
+  nationalityCode: "",
+  gender: "",
   hsCountry: "",
   highSchoolType: "",
   schools: [newSchoolRow(), newSchoolRow()],
@@ -84,6 +117,7 @@ const EMPTY_DRAFT: IntlFormDraft = {
 export default function InternationalSubmissionForm() {
   const [step, setStep] = useState(1);
   const [draft, setDraft] = useState<IntlFormDraft>(EMPTY_DRAFT);
+  const [nationalityInput, setNationalityInput] = useState("");
   const [verificationFile, setVerificationFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -110,6 +144,13 @@ export default function InternationalSubmissionForm() {
       console.warn("Draft restore failed:", e);
     }
   }, []);
+
+  useEffect(() => {
+    const formatted = formatNationalityInput(draft.nationalityCode);
+    if (formatted && !nationalityInput) {
+      setNationalityInput(formatted);
+    }
+  }, [draft.nationalityCode, nationalityInput]);
 
   useEffect(() => {
     const t = window.setTimeout(() => {
@@ -283,6 +324,8 @@ export default function InternationalSubmissionForm() {
           nickname: draft.handle.trim(),
           admit_track: trackToAdmitTrack(draft.track, draft.trackOther),
           degree_level: draft.degreeLevel,
+          nationality_code: draft.nationalityCode || undefined,
+          gender: draft.gender || undefined,
           track: draft.track,
           track_other: draft.trackOther.trim(),
           home_country: draft.hsCountry,
@@ -669,6 +712,55 @@ export default function InternationalSubmissionForm() {
                     (optional)
                   </span>
                 </h2>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <label className={labelClass} htmlFor="nationalityCode">
+                      Nationality (optional)
+                    </label>
+                    <AutocompleteInput
+                      id="nationalityCode"
+                      options={intlNationalityOptions}
+                      value={nationalityInput}
+                      onChange={(value) => {
+                        setNationalityInput(value);
+                        updateDraft({
+                          nationalityCode: matchNationalityInput(value)?.code ?? "",
+                        });
+                      }}
+                      onSelect={(value) => {
+                        setNationalityInput(value);
+                        updateDraft({
+                          nationalityCode: matchNationalityInput(value)?.code ?? "",
+                        });
+                      }}
+                      placeholder="Search nationality"
+                      className={inputClass}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass} htmlFor="gender">
+                      Gender (optional)
+                    </label>
+                    <select
+                      id="gender"
+                      className={inputClass}
+                      value={draft.gender}
+                      onChange={(e) => updateDraft({ gender: e.target.value })}
+                    >
+                      <option value="">Prefer not to choose</option>
+                      {GENDER_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.name_en}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <p className="rounded-lg border border-[#E5E5E0] bg-[#FAFAF8] px-3 py-2 text-xs text-[#6B7280]">
+                  This helps other students find admissions stories from people
+                  with similar backgrounds. It is optional and can be changed
+                  later.
+                </p>
                 <div>
                   <label className={labelClass} htmlFor="scoresText">
                     Test scores & qualifications

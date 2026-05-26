@@ -17,6 +17,8 @@ export interface GetAdmissionsParams {
   univ_id?: number;
   admit_track?: AdmitTrack[];
   degree_level?: DegreeLevel[];
+  nationality_code?: string;
+  gender?: string;
   sort?: AdmissionsSort;
   limit?: number;
   offset?: number;
@@ -50,6 +52,9 @@ const ADMISSION_DETAIL_SELECT = `
   source_url,
   admit_track,
   degree_level,
+  nationality_code,
+  nationality_region,
+  gender,
   original_language,
   original_title,
   original_content,
@@ -209,6 +214,14 @@ export async function getAdmissions(
 
   if (params.degree_level && params.degree_level.length > 0) {
     query = query.in("degree_level", params.degree_level);
+  }
+
+  if (params.nationality_code?.trim()) {
+    query = query.eq("nationality_code", params.nationality_code.trim().toUpperCase());
+  }
+
+  if (params.gender?.trim()) {
+    query = query.eq("gender", params.gender.trim());
   }
 
   query = applySort(query, sortMode);

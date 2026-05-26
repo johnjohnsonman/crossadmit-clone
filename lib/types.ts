@@ -55,6 +55,9 @@ export interface AdmissionRecord {
   originalContent?: string;
   originalTitle?: string;
   sourceType?: SourceType | string;
+  nationalityCode?: string;
+  nationalityRegion?: string;
+  gender?: string;
   homeCountry?: string;
   availableAsMentor?: boolean;
   mentorIntro?: string;
