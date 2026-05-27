@@ -47,9 +47,6 @@ function NavbarInner() {
               <Link href={href("/mentors")} className={navLink}>
                 {t.nav_mentors}
               </Link>
-              <Link href={href("/study-korea")} className={navLink}>
-                {t.nav_guide}
-              </Link>
               <Link href={href("/videos")} className={navLink}>
                 {t.nav_videos}
               </Link>
@@ -122,13 +119,6 @@ function NavbarInner() {
               onClick={() => setIsMenuOpen(false)}
             >
               {t.nav_mentors}
-            </Link>
-            <Link
-              href={href("/study-korea")}
-              className={mobileLink}
-              onClick={() => setIsMenuOpen(false)}
-            >
-              {t.nav_guide}
             </Link>
             <Link
               href={href("/videos")}

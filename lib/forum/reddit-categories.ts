@@ -1,3 +1,5 @@
+import { normalizeStudyKoreaCategory } from "@/lib/pipeline/study-korea/categories";
+
 export type RedditCategoryId =
   | "visa"
   | "admission"
@@ -88,7 +90,10 @@ export function normalizePostCategory(
   const raw = (category || subcategory || "general").toLowerCase();
   if (raw === "youtube") return "general";
   if (VALID.has(raw as RedditCategoryId)) return raw;
-  if (raw === "life" || raw === "cost") return "living_cost";
+
+  const normalized = normalizeStudyKoreaCategory(raw);
+  if (VALID.has(normalized as RedditCategoryId)) return normalized;
+
   return "general";
 }
 

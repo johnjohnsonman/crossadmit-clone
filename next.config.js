@@ -21,6 +21,15 @@ const nextConfig = {
       },
     ],
   },
+  async redirects() {
+    return [
+      {
+        source: '/study-korea',
+        destination: '/forum',
+        permanent: true,
+      },
+    ];
+  },
 }
 
 module.exports = nextConfig

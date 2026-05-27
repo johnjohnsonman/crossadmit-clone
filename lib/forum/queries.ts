@@ -3,6 +3,7 @@ import {
   applyForumPostExclusions,
   isForumExcludedPost,
 } from "./exclusions";
+import { buildForumCategoryOrFilter } from "./category-filter";
 import { normalizePostCategory } from "./reddit-categories";
 
 export type StudyKoreaPostRow = {
@@ -95,7 +96,7 @@ export async function getRelatedPosts(
     supabase.from("study_korea_posts").select(POST_SELECT)
   )
     .eq("is_published", true)
-    .or(`category.eq.${category},subcategory.eq.${category}`)
+    .or(buildForumCategoryOrFilter(category))
     .neq("id", postId)
     .not("slug", "is", null)
     .order("upvotes", { ascending: false })

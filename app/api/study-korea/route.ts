@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { buildForumCategoryOrFilter } from "@/lib/forum/category-filter";
 import { applyForumPostExclusions } from "@/lib/forum/exclusions";
 
 export const dynamic = "force-dynamic";
@@ -27,7 +28,7 @@ export async function GET(request: NextRequest) {
     );
 
     if (category && category !== "all") {
-      q = q.eq("category", category);
+      q = q.or(buildForumCategoryOrFilter(category));
     }
     if (universityIdParam) {
       const uid = parseInt(universityIdParam, 10);

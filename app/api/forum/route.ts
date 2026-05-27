@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { enrichStudyKoreaPosts } from "@/lib/forum/enrich-posts";
 import { SLUG_NAME_HINTS } from "@/lib/forum/constants";
+import { buildForumCategoryOrFilter } from "@/lib/forum/category-filter";
 import {
   applyForumPostExclusions,
   isForumExcludedCategory,
@@ -74,7 +75,7 @@ export async function GET(request: NextRequest) {
     );
 
     if (category && category !== "all") {
-      q = q.or(`subcategory.eq.${category},category.eq.${category}`);
+      q = q.or(buildForumCategoryOrFilter(category));
     }
 
     if (source) {
