@@ -8,6 +8,10 @@ import {
   isForumExcludedCategory,
 } from "@/lib/forum/exclusions";
 import { resolveUniversityId } from "@/lib/pipeline/study-korea/university-id";
+import {
+  FORUM_NEWS_SOURCES,
+  forumNewsSourcesInList,
+} from "@/lib/forum/feed-kind";
 
 export const dynamic = "force-dynamic";
 
@@ -84,8 +88,11 @@ export async function GET(request: NextRequest) {
 
     if (kind === "guides") {
       q = q.eq("post_type", "ai_guide");
+    } else if (kind === "news") {
+      q = q.in("source", [...FORUM_NEWS_SOURCES]);
     } else if (kind === "discussions") {
       q = q.neq("post_type", "ai_guide");
+      q = q.not("source", "in", forumNewsSourcesInList());
     }
 
     const univId = universityIdParam

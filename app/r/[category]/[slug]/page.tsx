@@ -13,6 +13,9 @@ import AIGuideBadge from "@/components/reddit-style/AIGuideBadge";
 import AIGuideContent from "@/components/reddit-style/AIGuideContent";
 import AIGuideSources from "@/components/reddit-style/AIGuideSources";
 import GuideFeedback from "@/components/reddit-style/GuideFeedback";
+import WritePostCta from "@/components/reddit-style/WritePostCta";
+import PostEditControls from "@/components/posts/PostEditControls";
+import { hasAdminCookieSession } from "@/lib/admin/server-session";
 import {
   formatTimeAgo,
   postCommentsCount,
@@ -111,6 +114,7 @@ export default async function PostDetailPage({ params }: Props) {
   const when = formatTimeAgo(post.source_created_at ?? post.created_at);
   const related = await getRelatedPosts(post.id, cat);
   const commentList = await getCommentsForPost(post.id);
+  const isAdmin = await hasAdminCookieSession();
   const canonical = `${BASE}${postPath(cat, slug)}`;
 
   const articleSchema = {
@@ -286,12 +290,20 @@ export default async function PostDetailPage({ params }: Props) {
           <div className="mt-4 flex gap-2 text-xs font-bold text-[#7C7C7C]">
             <span>💬 {comments} Comments</span>
           </div>
+
+          <PostEditControls
+            postId={post.id}
+            category={cat}
+            initialIsAdmin={isAdmin}
+          />
         </div>
       </article>
 
       <div className="my-4">
         <AdSenseSlot />
       </div>
+
+      <WritePostCta category={cat} className="mb-4 lg:hidden" />
 
       <CommentSection postId={post.id} initialComments={commentList} />
     </RedditLayout>

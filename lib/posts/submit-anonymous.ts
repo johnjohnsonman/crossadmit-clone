@@ -79,6 +79,7 @@ export async function submitAnonymousPost(
     author: nickname,
     anonymous_nickname: nickname,
     anonymous_password_hash: passwordHash,
+    password_hash: passwordHash,
     author_ip_hash: ipHash,
     category: finalCategory,
     subcategory: categoryToSubcategory(finalCategory),

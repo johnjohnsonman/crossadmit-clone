@@ -7,12 +7,22 @@ import PostCard, { type RedditPostCardData } from "./PostCard";
 import RedditLayout from "./RedditLayout";
 import SortTabs from "./SortTabs";
 import CommunitySidebar from "./CommunitySidebar";
+import ForumFeedTabs from "./ForumFeedTabs";
+import ForumEmptyState from "./ForumEmptyState";
+import CreatePostButton from "./CreatePostButton";
+import type { ForumFeedKind } from "@/lib/forum/feed-kind";
 
 const PAGE_SIZE = 20;
+
+function parseTab(raw: string | null): ForumFeedKind {
+  if (raw === "guides" || raw === "news") return raw;
+  return "discussions";
+}
 
 export default function RedditForumHome() {
   const searchParams = useSearchParams();
   const sort = searchParams.get("sort") || "hot";
+  const tab = parseTab(searchParams.get("tab"));
   const [posts, setPosts] = useState<RedditPostCardData[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
@@ -24,6 +34,7 @@ export default function RedditForumHome() {
       limit: String(PAGE_SIZE),
       offset: String(page * PAGE_SIZE),
       sort: sort === "latest" ? "new" : sort,
+      kind: tab,
     });
     const res = await fetch(`/api/forum?${params}`);
     const json = await res.json();
@@ -32,7 +43,7 @@ export default function RedditForumHome() {
       setTotal(json.total ?? 0);
     }
     setLoading(false);
-  }, [page, sort]);
+  }, [page, sort, tab]);
 
   useEffect(() => {
     void fetchPosts();
@@ -40,33 +51,49 @@ export default function RedditForumHome() {
 
   useEffect(() => {
     setPage(0);
-  }, [sort]);
+  }, [sort, tab]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
+  const sectionLabel =
+    tab === "guides"
+      ? "📚 Guides"
+      : tab === "news"
+        ? "📰 News"
+        : "💬 Discussions";
+
   return (
-    <RedditLayout
-      sort={sort}
-      rightSidebar={<CommunitySidebar />}
-    >
+    <RedditLayout sort={sort} rightSidebar={<CommunitySidebar />}>
       <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-        <SortTabs sort={sort} />
-        <a
-          href="/submit"
-          className="sm:hidden px-3 py-1.5 bg-[#FF4500] text-white text-xs font-bold rounded-full"
-        >
-          + Create Post
-        </a>
+        <div className="min-w-0 flex-1">
+          <ForumFeedTabs active={tab} sort={sort} />
+        </div>
+        <CreatePostButton className="sm:hidden shrink-0" />
       </div>
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-2 px-1">
+        <SortTabs sort={sort} />
+        <CreatePostButton className="hidden sm:inline-flex" />
+      </div>
+
+      {tab === "guides" && (
+        <p className="text-xs text-orange-700 dark:text-orange-400 px-1 mb-2">
+          AI-generated · factual guides for international students
+        </p>
+      )}
+
       <div className="bg-[#DAE0E6] dark:bg-[#030303] space-y-2 pt-2">
+        {!loading && posts.length > 0 && (
+          <h2 className="text-sm font-bold text-[#1C1C1C] dark:text-[#D7DADC] px-1">
+            {sectionLabel}
+          </h2>
+        )}
+
         {loading ? (
           <div className="p-8 text-center text-sm text-[#7C7C7C] bg-white dark:bg-[#1A1A1B] rounded border border-[#EDEFF1]">
             Loading posts…
           </div>
         ) : posts.length === 0 ? (
-          <div className="p-8 text-center text-sm text-[#7C7C7C] bg-white dark:bg-[#1A1A1B] rounded border border-[#EDEFF1]">
-            No posts yet. Check back after the next crawl.
-          </div>
+          <ForumEmptyState kind={tab} />
         ) : (
           posts.map((p, i) => (
             <div key={p.id}>
@@ -80,7 +107,7 @@ export default function RedditForumHome() {
           ))
         )}
 
-        {totalPages > 1 && !loading && (
+        {totalPages > 1 && !loading && posts.length > 0 && (
           <div className="flex justify-center gap-2 py-4">
             <button
               type="button"

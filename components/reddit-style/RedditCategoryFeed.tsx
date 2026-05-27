@@ -6,6 +6,7 @@ import PostCard, { type RedditPostCardData } from "./PostCard";
 import RedditLayout from "./RedditLayout";
 import SortTabs from "./SortTabs";
 import CommunitySidebar from "./CommunitySidebar";
+import CreatePostButton from "./CreatePostButton";
 import type { RedditCategoryId } from "@/lib/forum/reddit-categories";
 
 type CategoryMeta = {
@@ -101,16 +102,22 @@ export default function RedditCategoryFeed({
       rightSidebar={<CommunitySidebar category={categoryId} />}
     >
       <div className="bg-white dark:bg-[#1A1A1B] border border-[#EDEFF1] dark:border-[#343536] rounded-t p-4 mb-0">
-        <div className="flex items-center gap-2">
-          <span className="text-2xl">{categoryMeta.emoji}</span>
-          <div>
-            <h1 className="text-xl font-bold text-[#1C1C1C] dark:text-[#D7DADC]">
-              r/{categoryMeta.label}
-            </h1>
-            <p className="text-sm text-[#7C7C7C] mt-0.5">
-              {categoryMeta.description}
-            </p>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-2xl">{categoryMeta.emoji}</span>
+            <div className="min-w-0">
+              <h1 className="text-xl font-bold text-[#1C1C1C] dark:text-[#D7DADC]">
+                r/{categoryMeta.label}
+              </h1>
+              <p className="text-sm text-[#7C7C7C] mt-0.5">
+                {categoryMeta.description}
+              </p>
+            </div>
           </div>
+          <CreatePostButton
+            category={categoryId}
+            className="px-4 py-2 text-sm shrink-0"
+          />
         </div>
         <button
           type="button"
@@ -159,8 +166,18 @@ export default function RedditCategoryFeed({
                 💬 Discussions
               </h2>
               {posts.length === 0 ? (
-                <div className="p-6 text-center text-sm bg-white dark:bg-[#1A1A1B] rounded border text-[#7C7C7C]">
-                  No discussions in this category yet.
+                <div className="p-6 text-center text-sm bg-white dark:bg-[#1A1A1B] rounded border border-[#EDEFF1] dark:border-[#343536]">
+                  <p className="font-bold text-[#1C1C1C] dark:text-[#D7DADC] mb-2">
+                    Be the first to share your story
+                  </p>
+                  <p className="text-[#7C7C7C] dark:text-[#818384] mb-4">
+                    No discussions in r/{categoryMeta.label} yet. Post
+                    anonymously — no signup needed.
+                  </p>
+                  <CreatePostButton
+                    category={categoryId}
+                    className="px-5 py-2 text-sm"
+                  />
                 </div>
               ) : (
                 <div className="space-y-2">
