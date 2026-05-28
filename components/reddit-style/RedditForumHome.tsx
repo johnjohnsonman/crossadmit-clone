@@ -21,7 +21,7 @@ function parseTab(raw: string | null): ForumFeedKind {
 
 export default function RedditForumHome() {
   const searchParams = useSearchParams();
-  const sort = searchParams.get("sort") || "hot";
+  const sort = searchParams.get("sort") || "new";
   const tab = parseTab(searchParams.get("tab"));
   const [posts, setPosts] = useState<RedditPostCardData[]>([]);
   const [total, setTotal] = useState(0);
@@ -71,7 +71,7 @@ export default function RedditForumHome() {
         <CreatePostButton className="sm:hidden shrink-0" />
       </div>
       <div className="flex flex-wrap items-center justify-between gap-2 mb-2 px-1">
-        <SortTabs sort={sort} />
+        <SortTabs sort={sort} defaultSort="new" />
         <CreatePostButton className="hidden sm:inline-flex" />
       </div>
 

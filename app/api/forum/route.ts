@@ -16,9 +16,38 @@ import {
 export const dynamic = "force-dynamic";
 
 const KNOWN_SLUGS = Object.keys(SLUG_NAME_HINTS);
+const MAX_SORT_CANDIDATES = 2000;
 
 function escapeIlike(raw: string): string {
   return raw.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
+}
+
+type SortablePost = {
+  upvotes_count?: number | null;
+  downvotes_count?: number | null;
+  comments_count?: number | null;
+  source_created_at?: string | null;
+  created_at?: string | null;
+};
+
+function postScoreValue(post: SortablePost): number {
+  const up = Number(post.upvotes_count ?? 0);
+  const down = Number(post.downvotes_count ?? 0);
+  return up - down;
+}
+
+function postTimestampMs(post: SortablePost): number {
+  const iso = post.source_created_at ?? post.created_at ?? null;
+  if (!iso) return 0;
+  const ms = new Date(iso).getTime();
+  return Number.isNaN(ms) ? 0 : ms;
+}
+
+function postHotValue(post: SortablePost): number {
+  const score = postScoreValue(post);
+  const comments = Number(post.comments_count ?? 0);
+  const ageHours = Math.max(0, (Date.now() - postTimestampMs(post)) / 3600000);
+  return (score + comments * 2) / Math.pow(ageHours + 2, 1.5);
 }
 
 async function countBySource(
@@ -52,7 +81,7 @@ export async function GET(request: NextRequest) {
   const limit = Math.min(parseInt(searchParams.get("limit") || "20", 10), 50);
   const offset = parseInt(searchParams.get("offset") || "0", 10);
   const withStats = searchParams.get("stats") === "1";
-  const kind = searchParams.get("kind"); // guides | discussions
+  const kind = searchParams.get("kind"); // guides | discussions | news
 
   try {
     if (category && isForumExcludedCategory(category)) {
@@ -127,21 +156,47 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    if (sort === "hot" || sort === "popular" || sort === "top") {
-      q = q
-        .order("upvotes_count", { ascending: false, nullsFirst: false })
-        .order("upvotes", { ascending: false });
-    } else {
+    if (sort === "new") {
       q = q.order("source_created_at", { ascending: false, nullsFirst: false });
     }
 
-    const { data, error, count } = await q.range(offset, offset + limit - 1);
+    let data: Record<string, unknown>[] | null = [];
+    let count: number | null = 0;
+    let error: { message: string } | null = null;
+
+    if (sort === "new") {
+      const res = await q.range(offset, offset + limit - 1);
+      data = res.data;
+      error = res.error;
+      count = res.count ?? 0;
+    } else {
+      const res = await q.limit(MAX_SORT_CANDIDATES);
+      data = res.data;
+      error = res.error;
+      count = res.count ?? 0;
+    }
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    const enriched = await enrichStudyKoreaPosts(data ?? []);
+    let enriched = await enrichStudyKoreaPosts(data ?? []);
+
+    if (sort === "top") {
+      enriched = [...enriched].sort((a, b) => {
+        const diff = postScoreValue(b) - postScoreValue(a);
+        if (diff !== 0) return diff;
+        return postTimestampMs(b) - postTimestampMs(a);
+      });
+      enriched = enriched.slice(offset, offset + limit);
+    } else if (sort === "hot" || sort === "popular") {
+      enriched = [...enriched].sort((a, b) => {
+        const diff = postHotValue(b) - postHotValue(a);
+        if (diff !== 0) return diff;
+        return postTimestampMs(b) - postTimestampMs(a);
+      });
+      enriched = enriched.slice(offset, offset + limit);
+    }
 
     let statsBySource: Record<string, number> | undefined;
     if (withStats || offset === 0) {

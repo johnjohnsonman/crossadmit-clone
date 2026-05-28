@@ -11,16 +11,24 @@ const TABS = [
 type Props = {
   sort: string;
   basePath?: string;
+  defaultSort?: "hot" | "new";
 };
 
-export default function SortTabs({ sort, basePath = "/forum" }: Props) {
+export default function SortTabs({
+  sort,
+  basePath = "/forum",
+  defaultSort = "hot",
+}: Props) {
   return (
     <div className="flex items-center gap-1 border-b border-[#EDEFF1] dark:border-[#343536] bg-white dark:bg-[#1A1A1B] rounded-t px-2 overflow-x-auto">
       {TABS.map((t) => {
-        const active = sort === t.id || (t.id === "hot" && sort === "popular");
+        const active =
+          sort === t.id ||
+          (t.id === "hot" && sort === "popular") ||
+          (t.id === defaultSort && !sort);
         const href =
           basePath === "/forum"
-            ? t.id === "hot"
+            ? t.id === defaultSort
               ? "/forum"
               : `/forum?sort=${t.id}`
             : `${basePath}?sort=${t.id}`;

@@ -17,7 +17,7 @@ type Props = {
 function buildHref(tab: ForumFeedKind, sort: string): string {
   const params = new URLSearchParams();
   if (tab !== "discussions") params.set("tab", tab);
-  if (sort && sort !== "hot" && sort !== "popular") params.set("sort", sort);
+  if (sort && sort !== "new") params.set("sort", sort);
   const q = params.toString();
   return q ? `/forum?${q}` : "/forum";
 }

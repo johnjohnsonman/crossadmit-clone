@@ -183,7 +183,7 @@ export default async function PostDetailPage({ params }: Props) {
 
       <article className="rounded flex overflow-hidden border bg-white dark:bg-[#1A1A1B] border-[#EDEFF1] dark:border-[#343536]">
         <div className="hidden md:flex p-2">
-          <VoteColumn score={score} layout="side" />
+          <VoteColumn postId={post.id} score={score} layout="side" />
         </div>
         <div className="flex-1 p-4 min-w-0">
           <p className="text-xs text-[#7C7C7C] mb-2 flex flex-wrap items-center gap-2">
@@ -284,7 +284,7 @@ export default async function PostDetailPage({ params }: Props) {
           )}
 
           <div className="md:hidden">
-            <VoteColumn score={score} layout="bottom" />
+            <VoteColumn postId={post.id} score={score} layout="bottom" />
           </div>
 
           <div className="mt-4 flex gap-2 text-xs font-bold text-[#7C7C7C]">

@@ -63,7 +63,7 @@ export default function PostCard({ post }: Props) {
   const inner = (
     <>
       <div className="hidden md:flex">
-        <VoteColumn score={score} layout="side" />
+        <VoteColumn postId={post.id} score={score} layout="side" />
       </div>
       <div className="flex-1 min-w-0 py-2 pr-3">
         <p className="text-xs text-[#7C7C7C] dark:text-[#818384] mb-1 flex flex-wrap items-center gap-1">
@@ -108,7 +108,7 @@ export default function PostCard({ post }: Props) {
             🔖 Save
           </span>
         </div>
-        <VoteColumn score={score} layout="bottom" />
+        <VoteColumn postId={post.id} score={score} layout="bottom" />
       </div>
     </>
   );

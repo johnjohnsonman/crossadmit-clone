@@ -12,7 +12,7 @@ type Props = {
 
 export default function CategorySidebar({
   currentCategory,
-  sort = "hot",
+  sort = "new",
   onNavigate,
 }: Props) {
   const pathname = usePathname();
@@ -34,7 +34,7 @@ export default function CategorySidebar({
         <Link
           href="/forum"
           onClick={onNavigate}
-          className={linkClass(isForumHome && !currentCategory)}
+          className={linkClass(isForumHome && !currentCategory && sort === "new")}
         >
           🏠 All Posts
         </Link>
